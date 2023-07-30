@@ -5422,13 +5422,13 @@
     (property "MFG" "YAEGO" (at 55.88 135.255 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRE073KL" (at 55.88 135.255 0)
+    (property "PN" "RC1206FR-073KL" (at 55.88 135.255 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 8703f0a2-63d9-4571-9097-f834758e6976))
     (pin "2" (uuid 144e2c94-42df-4139-b508-6c6ae2afd97f))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R12") (unit 1)
         )
@@ -5454,10 +5454,13 @@
     (property "PN" "156120RS75300" (at 59.69 142.875 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Wurth Elektronik " (at 59.69 142.875 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 2d10feaa-72da-42f8-9bb6-138570faa611))
     (pin "2" (uuid 04c4a6ca-ce65-47e7-b934-df2d5920a797))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "D4") (unit 1)
         )
@@ -5489,7 +5492,7 @@
     (pin "1" (uuid d37bbabc-9f47-4372-9e3d-db06d5a04f0e))
     (pin "2" (uuid 8aa28494-49d7-42e0-a6d2-834c6a4c96ce))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "C6") (unit 1)
         )
@@ -5512,6 +5515,12 @@
     (property "Datasheet" "~" (at 26.67 180.975 90)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Amphenol" (at 26.67 181.61 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "54601-906WPLF" (at 26.67 181.61 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid a8f4e9f3-c3eb-4616-a310-9c119498472c))
     (pin "2" (uuid 0984f182-9164-4fed-ba18-a39ab7cf93ab))
     (pin "3" (uuid 0f88ebf4-8da7-4de8-955f-24505c99bd72))
@@ -5519,7 +5528,7 @@
     (pin "5" (uuid 858a1968-1838-4447-9c24-2ab2a2bc7065))
     (pin "6" (uuid 6e82cb6d-bae1-40a3-8640-a9261b849a97))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "LOCONET_T1") (unit 1)
         )
@@ -5545,13 +5554,13 @@
     (property "MFG" "YAEGO" (at 68.58 187.96 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRE07150KL" (at 68.58 187.96 0)
+    (property "PN" "RC1206FR-07150KL" (at 68.58 187.96 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 6ee39504-1c8b-4730-b8b0-d775b5066e10))
     (pin "2" (uuid 595b73e9-6584-444d-bc7d-71f003653dc3))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R4") (unit 1)
         )
@@ -5577,13 +5586,13 @@
     (property "MFG" "YAEGO" (at 57.785 179.07 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRE0747KL" (at 57.785 179.07 0)
+    (property "PN" "RC1206FR-0747KL" (at 57.785 179.07 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 1ca8517d-365d-4340-8fc7-a93127942523))
     (pin "2" (uuid 10288718-76b2-4863-aac1-51411fde8925))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R3") (unit 1)
         )
@@ -5609,13 +5618,13 @@
     (property "MFG" "YAEGO" (at 82.55 171.45 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRD0710KL" (at 82.55 171.45 0)
+    (property "PN" "RC1206FR-1310KL" (at 82.55 171.45 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid f81b9137-8ff6-4e5d-8e37-736530f61eb3))
     (pin "2" (uuid 0166fa46-3de5-4146-b95f-034cf2801b4a))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R6") (unit 1)
         )
@@ -5641,13 +5650,13 @@
     (property "MFG" "YAEGO" (at 76.2 187.96 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRE0722KL" (at 76.2 187.96 0)
+    (property "PN" "RC1206FR-0722KL" (at 76.2 187.96 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 031c0f92-55c3-4d4b-90b1-d29decf7b7ce))
     (pin "2" (uuid 0866f7d0-ea5c-4523-841e-a4f3fa95ae28))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R5") (unit 1)
         )
@@ -5673,13 +5682,13 @@
     (property "MFG" "YAEGO" (at 95.25 191.77 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRE07220KL" (at 95.25 191.77 0)
+    (property "PN" "RC1206FR-07220KL" (at 95.25 191.77 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid bb1d3163-dcb9-4d90-b530-f61f416b2add))
     (pin "2" (uuid c039ae59-a626-4162-840b-73a8e7f765f6))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R7") (unit 1)
         )
@@ -5702,11 +5711,17 @@
     (property "Datasheet" "https://www.onsemi.com/pub/Collateral/2N3903-D.PDF" (at 54.61 186.69 0)
       (effects (font (size 1.27 1.27)) (justify left) hide)
     )
+    (property "MFG" "Diotec Semiconductor" (at 54.61 186.69 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "2N3904" (at 54.61 186.69 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 53ce292e-8049-492c-b7d5-589c4a1ae03a))
     (pin "2" (uuid 59797fd8-c58f-4eea-8dc0-d182fc0d2c5b))
     (pin "3" (uuid c4e61b85-1234-454d-a7d1-4af3b0c8268b))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "Q1") (unit 1)
         )
@@ -5732,13 +5747,13 @@
     (property "MFG" "YAEGO" (at 67.31 196.85 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRE074K7L" (at 67.31 196.85 0)
+    (property "PN" "RC1206FR-0747KL" (at 67.31 196.85 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 25483d03-ecfe-4987-bca8-a973c908da16))
     (pin "2" (uuid 592321c1-cf86-4dfe-a1e8-13ada66c5a09))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R2") (unit 1)
         )
@@ -5763,7 +5778,7 @@
     )
     (pin "1" (uuid 17f25357-9264-4687-805c-dacda51f950c))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0106") (unit 1)
         )
@@ -5788,7 +5803,7 @@
     )
     (pin "1" (uuid 93fb50a7-8498-48af-a12c-ea426f466e65))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0118") (unit 1)
         )
@@ -5811,11 +5826,17 @@
     (property "Datasheet" "~" (at 182.88 111.76 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "TE Connectivity" (at 182.88 111.76 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "87224-3" (at 182.88 111.76 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 2e93d251-49db-4ce4-8a03-2be59ca7544c))
     (pin "2" (uuid 0153282a-f127-4a90-8ec5-4398d6d0abcf))
     (pin "3" (uuid ab535334-5cb7-4039-a565-e2dbf940ce86))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "JP3") (unit 1)
         )
@@ -5838,11 +5859,17 @@
     (property "Datasheet" "~" (at 175.26 111.76 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "TE Connectivity" (at 175.26 111.76 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "87224-3" (at 175.26 111.76 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 4d78b51e-0878-424c-8198-2940379bcf5c))
     (pin "2" (uuid 624d906c-9d73-4f30-9947-391bbc8a5cc7))
     (pin "3" (uuid e6c2fe76-6f4b-464f-8c23-e186ac97b2b0))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "JP2") (unit 1)
         )
@@ -5867,7 +5894,7 @@
     )
     (pin "1" (uuid 0ba44757-f42a-4e9d-affd-7f83feac28f3))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0107") (unit 1)
         )
@@ -5890,6 +5917,12 @@
     (property "Datasheet" "http://www.ti.com/lit/ds/symlink/drv8871.pdf" (at 194.31 104.14 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Texas Insturments" (at 200.66 102.87 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "DRV8231ADDAR" (at 200.66 102.87 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid b3af7daa-b6ea-4736-b28f-0ae33849227a))
     (pin "2" (uuid e7f7d725-4ff4-410a-b40f-296cac7a0eda))
     (pin "3" (uuid a35ac1ee-439f-4fc5-baf0-0d8e3774ada8))
@@ -5900,7 +5933,7 @@
     (pin "8" (uuid 5e18f48e-6fd9-4bdc-8b54-ebb6ed5b859d))
     (pin "9" (uuid 24c707a5-5d35-45b7-b4fe-3003b6bd2521))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U7") (unit 1)
         )
@@ -5925,7 +5958,7 @@
     )
     (pin "1" (uuid 87633ef8-c640-4e5c-b88a-56aea10197db))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0102") (unit 1)
         )
@@ -5957,7 +5990,7 @@
     (pin "1" (uuid d6fc2429-42e7-4c34-87d1-b5283a171606))
     (pin "2" (uuid 0e083bc5-b4d8-4ddf-bcbc-8736964b77be))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R13") (unit 1)
         )
@@ -5971,13 +6004,19 @@
     (property "Reference" "U3" (at 92.71 172.72 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "LM393" (at 95.25 175.26 0)
+    (property "Value" "LM393B" (at 95.25 175.26 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" (at 91.44 181.61 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "http://www.ti.com/lit/ds/symlink/lm393.pdf" (at 91.44 181.61 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "MFG" "Texas Insturments" (at 91.44 181.61 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "LM393BIDR" (at 91.44 181.61 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 49ff67e5-3c1f-4f27-b7a1-884d4966da9a))
@@ -5989,7 +6028,7 @@
     (pin "4" (uuid eb34f9da-4e4b-4c44-8a2e-bb0275169830))
     (pin "8" (uuid 1abcf1c5-4fce-4367-a092-dc268f3e4c3b))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U3") (unit 1)
         )
@@ -6003,13 +6042,19 @@
     (property "Reference" "U3" (at 95.25 172.72 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "LM393" (at 92.71 185.42 0)
+    (property "Value" "LM393B" (at 92.71 185.42 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Footprint" "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" (at 91.44 181.61 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "http://www.ti.com/lit/ds/symlink/lm393.pdf" (at 91.44 181.61 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "MFG" "Texas Insturments" (at 91.44 181.61 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "LM393BIDR" (at 91.44 181.61 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 9ddc7aa0-b4e9-4ab0-a532-d793cd70f987))
@@ -6021,7 +6066,7 @@
     (pin "4" (uuid 71281abf-571a-433c-8e94-f035f7a6e032))
     (pin "8" (uuid bbd165a5-b394-4658-8f55-753f76e6da48))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U3") (unit 3)
         )
@@ -6044,6 +6089,12 @@
     (property "Datasheet" "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" (at 228.6 95.25 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Texas Insturments" (at 228.6 95.25 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "SN74LVC1G3208DBVR" (at 228.6 95.25 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 99821821-48cd-4be4-b400-136c355f651e))
     (pin "2" (uuid e6ea3f1a-891b-402f-b731-f79a7646c7f5))
     (pin "3" (uuid 251b2fd2-aa68-41f0-9783-1b1d796bdf7b))
@@ -6056,7 +6107,7 @@
           (reference "U?") (unit 1)
         )
       )
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U8") (unit 1)
         )
@@ -6079,6 +6130,12 @@
     (property "Datasheet" "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" (at 228.6 107.95 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Texas Insturments" (at 228.6 107.95 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "SN74LVC1G3208DBVR" (at 228.6 107.95 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 843253ca-f3a4-4486-a0c9-52a8e42043eb))
     (pin "2" (uuid a0df5188-ff49-4efa-ac5a-303582a048f2))
     (pin "3" (uuid 44fdd92b-0b32-4e20-a667-40264ccca4a1))
@@ -6091,7 +6148,7 @@
           (reference "U?") (unit 1)
         )
       )
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U9") (unit 1)
         )
@@ -6116,7 +6173,7 @@
     )
     (pin "1" (uuid 5f0d9647-bf29-41df-a6b6-bfd1fe116ac3))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0111") (unit 1)
         )
@@ -6148,7 +6205,7 @@
     (pin "1" (uuid 0b55562b-488b-4064-a7ed-a45a0a602bdc))
     (pin "2" (uuid 016b6627-8306-4408-9446-b0ec62699381))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "F3") (unit 1)
         )
@@ -6180,7 +6237,7 @@
     (pin "1" (uuid 167c0aa7-93f0-40e9-bbb9-2ba8e2f43b56))
     (pin "2" (uuid a2e8d148-2425-4f7a-995a-0906da4d908c))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "F2") (unit 1)
         )
@@ -6203,11 +6260,17 @@
     (property "Datasheet" "http://www.onsemi.com/pub_link/Collateral/TIP3055-D.PDF" (at 193.04 87.63 0)
       (effects (font (size 1.27 1.27)) (justify left) hide)
     )
+    (property "MFG" "Onsemi" (at 193.04 87.63 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "MJE2955TG" (at 193.04 87.63 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid f4b79311-939a-4079-bfe1-22fa89084e12))
     (pin "2" (uuid b39444c4-9f9c-4431-93bf-3efede0148ea))
     (pin "3" (uuid 3a8432d3-9b39-4067-b1d3-a30773d3f01a))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "Q3") (unit 1)
         )
@@ -6239,7 +6302,7 @@
     (pin "1" (uuid 384d6b96-9085-47df-a0ae-46b003517b6c))
     (pin "2" (uuid dff395bd-b027-49fd-8a90-b33d9574869d))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R14") (unit 1)
         )
@@ -6265,13 +6328,13 @@
     (property "MFG" "YAEGO" (at 182.88 90.17 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRE073KL" (at 182.88 90.17 0)
+    (property "PN" "RC1206FR-073KL" (at 182.88 90.17 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 4e476c2f-aa4a-4713-84fe-99325dc6d094))
     (pin "2" (uuid 9a8d91f9-c31e-448e-a036-a1a3151eb3f1))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R15") (unit 1)
         )
@@ -6303,7 +6366,7 @@
     (pin "1" (uuid 283e7d8c-f9a9-40de-9347-7f288610a5d3))
     (pin "2" (uuid 35e68331-2532-4792-ac32-7ebdb9bbdc15))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "D5") (unit 1)
         )
@@ -6328,7 +6391,7 @@
     )
     (pin "1" (uuid 405ef36a-961a-4929-b746-be389e2dda95))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0101") (unit 1)
         )
@@ -6353,7 +6416,7 @@
     )
     (pin "1" (uuid b47d955d-be50-4c1c-af12-6c1bf086828f))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0126") (unit 1)
         )
@@ -6367,7 +6430,7 @@
     (property "Reference" "U5" (at 121.285 189.865 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "74AHCT1G02" (at 118.11 193.675 0)
+    (property "Value" "74LVC1G02" (at 118.11 193.675 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Package_TO_SOT_SMD:SOT-23-5_HandSoldering" (at 122.555 189.865 0)
@@ -6376,13 +6439,19 @@
     (property "Datasheet" "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" (at 122.555 189.865 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "PN" "SN74LVC1G02DBVR" (at 122.555 189.865 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "MFG" "Texas Insturments" (at 122.555 189.865 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid b90ce2fd-6732-4f78-a04a-b4e28b86279b))
     (pin "2" (uuid 1aa456d6-43ff-4a43-9049-3d2b20ec8c42))
     (pin "3" (uuid 2f37fb6d-d7c4-4cf2-ab63-c11ce61485dc))
     (pin "4" (uuid 989bcdb3-9936-4573-807a-6dc187a62ded))
     (pin "5" (uuid 51a878f2-3a9f-41b3-8761-243ad7eca1ab))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U5") (unit 1)
         )
@@ -6396,7 +6465,7 @@
     (property "Reference" "U4" (at 101.1682 179.705 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "74AHC1G04" (at 103.4796 179.705 0)
+    (property "Value" "74LVC1G04" (at 103.4796 179.705 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Package_TO_SOT_SMD:SOT-23-5_HandSoldering" (at 107.95 180.34 0)
@@ -6405,12 +6474,18 @@
     (property "Datasheet" "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" (at 107.95 180.34 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "PN" "SN74LVC1G04DBVR" (at 107.95 180.34 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "MFG" "Texas Insturments" (at 107.95 180.34 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "2" (uuid 64278733-e781-4f27-ae39-1fa6a6e11d3c))
     (pin "3" (uuid c47feefb-5191-468c-9e89-439acb984356))
     (pin "4" (uuid 6d6f1e9a-d410-4d38-bd70-d22726d19cc7))
     (pin "5" (uuid dc1e6899-0739-4c55-a9c7-553753b1a146))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U4") (unit 1)
         )
@@ -6433,6 +6508,12 @@
     (property "Datasheet" "https://toshiba.semicon-storage.com/info/docget.jsp?did=53548&prodName=TLP2770" (at 73.66 142.875 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Toshiba" (at 73.66 142.875 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "TLP2770(TP,E" (at 73.66 142.875 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid aaaea70a-ef5c-45d2-ae45-c184aa623934))
     (pin "2" (uuid b243a5c2-e378-474f-88dc-dc6a4b4ea52f))
     (pin "3" (uuid f8b8536f-3bdd-4fd6-954f-ed581471098c))
@@ -6440,7 +6521,7 @@
     (pin "5" (uuid 6abde4f2-3f82-48f7-af22-8cce480f546f))
     (pin "6" (uuid fef3c813-f2f7-43c2-b597-59da5d75a4f5))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U6") (unit 1)
         )
@@ -6465,7 +6546,7 @@
     )
     (pin "1" (uuid b7d1c50e-7e41-4b18-ae81-028a63ef7fc9))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0123") (unit 1)
         )
@@ -6490,7 +6571,7 @@
     )
     (pin "1" (uuid 5c6ca156-da32-420f-9399-312662f2a430))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0105") (unit 1)
         )
@@ -6522,7 +6603,7 @@
     (pin "1" (uuid 2f44376a-ac7f-4271-8b3b-81e6fbf7fed2))
     (pin "2" (uuid 3df8a91e-4022-40a3-a308-db71d47fab09))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R9") (unit 1)
         )
@@ -6547,7 +6628,7 @@
     )
     (pin "1" (uuid fcbd352b-3c92-445e-9a33-03ee985e8010))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0104") (unit 1)
         )
@@ -6570,11 +6651,17 @@
     (property "Datasheet" "http://www.onsemi.com/pub_link/Collateral/TIP3055-D.PDF" (at 28.575 160.655 0)
       (effects (font (size 1.27 1.27)) (justify left) hide)
     )
+    (property "MFG" "Onsemi" (at 28.575 160.655 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "MJE2955TG" (at 28.575 160.655 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 237b3558-528a-4210-bb64-fad1280767e5))
     (pin "2" (uuid 3a2092c0-6c51-4481-8eed-cea7843af932))
     (pin "3" (uuid 763e7caf-4efb-453b-b24f-4d27b7bebaa2))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "Q2") (unit 1)
         )
@@ -6606,7 +6693,7 @@
     (pin "1" (uuid c75f7245-1314-41ab-8c04-95aed880c021))
     (pin "2" (uuid 17bb8c7e-0e85-4731-9497-a4a9c0d6b582))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R10") (unit 1)
         )
@@ -6632,13 +6719,13 @@
     (property "MFG" "YAEGO" (at 32.385 167.005 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRE0733KL" (at 32.385 167.005 0)
+    (property "PN" "RC1206FR-0733KL" (at 32.385 167.005 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 49604701-ed62-4943-bf41-60f62ecc7a37))
     (pin "2" (uuid a9997f86-9a9c-4f79-a8bc-ebd12bdaaf19))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R11") (unit 1)
         )
@@ -6670,7 +6757,7 @@
     (pin "1" (uuid e9497eb5-b674-44bc-9cd9-3ac4e4288e66))
     (pin "2" (uuid bc05bf52-5f84-455c-a748-391ceafed528))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "D3") (unit 1)
         )
@@ -6693,10 +6780,16 @@
     (property "Datasheet" "~" (at 38.1 158.115 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "TE Connectivity" (at 38.1 158.115 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "87224-2 " (at 38.1 158.115 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 5789621b-9d5e-4e4b-b7ad-c5adfe3a9236))
     (pin "2" (uuid c23badef-6512-4888-abbf-360f5e32d55a))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "JP1") (unit 1)
         )
@@ -6728,7 +6821,7 @@
     (pin "1" (uuid 4a11fb22-4602-450b-8f80-34698bd6ea3d))
     (pin "2" (uuid 030fb47e-deb6-4d44-a352-08bbe2ee5546))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "CU11") (unit 1)
         )
@@ -6753,7 +6846,7 @@
     )
     (pin "1" (uuid 8c41e52c-7bcb-49e4-aa9b-6c00de5cb2cb))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0113") (unit 1)
         )
@@ -6785,7 +6878,7 @@
     (pin "1" (uuid 2bcdccbf-8b91-4dd7-b060-6e72d18f3e4f))
     (pin "2" (uuid b6f56770-60c8-4414-b132-93394d7c705a))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "C11") (unit 1)
         )
@@ -6817,7 +6910,7 @@
     (pin "1" (uuid e932933a-613d-45f5-9f24-398f5a9c393c))
     (pin "2" (uuid 3217b185-ade1-478b-9279-c299377d1185))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "C9") (unit 1)
         )
@@ -6842,7 +6935,7 @@
     )
     (pin "1" (uuid 1bea4ffb-27f9-4b68-927a-c2fa6537e540))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0120") (unit 1)
         )
@@ -6867,7 +6960,7 @@
     )
     (pin "1" (uuid 9638c322-2525-49c9-b27b-4780fa8c1238))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0121") (unit 1)
         )
@@ -6890,6 +6983,12 @@
     (property "Datasheet" "~" (at 26.67 142.24 90)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Amphenol" (at 26.67 142.875 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "54601-906WPLF" (at 26.67 142.875 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 62171aae-7e56-4adc-a5ec-02f6ae23a76b))
     (pin "2" (uuid 2f2d0d50-921a-4d93-bc50-553f16f545aa))
     (pin "3" (uuid c4d4c593-ce0d-4ede-8b4b-e6b5dc92770a))
@@ -6897,7 +6996,7 @@
     (pin "5" (uuid de4158a9-a59a-4e5b-bb9e-097a3d022bce))
     (pin "6" (uuid 350bf2ae-dbbd-4c64-b9cd-c496d7039449))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "LOCONET_B1") (unit 1)
         )
@@ -6922,7 +7021,7 @@
     )
     (pin "1" (uuid b6d0c1bf-a314-489c-9658-0efcab9fa464))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0124") (unit 1)
         )
@@ -6954,7 +7053,7 @@
     (pin "1" (uuid 43a67325-8ef7-44ec-a031-6648dfb4dad4))
     (pin "2" (uuid 5170450e-37a2-4b89-9a9b-297fd32a0d41))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "C8") (unit 1)
         )
@@ -6979,7 +7078,7 @@
     )
     (pin "1" (uuid 82d52935-c4a5-48d0-b3cc-c309aba12173))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0119") (unit 1)
         )
@@ -7002,6 +7101,12 @@
     (property "Datasheet" "~" (at 26.67 116.84 90)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Amphenol" (at 26.67 117.475 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "54601-906WPLF" (at 26.67 117.475 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid ee285380-6e6f-4878-8362-89b8e816e30e))
     (pin "2" (uuid 319fee8c-b625-4886-9af4-497e3696d5fb))
     (pin "3" (uuid 855531e9-6658-44bc-94ba-280495e3727d))
@@ -7009,7 +7114,7 @@
     (pin "5" (uuid 34882b07-14b7-4fc7-a488-10d58b32d892))
     (pin "6" (uuid 62cfcff5-aba9-4218-beb8-aa8711b858de))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "LOCONET_B2") (unit 1)
         )
@@ -7034,7 +7139,7 @@
     )
     (pin "1" (uuid b897deeb-3c09-4623-b7f4-02661ac0eb83))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR012") (unit 1)
         )
@@ -7057,10 +7162,16 @@
     (property "Datasheet" "~" (at 170.18 31.75 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Wuerth Electronik" (at 170.18 31.75 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "865080545012" (at 170.18 31.75 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 161f7929-9ecb-4077-8417-709371b4c045))
     (pin "2" (uuid 602b0b7c-2c10-4382-b163-313a356bf816))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "CB1") (unit 1)
         )
@@ -7085,7 +7196,7 @@
     )
     (pin "1" (uuid 356eaedd-300f-4f1b-a656-3bf37534f69d))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0125") (unit 1)
         )
@@ -7126,7 +7237,7 @@
     (pin "2" (uuid aca78b39-f3fe-4d14-8fcc-4aef4dd14cc2))
     (pin "3" (uuid df778c7c-3324-4980-99ff-1923438b12af))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U2") (unit 1)
         )
@@ -7163,7 +7274,7 @@
     (pin "1" (uuid b75f3759-8302-47b9-bc4e-9e4cb0f0119c))
     (pin "2" (uuid 897a287a-fc32-4150-a4de-0d2465ea14eb))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "D6") (unit 1)
         )
@@ -7188,7 +7299,7 @@
     )
     (pin "1" (uuid 7075c08b-1f47-476b-97d8-f62cf36cd58e))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR011") (unit 1)
         )
@@ -7202,13 +7313,19 @@
     (property "Reference" "U?" (at 247.015 85.9282 0)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "74AHC1G04" (at 247.015 88.2396 0)
+    (property "Value" "74LVC1G04" (at 247.015 88.2396 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Footprint" "Package_TO_SOT_SMD:SOT-23-5_HandSoldering" (at 246.38 92.71 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" (at 246.38 92.71 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "SN74LVC1G04DBVR" (at 246.38 92.71 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "MFG" "Texas Insturments" (at 246.38 92.71 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "2" (uuid 91f9b033-de99-4771-86c1-063f090e54ab))
@@ -7221,7 +7338,7 @@
           (reference "U?") (unit 1)
         )
       )
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U10") (unit 1)
         )
@@ -7246,7 +7363,7 @@
     )
     (pin "1" (uuid f8c9f113-b721-4457-8470-c6e4f60c3196))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR03") (unit 1)
         )
@@ -7278,7 +7395,7 @@
     (pin "1" (uuid 6c71ec7e-a61e-43e6-a934-3bbf425e6362))
     (pin "2" (uuid ebea0f3e-658d-4348-846e-1826579fd664))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "C1") (unit 1)
         )
@@ -7312,13 +7429,13 @@
     (property "MFG" "YAEGO" (at 119.38 196.215 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRE071KL" (at 119.38 196.215 0)
+    (property "PN" "RC1206FR-071KL" (at 119.38 196.215 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid c76411c6-d3a4-4929-a04d-1fd3808f574d))
     (pin "2" (uuid 078c6904-8662-425f-886d-fb2c73619a16))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R8") (unit 1)
         )
@@ -7344,13 +7461,13 @@
     (property "MFG" "YAEGO" (at 245.11 113.03 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRD0710KL" (at 245.11 113.03 0)
+    (property "PN" "RC1206FR-1310KL" (at 245.11 113.03 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 808212f0-a85d-46a8-97f5-ecd0e2e4077d))
     (pin "2" (uuid 5b9710ce-ce53-41ea-823a-8a5bef2bb51b))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R22") (unit 1)
         )
@@ -7375,7 +7492,7 @@
     )
     (pin "1" (uuid 48abea47-2a59-4f20-b14f-0829cbf95df4))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR019") (unit 1)
         )
@@ -7401,13 +7518,13 @@
     (property "MFG" "YAEGO" (at 185.42 134.62 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRD0710KL" (at 185.42 134.62 0)
+    (property "PN" "RC1206FR-1310KL" (at 185.42 134.62 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 8cd274bf-b5c0-496b-b4b8-a6a5ba6785b1))
     (pin "2" (uuid 6ffe2952-ca36-4bf1-89c4-23932af783ce))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R16") (unit 1)
         )
@@ -7437,7 +7554,7 @@
     )
     (pin "1" (uuid a5b8a3db-7e00-4451-9f54-b8dffd5fc185))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0128") (unit 1)
         )
@@ -7472,7 +7589,7 @@
           (reference "#PWR?") (unit 1)
         )
       )
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0117") (unit 1)
         )
@@ -7495,6 +7612,12 @@
     (property "Datasheet" "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" (at 228.6 53.34 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Texas Insturments" (at 228.6 53.34 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "SN74LVC1G3208DBVR" (at 228.6 53.34 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid ba011c25-265f-4d43-ac7e-b29e871f5671))
     (pin "2" (uuid 19f5e92a-8a83-4890-a6a8-cc60b24332a7))
     (pin "3" (uuid ac6a7f02-52ed-4b40-a5ae-76e6897e1ae4))
@@ -7507,7 +7630,7 @@
           (reference "U?") (unit 1)
         )
       )
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U14") (unit 1)
         )
@@ -7530,11 +7653,17 @@
     (property "Datasheet" "~" (at 213.36 149.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "3M" (at 213.36 149.86 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "929850-01-03-RA" (at 213.36 149.86 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid c5ef99e3-628c-4242-a052-681c47a26d28))
     (pin "2" (uuid d86f157c-8672-4a41-b2c3-c4976402d635))
     (pin "3" (uuid 22d9b95d-4f16-446a-8273-31ecb6d48727))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "TTY_1") (unit 1)
         )
@@ -7560,10 +7689,13 @@
     (property "PN" "156120RS75300" (at 218.44 30.48 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Wurth Elektronik " (at 218.44 30.48 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid fbab2196-fb06-4e90-94d3-4a268245a76e))
     (pin "2" (uuid 96194bae-bbde-4841-bb44-bf7d873b5825))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "D1") (unit 1)
         )
@@ -7592,6 +7724,12 @@
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf" (at 81.28 116.84 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "MFG" "Expressif" (at 78.74 66.04 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "ESP32-S3-WROOM-1U-N16" (at 78.74 66.04 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 8bef772d-af37-4e54-89cf-a476651aed65))
@@ -7636,7 +7774,7 @@
     (pin "8" (uuid 656c2ec3-8ffd-4657-b526-3a202c7cdd8c))
     (pin "9" (uuid b6e354e9-87b2-4305-bf56-c0c3613b6fd0))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U11") (unit 1)
         )
@@ -7668,7 +7806,7 @@
     (pin "1" (uuid 9b1d3b84-ef64-4e30-a0f7-579d4a2d711f))
     (pin "2" (uuid 28f5289b-ed40-4109-8919-6cbd31aa225e))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "C7") (unit 1)
         )
@@ -7698,7 +7836,7 @@
           (reference "#PWR?") (unit 1)
         )
       )
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR05") (unit 1)
         )
@@ -7723,42 +7861,9 @@
     )
     (pin "1" (uuid b18c5b82-013f-44cc-ad1a-248f8247672a))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR013") (unit 1)
-        )
-      )
-    )
-  )
-
-  (symbol (lib_id "Loconet DCC Interface-rescue:74AHC1G04-74xGxx") (at 246.38 50.8 180) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
-    (uuid 4edc93bc-04dc-4e0c-b160-35491c4843cb)
-    (property "Reference" "U?" (at 247.015 44.0182 0)
-      (effects (font (size 1.27 1.27)))
-    )
-    (property "Value" "74AHC1G04" (at 247.015 46.3296 0)
-      (effects (font (size 1.27 1.27)))
-    )
-    (property "Footprint" "Package_TO_SOT_SMD:SOT-23-5_HandSoldering" (at 246.38 50.8 0)
-      (effects (font (size 1.27 1.27)) hide)
-    )
-    (property "Datasheet" "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" (at 246.38 50.8 0)
-      (effects (font (size 1.27 1.27)) hide)
-    )
-    (pin "2" (uuid adcc012d-862b-493f-a202-5e52d7207574))
-    (pin "3" (uuid b63fefde-608c-416d-9e98-bda5c9b0dd4f))
-    (pin "4" (uuid c5ec008d-6e79-45dd-afee-1f6e9f3990cb))
-    (pin "5" (uuid eb746cbe-d15c-4af2-84f2-ae193f316782))
-    (instances
-      (project "Loconet DCC Interface"
-        (path "/4bc2d225-6556-4bf4-a464-1b6c28a4d653"
-          (reference "U?") (unit 1)
-        )
-      )
-      (project "Loconet DCC Interface ESP32"
-        (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
-          (reference "U16") (unit 1)
         )
       )
     )
@@ -7779,6 +7884,12 @@
     (property "Datasheet" "~" (at 264.16 68.58 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "3M" (at 264.16 68.58 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "929850-01-04-RA " (at 264.16 68.58 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 0c3ee4df-7096-4e52-aaf4-7c03e9185484))
     (pin "2" (uuid be7cc788-447e-42b6-a8fa-5f164dd250a4))
     (pin "3" (uuid e1ff175c-cafa-4f9e-be2f-ac0dee16a35f))
@@ -7789,7 +7900,7 @@
           (reference "DCC_IN?") (unit 1)
         )
       )
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "DCC_2") (unit 1)
         )
@@ -7814,7 +7925,7 @@
     )
     (pin "1" (uuid d34d1788-0027-4d1a-94b6-f0ab0295719c))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR010") (unit 1)
         )
@@ -7840,13 +7951,13 @@
     (property "MFG" "YAEGO" (at 245.11 71.12 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRD0710KL" (at 245.11 71.12 0)
+    (property "PN" "RC1206FR-1310KL" (at 245.11 71.12 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 01c1f482-dff9-41eb-84e5-84ff695f5d2b))
     (pin "2" (uuid 187d1384-d870-45e5-92b5-cac9c51b976a))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R23") (unit 1)
         )
@@ -7871,7 +7982,7 @@
     )
     (pin "1" (uuid dcdd03cf-a2d3-4fbf-bb47-ab78dc61b133))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR09") (unit 1)
         )
@@ -7903,7 +8014,7 @@
     (pin "1" (uuid 7a873347-719f-4ed2-ac2a-5691872acac0))
     (pin "2" (uuid cf49d5c9-c1c6-49c5-8033-f2e6e7007073))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "C5") (unit 1)
         )
@@ -7943,7 +8054,7 @@
     (pin "1" (uuid a1d13080-be17-4ba5-ae70-b97dcd1d4236))
     (pin "2" (uuid a9f76e07-61c4-4100-98ec-d88432b81119))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "RESET1") (unit 1)
         )
@@ -7969,13 +8080,13 @@
     (property "MFG" "YAEGO" (at 144.78 134.62 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRD0710KL" (at 144.78 134.62 0)
+    (property "PN" "RC1206FR-1310KL" (at 144.78 134.62 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 3f1e2a32-197e-4cc7-88d1-355bf103598b))
     (pin "2" (uuid 4311e8a2-caef-4175-9809-bd5104628eb4))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R19") (unit 1)
         )
@@ -8005,7 +8116,7 @@
     )
     (pin "1" (uuid cbdde513-b854-4e16-9b29-d4111d24b1ca))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0103") (unit 1)
         )
@@ -8033,11 +8144,17 @@
     (property "Datasheet" "~" (at 172.72 149.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "3M" (at 172.72 149.86 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "929850-01-03-RA" (at 172.72 149.86 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 45965bda-6e88-4127-bae3-02b4ca2554eb))
     (pin "2" (uuid 064e2b25-3e1d-419d-8b66-f8db2bacba53))
     (pin "3" (uuid bbc9f854-af2a-4713-8283-d2d003d70530))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "I2C_1") (unit 1)
         )
@@ -8069,7 +8186,7 @@
     (pin "1" (uuid 1e7e5707-8e2f-436d-9018-b81e735a9013))
     (pin "2" (uuid d9bae3f0-9afb-4cb0-96d2-68914b5f19e5))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "C2") (unit 1)
         )
@@ -8102,7 +8219,7 @@
     )
     (pin "1" (uuid 417e5327-ae83-4a56-93e3-ca8773e86a6c))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR02") (unit 1)
         )
@@ -8132,7 +8249,7 @@
     )
     (pin "1" (uuid dbfb91af-5d6e-44cc-a004-3ff5153fb389))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR024") (unit 1)
         )
@@ -8175,7 +8292,7 @@
     (pin "7" (uuid 7171df2a-5c4c-41fa-aada-3a17f055ace7))
     (pin "8" (uuid 5c768b9b-be30-4a29-ba75-9021a820dbcd))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U18") (unit 1)
         )
@@ -8200,7 +8317,7 @@
     )
     (pin "1" (uuid 5c72a7af-b77d-4d2e-8d22-5d4556580661))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0114") (unit 1)
         )
@@ -8232,7 +8349,7 @@
     (pin "1" (uuid b34152cd-1b3d-49e0-a4e9-f470bc5cda6e))
     (pin "2" (uuid 162bb685-477e-445e-b4f8-f2fca220eb30))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "L1") (unit 1)
         )
@@ -8276,7 +8393,7 @@
     (pin "5" (uuid 21ffd797-3ce7-4636-897a-6fb8c14ec63a))
     (pin "6" (uuid 9acb1fe8-37af-4490-af55-46674675d755))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U1") (unit 1)
         )
@@ -8309,7 +8426,7 @@
     )
     (pin "1" (uuid 9a1edf6e-61bc-44e8-832d-58d801b5abe9))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR017") (unit 1)
         )
@@ -8334,7 +8451,7 @@
     )
     (pin "1" (uuid 4495172b-5d2c-40e2-9b32-7fc3e42c391c))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0108") (unit 1)
         )
@@ -8371,7 +8488,7 @@
     (pin "1" (uuid 806ea4a4-f703-443e-865e-e9e2d56d7af6))
     (pin "2" (uuid 65ff423b-0dbf-44a8-8b8f-d739b41ef13c))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R18") (unit 1)
         )
@@ -8396,7 +8513,7 @@
     )
     (pin "1" (uuid b4311461-4da0-48c2-b4f6-9ab12236e02f))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR08") (unit 1)
         )
@@ -8421,7 +8538,7 @@
     )
     (pin "1" (uuid 88ecd827-b135-4e56-839e-0a588aae2162))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR022") (unit 1)
         )
@@ -8447,13 +8564,13 @@
     (property "MFG" "YAEGO" (at 125.095 173.99 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRD0710KL" (at 125.095 173.99 0)
+    (property "PN" "RC1206FR-1310KL" (at 125.095 173.99 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 10a9d032-6afe-4895-95bd-b5d836b070c4))
     (pin "2" (uuid 9b194670-a5c1-44d5-b08d-787f16ba6e61))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R21") (unit 1)
         )
@@ -8481,6 +8598,12 @@
     (property "Datasheet" "www.ti.com/lit/ds/symlink/txs0108e.pdf" (at 113.03 146.05 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Texas Insturments" (at 113.03 143.51 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "TXS0108EPWR" (at 113.03 143.51 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 8e671b78-7a7b-44ba-8486-4f5e6a3369fb))
     (pin "10" (uuid babd8b56-da20-469c-be4f-e6c6cb5c2b9b))
     (pin "11" (uuid b60d65d0-d10f-45a2-9a0b-f1b45dddf96a))
@@ -8502,7 +8625,7 @@
     (pin "8" (uuid db3bf20b-78ed-4ca7-9943-85e0eab32066))
     (pin "9" (uuid 9c0589d0-da1b-4844-a263-3b837f63a596))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U20") (unit 1)
         )
@@ -8534,7 +8657,7 @@
     (pin "1" (uuid a0b6f3cc-489d-442e-a9fa-5d81c9556c40))
     (pin "2" (uuid 1de71296-4c2c-4ef5-9a3b-088c9b0b67a1))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "C10") (unit 1)
         )
@@ -8566,7 +8689,7 @@
     (pin "1" (uuid ba6c6b03-80fc-40b9-bd08-9c9bad805e11))
     (pin "2" (uuid fed7e5d7-e97e-4570-9680-9e8bf5273393))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "C4") (unit 1)
         )
@@ -8599,7 +8722,7 @@
     )
     (pin "1" (uuid 3739aba1-8eba-4ae8-ba8c-6196bf4df428))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR023") (unit 1)
         )
@@ -8622,6 +8745,12 @@
     (property "Datasheet" "~" (at 264.16 110.49 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "3M" (at 264.16 110.49 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "929850-01-04-RA " (at 264.16 110.49 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 15e2bd20-d8ba-4f6f-b55e-9195c7f12f94))
     (pin "2" (uuid 43b7a0ef-87a9-4879-8136-e6e5e22af452))
     (pin "3" (uuid 3ceb2871-e833-4366-979e-63a27c1b6ed4))
@@ -8632,7 +8761,7 @@
           (reference "DCC_IN?") (unit 1)
         )
       )
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "DCC_1") (unit 1)
         )
@@ -8657,7 +8786,7 @@
     )
     (pin "1" (uuid e0c03910-f604-4098-b006-35e66648c780))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0110") (unit 1)
         )
@@ -8687,7 +8816,7 @@
     )
     (pin "1" (uuid 8389db3a-7a4d-400c-803c-86d41e5a0dbe))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR06") (unit 1)
         )
@@ -8715,6 +8844,12 @@
     (property "Datasheet" "www.ti.com/lit/ds/symlink/txs0108e.pdf" (at 151.13 83.82 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Texas Insturments" (at 151.13 86.36 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "TXS0108EPWR" (at 151.13 86.36 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 0c4695e0-3d93-43f7-9205-22211c8a969e))
     (pin "10" (uuid 4cb0a191-7568-44fa-bc62-47d0c2381185))
     (pin "11" (uuid 07e6d3c3-5e4b-4234-9d2a-ecb09cecaa05))
@@ -8736,7 +8871,7 @@
     (pin "8" (uuid b4b5be4f-fa2a-4274-9e77-5fff2c1d1322))
     (pin "9" (uuid 3ee4e373-836a-4841-b32c-4c9eedf7c93a))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U19") (unit 1)
         )
@@ -8759,10 +8894,16 @@
     (property "Datasheet" "~" (at 177.8 58.42 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Wuerth Electronik" (at 177.8 58.42 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "691322310002 " (at 177.8 58.42 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid e40d1df6-4c3e-45c7-81de-66ee199c8606))
     (pin "2" (uuid 05eed6d0-78d6-4b0f-aff8-9fb86fd7e3f4))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "J1") (unit 1)
         )
@@ -8794,9 +8935,48 @@
     (pin "1" (uuid 79e8076d-07a0-4f38-bdef-9a12001fdfea))
     (pin "2" (uuid ccbd1f63-a9d9-4572-bc84-f3804beb8a13))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "CU6") (unit 1)
+        )
+      )
+    )
+  )
+
+  (symbol (lib_id "Loconet DCC Interface-rescue:74AHC1G04-74xGxx") (at 246.38 50.8 180) (unit 1)
+    (in_bom yes) (on_board yes) (dnp no)
+    (uuid a7dac1fe-3f78-4042-a432-6d75d2af0481)
+    (property "Reference" "U?" (at 247.015 44.0182 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Value" "74LVC1G04" (at 247.015 46.3296 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Footprint" "Package_TO_SOT_SMD:SOT-23-5_HandSoldering" (at 246.38 50.8 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" (at 246.38 50.8 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "SN74LVC1G04DBVR" (at 246.38 50.8 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "MFG" "Texas Insturments" (at 246.38 50.8 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "2" (uuid a9b67c96-990a-4985-86f4-0771a4870adb))
+    (pin "3" (uuid d33d971b-7c73-4c21-bb2e-b57a983df1c8))
+    (pin "4" (uuid 5515134e-eb8e-487d-b57a-ad5d8e7a062f))
+    (pin "5" (uuid a97e61ae-2bbb-44f7-a69d-cc93ba46e9b7))
+    (instances
+      (project "Loconet DCC Interface"
+        (path "/4bc2d225-6556-4bf4-a464-1b6c28a4d653"
+          (reference "U?") (unit 1)
+        )
+      )
+      (project "Arch_Bridge"
+        (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
+          (reference "U16") (unit 1)
         )
       )
     )
@@ -8819,7 +8999,7 @@
     )
     (pin "1" (uuid 612bdd43-8d0d-4b42-a7cd-684b84102ac5))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR020") (unit 1)
         )
@@ -8844,7 +9024,7 @@
     )
     (pin "1" (uuid 2418c68d-3dd6-4610-86a0-0be57ea9aeec))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0112") (unit 1)
         )
@@ -8869,7 +9049,7 @@
     )
     (pin "1" (uuid bca3dd07-8441-4756-b6d2-73c00a7bd7d4))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0127") (unit 1)
         )
@@ -8899,7 +9079,7 @@
     )
     (pin "1" (uuid 110cc197-93ed-4bd2-861e-48305c62fba6))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR014") (unit 1)
         )
@@ -8924,7 +9104,7 @@
     )
     (pin "1" (uuid 16eb068b-88f3-48cc-a95a-fed709fadec2))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR021") (unit 1)
         )
@@ -8956,7 +9136,7 @@
     (pin "1" (uuid 7b39d20a-76fe-4a0f-a54b-c91af5ecd5ff))
     (pin "2" (uuid 8419dbd9-dd75-4628-85b2-5bfe8ffa8fa3))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "BOOT1") (unit 1)
         )
@@ -8979,6 +9159,12 @@
     (property "Datasheet" "~" (at 246.38 137.16 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Molex" (at 242.57 135.89 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "105017-0001" (at 242.57 135.89 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid f560985c-17c6-47d4-962c-f2fdcbf8e7c7))
     (pin "2" (uuid f71c278d-862c-49ed-a5f7-75c17586f2ae))
     (pin "3" (uuid 538b9219-ce2e-46dc-acf0-7963d28147cb))
@@ -8986,7 +9172,7 @@
     (pin "5" (uuid 49d5ac7c-1dd3-4501-930a-a62459d88041))
     (pin "6" (uuid 41ccde12-087f-4aab-bef8-117c9a7cef80))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "USB1") (unit 1)
         )
@@ -9009,10 +9195,16 @@
     (property "Datasheet" "~" (at 175.26 22.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Eaton" (at 175.26 22.86 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "A202202" (at 175.26 22.86 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 0a1efe4a-c33c-411e-94e4-2a6fee2ea18e))
     (pin "2" (uuid 17121ec4-5228-4d0d-8809-8e20ab30a3ae))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "V12") (unit 1)
         )
@@ -9037,7 +9229,7 @@
     )
     (pin "1" (uuid 250905b1-d308-4a95-89d2-cb90706094fa))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR04") (unit 1)
         )
@@ -9075,7 +9267,7 @@
     (pin "7" (uuid 3fd0316c-2fc9-445c-84f7-d16fee7961fa))
     (pin "8" (uuid b9cae917-ee2e-42f5-b017-1ee3b6145be8))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U17") (unit 1)
         )
@@ -9105,7 +9297,7 @@
     )
     (pin "1" (uuid 69988151-3d7d-4cba-808f-b0243d140b63))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR07") (unit 1)
         )
@@ -9135,7 +9327,7 @@
     )
     (pin "1" (uuid cb040d9b-df27-43e2-8334-7fb2f0b0ebad))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0109") (unit 1)
         )
@@ -9165,7 +9357,7 @@
     )
     (pin "1" (uuid 68586143-770f-4a25-b9b4-e9cb04eaf67c))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR01") (unit 1)
         )
@@ -9182,16 +9374,22 @@
     (property "Value" "2A" (at 207.01 47.3964 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "Fuse:Fuse_1812_4532Metric_Pad1.30x3.40mm_HandSolder" (at 201.93 52.07 0)
+    (property "Footprint" "Fuse:Fuse_Bourns_MF-RHT200" (at 201.93 52.07 0)
       (effects (font (size 1.27 1.27)) (justify left) hide)
     )
     (property "Datasheet" "~" (at 207.01 50.8 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "PN" "MF-RHT200/32-2" (at 207.01 50.8 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "MFG" "Bourns" (at 207.01 50.8 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 7398de7d-a649-4e0f-a832-c9653841e521))
     (pin "2" (uuid d0c94bd5-fb1e-4d2b-81c3-3d8432dd65a1))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "F4") (unit 1)
         )
@@ -9217,13 +9415,13 @@
     (property "MFG" "YAEGO" (at 212.09 34.29 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRE071KL" (at 212.09 34.29 0)
+    (property "PN" "RC1206FR-071KL" (at 212.09 34.29 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid fd93ddc9-ebad-4122-8017-697828599d30))
     (pin "2" (uuid e020dd9d-2e47-4c72-a66c-34118d6cb467))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R1") (unit 1)
         )
@@ -9256,7 +9454,7 @@
     )
     (pin "1" (uuid 1ce54f9e-ff63-4112-aa91-7232daf87104))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR018") (unit 1)
         )
@@ -9288,7 +9486,7 @@
     (pin "1" (uuid e220f438-228b-47d1-b197-c7d4610cb4f5))
     (pin "2" (uuid 61717d90-997d-4fdf-9e8b-e2f8639e46e2))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "C3") (unit 1)
         )
@@ -9322,13 +9520,13 @@
     (property "MFG" "YAEGO" (at 130.81 22.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRD0710KL" (at 130.81 22.86 0)
+    (property "PN" "RC1206FR-1310KL" (at 130.81 22.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 0f81b1f9-ff2e-4673-a297-9171b3b6d08b))
     (pin "2" (uuid eb498cd7-5410-43ff-adb6-ac864a73ad03))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R20") (unit 1)
         )
@@ -9353,7 +9551,7 @@
     )
     (pin "1" (uuid e609888f-e309-41ae-ace7-00260ce9a369))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR016") (unit 1)
         )
@@ -9384,10 +9582,13 @@
     (property "PN" "156120RS75300" (at 126.365 196.215 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Wurth Elektronik " (at 126.365 196.215 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 50c0f73a-296f-4ab0-9e01-bf481019a37a))
     (pin "2" (uuid 1f19ca5c-8f37-4644-9a4e-b5dce9f5cfb1))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "D2") (unit 1)
         )
@@ -9412,7 +9613,7 @@
     )
     (pin "1" (uuid c2092a23-020d-4cbe-89ab-0634c0bd38ef))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0115") (unit 1)
         )
@@ -9435,6 +9636,12 @@
     (property "Datasheet" "http://www.ti.com/lit/sg/scyt129e/scyt129e.pdf" (at 228.6 66.04 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Texas Insturments" (at 228.6 66.04 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "SN74LVC1G3208DBVR" (at 228.6 66.04 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid d7d71bfe-0e9a-42bf-a285-6b02a5c79109))
     (pin "2" (uuid 23b56b3c-8068-4bd8-9156-2cc39884b3c7))
     (pin "3" (uuid b2e05f29-2285-45b2-9e00-674364ba718a))
@@ -9447,7 +9654,7 @@
           (reference "U?") (unit 1)
         )
       )
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U15") (unit 1)
         )
@@ -9473,13 +9680,13 @@
     (property "MFG" "YAEGO" (at 33.02 22.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RT1206FRD0710KL" (at 33.02 22.86 0)
+    (property "PN" "RC1206FR-1310KL" (at 33.02 22.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 419fe496-0603-4e3c-b52b-ce83a2e6a1c2))
     (pin "2" (uuid 0cc07cb5-c50c-4afc-9290-db3357df0c0e))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "R17") (unit 1)
         )
@@ -9504,7 +9711,7 @@
     )
     (pin "1" (uuid c44a5763-cd36-4a20-9b8e-499d3b5c182c))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR015") (unit 1)
         )
@@ -9527,12 +9734,18 @@
     (property "Datasheet" "~" (at 128.27 148.59 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "3M" (at 128.27 148.59 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "929850-01-04-RA " (at 128.27 148.59 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid f76c1ff1-ba7a-41df-a912-db60bea111f9))
     (pin "2" (uuid 416dcc41-3235-4f2f-9081-bff10b9eb273))
     (pin "3" (uuid 44036b4c-93d4-4c02-99f8-93e1f4e14601))
     (pin "4" (uuid 49acae4d-1189-408d-a225-56d2524fa07f))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "J3") (unit 1)
         )
@@ -9557,7 +9770,7 @@
     )
     (pin "1" (uuid d1ba8370-42f2-45f3-8d68-ed17ea7f56ca))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "#PWR0116") (unit 1)
         )
@@ -9580,6 +9793,12 @@
     (property "Datasheet" "http://www.ti.com/lit/ds/symlink/drv8871.pdf" (at 194.31 62.23 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "Texas Insturments" (at 200.66 60.96 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "DRV8231ADDAR" (at 200.66 60.96 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 28936cd7-3499-4fc7-a511-8de6aaee4ddb))
     (pin "2" (uuid ed7e7328-719d-416d-b598-d38906805c35))
     (pin "3" (uuid 9d6e079f-d53e-4e13-9fe7-125f38579822))
@@ -9590,7 +9809,7 @@
     (pin "8" (uuid 58840fc1-be87-4ff5-90ec-7753d79bb35b))
     (pin "9" (uuid 5af49c00-9a30-4415-85e0-4ca049d3bbac))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U13") (unit 1)
         )
@@ -9613,12 +9832,18 @@
     (property "Datasheet" "~" (at 128.27 138.43 0)
       (effects (font (size 1.27 1.27)) hide)
     )
+    (property "MFG" "3M" (at 128.27 138.43 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "PN" "929850-01-04-RA " (at 128.27 138.43 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
     (pin "1" (uuid 4e7fafb6-54c2-4658-99d8-3f96331efaef))
     (pin "2" (uuid e26fd48f-6f81-4803-95c0-71a5d540d25f))
     (pin "3" (uuid 8376ce7f-6cf0-4f76-93d4-4d814f5da93c))
     (pin "4" (uuid 86a601c7-1bb3-4e33-8c03-c4fc897220cd))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "J4") (unit 1)
         )
@@ -9656,7 +9881,7 @@
     (pin "7" (uuid 3f855fb1-b9c3-4d59-8f94-2550d5e4e81b))
     (pin "8" (uuid e1fe9b10-a99f-4382-af68-19f2c5de48ae))
     (instances
-      (project "Loconet DCC Interface ESP32"
+      (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
           (reference "U12") (unit 1)
         )

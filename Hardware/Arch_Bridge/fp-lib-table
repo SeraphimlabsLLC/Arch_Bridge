@@ -1,6 +1,5 @@
 (fp_lib_table
   (version 7)
-  (lib (name "ESP KiCad libraries")(type "KiCad")(uri "C:/Users/Sean/Documents/Projects/EXWIFI/ESP KiCad libraries")(options "")(descr ""))
   (lib (name "Multicomp Screw terminals")(type "KiCad")(uri "C:/Users/Sean/Documents/Projects/Multicomp Screw terminals.pretty")(options "")(descr ""))
   (lib (name "footprints")(type "KiCad")(uri "C:/Users/Sean/Documents/Projects/ESP Libraries/footprints.pretty")(options "")(descr ""))
   (lib (name "Espressif")(type "KiCad")(uri "C:/Users/Sean/Documents/Projects/ESP Libraries/footprints/Espressif.pretty")(options "")(descr ""))
