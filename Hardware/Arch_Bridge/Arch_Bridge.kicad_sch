@@ -4880,7 +4880,7 @@
     (uuid ffbd1610-f0c9-4e9b-b241-edb844117db2)
   )
 
-  (text "Loconet T 12v 500mA DC power for throttles, Loconet B1 and B2 provide 200mA 12v Railsync output.\nOpen phasing jumpers for ext railsync input\n\nDCC waveform generate/validate using ESP32 RMT functions\nSerial IO to DCC-EX via USART or I2C\nHeatsink required on Q3 - May be able to use aluminum\nsheet in enclosure wall. Or try 657-15ABPRN \n"
+  (text "Loconet T 12v 500mA DC power for throttles, Loconet B1 and B2 provide 200mA 12v Railsync output.\nOpen phasing jumpers for ext railsync input\n\nDCC waveform generate/validate using ESP32 RMT functions\nSerial IO to DCC-EX via USART or I2C\nHeatsink required on Q3 for 3W - May be able to use aluminum\nsheet in enclosure wall. Or try HSS-B20-NP-06 \n"
     (at 160.02 186.69 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 204f95b4-c525-40a4-82dc-052e790922f5)
@@ -5207,8 +5207,8 @@
     (property "PN" "RC1206FR-073KL" (at 55.88 135.255 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 8703f0a2-63d9-4571-9097-f834758e6976))
-    (pin "2" (uuid 144e2c94-42df-4139-b508-6c6ae2afd97f))
+    (pin "1" (uuid a6321e37-c19f-471a-b50f-7e514404645e))
+    (pin "2" (uuid c3451ebe-b34c-4271-907f-572c8bd89380))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5239,8 +5239,8 @@
     (property "MFG" "Wurth Elektronik " (at 59.69 142.875 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 2d10feaa-72da-42f8-9bb6-138570faa611))
-    (pin "2" (uuid 04c4a6ca-ce65-47e7-b934-df2d5920a797))
+    (pin "1" (uuid 4af0e9f2-55e7-40d5-94ec-e365b409e79c))
+    (pin "2" (uuid 4f583a09-229f-4fba-afb6-98cb924bdfd1))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5271,8 +5271,8 @@
     (property "PN" "885012208072" (at 50.8 142.875 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid d37bbabc-9f47-4372-9e3d-db06d5a04f0e))
-    (pin "2" (uuid 8aa28494-49d7-42e0-a6d2-834c6a4c96ce))
+    (pin "1" (uuid e20ed894-3c37-44e7-bd1d-c0fc97f1a2b4))
+    (pin "2" (uuid 329b1fdb-4013-42a6-989e-5f3b6b8c82d9))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5303,12 +5303,12 @@
     (property "PN" "54601-906WPLF" (at 26.67 181.61 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid a8f4e9f3-c3eb-4616-a310-9c119498472c))
-    (pin "2" (uuid 0984f182-9164-4fed-ba18-a39ab7cf93ab))
-    (pin "3" (uuid 0f88ebf4-8da7-4de8-955f-24505c99bd72))
-    (pin "4" (uuid e704cdad-a1dd-4594-b3cd-68daf326afd7))
-    (pin "5" (uuid 858a1968-1838-4447-9c24-2ab2a2bc7065))
-    (pin "6" (uuid 6e82cb6d-bae1-40a3-8640-a9261b849a97))
+    (pin "1" (uuid 327a8eda-a11c-4ac3-96b6-75f1734a37bc))
+    (pin "2" (uuid 118b7fe2-2e7f-466e-9728-9bc8603803cd))
+    (pin "3" (uuid 66abe09b-8658-4d0f-85b4-b0518c100af2))
+    (pin "4" (uuid dc7e7bc6-253d-4b7a-a27d-b242fcb51235))
+    (pin "5" (uuid a6711f15-9e8b-46e4-b1a3-175e77f0c243))
+    (pin "6" (uuid 4d8dc65f-3003-43c6-8fb1-6ee6232d7a8c))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5339,8 +5339,8 @@
     (property "PN" "RC1206FR-07150KL" (at 68.58 187.96 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 6ee39504-1c8b-4730-b8b0-d775b5066e10))
-    (pin "2" (uuid 595b73e9-6584-444d-bc7d-71f003653dc3))
+    (pin "1" (uuid 1c8566f8-0ebc-4c46-81d3-28e425684422))
+    (pin "2" (uuid 7d1ff516-f408-4d3d-949d-393e1cc948be))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5371,8 +5371,8 @@
     (property "PN" "RC1206FR-0747KL" (at 57.785 179.07 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 1ca8517d-365d-4340-8fc7-a93127942523))
-    (pin "2" (uuid 10288718-76b2-4863-aac1-51411fde8925))
+    (pin "1" (uuid a8d4d148-c776-49cd-a7fb-a7f6bf27e13b))
+    (pin "2" (uuid fce62c1c-de03-4c43-b752-7c8d2bd125b0))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5403,8 +5403,8 @@
     (property "PN" "RC1206FR-1310KL" (at 82.55 171.45 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid f81b9137-8ff6-4e5d-8e37-736530f61eb3))
-    (pin "2" (uuid 0166fa46-3de5-4146-b95f-034cf2801b4a))
+    (pin "1" (uuid 5e58b2eb-e1cd-4cc0-b831-cfaac770b1e6))
+    (pin "2" (uuid 55503cdb-222e-4795-825c-2bc23f2d0879))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5435,8 +5435,8 @@
     (property "PN" "RC1206FR-0722KL" (at 76.2 187.96 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 031c0f92-55c3-4d4b-90b1-d29decf7b7ce))
-    (pin "2" (uuid 0866f7d0-ea5c-4523-841e-a4f3fa95ae28))
+    (pin "1" (uuid cd118b97-7459-4fb2-bb2f-f647b4c5d70a))
+    (pin "2" (uuid 262e3097-2bbb-436f-b67d-a3b4555401bc))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5467,8 +5467,8 @@
     (property "PN" "RC1206FR-07220KL" (at 95.25 191.77 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid bb1d3163-dcb9-4d90-b530-f61f416b2add))
-    (pin "2" (uuid c039ae59-a626-4162-840b-73a8e7f765f6))
+    (pin "1" (uuid eb08aafb-3e65-4e9a-96b3-15fed25d836c))
+    (pin "2" (uuid c7220df3-9969-4748-b8b9-1bfc3b45a6ec))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5499,9 +5499,9 @@
     (property "PN" "2N3904" (at 54.61 186.69 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 53ce292e-8049-492c-b7d5-589c4a1ae03a))
-    (pin "2" (uuid 59797fd8-c58f-4eea-8dc0-d182fc0d2c5b))
-    (pin "3" (uuid c4e61b85-1234-454d-a7d1-4af3b0c8268b))
+    (pin "1" (uuid a6688394-5570-4f51-afd3-a37b287e0b20))
+    (pin "2" (uuid 84ac1bd5-f397-4609-a540-117d242a20e1))
+    (pin "3" (uuid fcbbec67-5857-48dd-a003-55858d387a14))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5532,8 +5532,8 @@
     (property "PN" "RC1206FR-0747KL" (at 67.31 196.85 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 25483d03-ecfe-4987-bca8-a973c908da16))
-    (pin "2" (uuid 592321c1-cf86-4dfe-a1e8-13ada66c5a09))
+    (pin "1" (uuid 12144099-3cba-4b16-826c-729399b9907a))
+    (pin "2" (uuid 02816ed5-9cb9-4ab1-a767-2ff117b02742))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5614,9 +5614,9 @@
     (property "PN" "87224-3" (at 182.88 111.76 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 2e93d251-49db-4ce4-8a03-2be59ca7544c))
-    (pin "2" (uuid 0153282a-f127-4a90-8ec5-4398d6d0abcf))
-    (pin "3" (uuid ab535334-5cb7-4039-a565-e2dbf940ce86))
+    (pin "1" (uuid 30b9211a-4a20-4dae-a6da-9c740f7173db))
+    (pin "2" (uuid b0ba7f70-a396-4191-a35e-2a0c148ebfd6))
+    (pin "3" (uuid 00a175b0-d29b-4421-aa81-45bc06dd7609))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5647,9 +5647,9 @@
     (property "PN" "87224-3" (at 175.26 111.76 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 4d78b51e-0878-424c-8198-2940379bcf5c))
-    (pin "2" (uuid 624d906c-9d73-4f30-9947-391bbc8a5cc7))
-    (pin "3" (uuid e6c2fe76-6f4b-464f-8c23-e186ac97b2b0))
+    (pin "1" (uuid d1c0d195-f946-4c96-b095-6b52e0822d77))
+    (pin "2" (uuid 7bed1c85-70d2-475d-b889-9f4a6e8149ba))
+    (pin "3" (uuid 36ae3341-6bde-44dd-8a63-667c17008b4a))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5705,15 +5705,15 @@
     (property "PN" "DRV8231ADDAR" (at 200.66 102.87 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid b3af7daa-b6ea-4736-b28f-0ae33849227a))
-    (pin "2" (uuid e7f7d725-4ff4-410a-b40f-296cac7a0eda))
-    (pin "3" (uuid a35ac1ee-439f-4fc5-baf0-0d8e3774ada8))
-    (pin "4" (uuid 6ef18c77-1234-407c-ae6b-250828405148))
-    (pin "5" (uuid ea4edf50-8c29-4bb9-b081-22378c6f5929))
-    (pin "6" (uuid bb7ca1c9-c5b5-439d-a170-a992fc7f0a6f))
-    (pin "7" (uuid 1fed5948-bd45-47b4-afa6-a8c3f6b5db6b))
-    (pin "8" (uuid 5e18f48e-6fd9-4bdc-8b54-ebb6ed5b859d))
-    (pin "9" (uuid 24c707a5-5d35-45b7-b4fe-3003b6bd2521))
+    (pin "1" (uuid cefb3130-c23c-488d-9bc3-2bface27dd8e))
+    (pin "2" (uuid b74cf7e5-6a30-498d-831f-419a6bc1629e))
+    (pin "3" (uuid 4f9b0bc6-ab6a-49b7-a105-24d8e991ed7d))
+    (pin "4" (uuid f96cdfd9-1e7e-49ba-a2cf-517659f5c0ef))
+    (pin "5" (uuid 87a758b3-096f-4343-a8c7-2e8e48fbbe03))
+    (pin "6" (uuid b4f5b961-cecf-475d-926a-411ef4358caf))
+    (pin "7" (uuid 6a751afc-d27c-4ff7-8a37-b18010911b0d))
+    (pin "8" (uuid 265d7591-16ae-4005-b24c-276442eba12f))
+    (pin "9" (uuid f90ef6c8-d416-47d8-b16f-d4de5fd5fcfd))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5769,8 +5769,8 @@
     (property "PN" "RT1206BRD079K1L" (at 204.47 118.11 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid d6fc2429-42e7-4c34-87d1-b5283a171606))
-    (pin "2" (uuid 0e083bc5-b4d8-4ddf-bcbc-8736964b77be))
+    (pin "1" (uuid 4458ea2e-1502-494c-bfc2-0c429a7a940a))
+    (pin "2" (uuid d8198556-9743-4c49-b95f-a0a71b2b7763))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5801,14 +5801,14 @@
     (property "PN" "LM393BIDR" (at 91.44 181.61 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 49ff67e5-3c1f-4f27-b7a1-884d4966da9a))
-    (pin "2" (uuid f584bf47-e217-4d20-a70d-4dcd7948d3f3))
-    (pin "3" (uuid ae1f702a-7c17-4ad4-a975-5079888c8276))
-    (pin "5" (uuid 882ddc9e-0ff6-4816-8d4b-bd3447dc0fb8))
-    (pin "6" (uuid fcf9c0c5-d1bc-4081-8780-2dedcf7b5191))
-    (pin "7" (uuid 0de40957-4e30-4f40-91fa-b06461e03b36))
-    (pin "4" (uuid eb34f9da-4e4b-4c44-8a2e-bb0275169830))
-    (pin "8" (uuid 1abcf1c5-4fce-4367-a092-dc268f3e4c3b))
+    (pin "1" (uuid d6bf33ae-d5b9-4e43-8e4e-60fc76e5d9bb))
+    (pin "2" (uuid 60f95bc7-c0d9-4449-a750-dd5fc3a90686))
+    (pin "3" (uuid 2413ef2a-6c74-46fe-b0b7-f7c1b2e65969))
+    (pin "5" (uuid 4c4582f2-b382-464e-9e64-3e285867b23d))
+    (pin "6" (uuid 41d0cd78-858f-4b32-8d2e-685446e22330))
+    (pin "7" (uuid 401833b0-ea12-422b-b797-f5731c5939f1))
+    (pin "4" (uuid a4bbfa60-5003-441a-b9b9-db17421045b6))
+    (pin "8" (uuid 0dc2fe0a-cae6-481f-9e75-60a619571e1c))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5839,14 +5839,14 @@
     (property "PN" "LM393BIDR" (at 91.44 181.61 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 9ddc7aa0-b4e9-4ab0-a532-d793cd70f987))
-    (pin "2" (uuid fc83c53a-29a7-4947-a676-2993d6473b8e))
-    (pin "3" (uuid 54852e5b-4ab4-4d4c-b45d-85735ae3eec2))
-    (pin "5" (uuid def33211-9d3f-447e-8b6d-0562fec0a3f6))
-    (pin "6" (uuid e234916d-8c5c-4b51-8509-57c820de956e))
-    (pin "7" (uuid 37bd5a6e-f5fa-48ed-b8ef-3a3dc2383e15))
-    (pin "4" (uuid 71281abf-571a-433c-8e94-f035f7a6e032))
-    (pin "8" (uuid bbd165a5-b394-4658-8f55-753f76e6da48))
+    (pin "1" (uuid 3a6a050d-a61e-46d8-bbf5-1e3dddf908a1))
+    (pin "2" (uuid 7f6156a0-eed6-4e97-97fc-fcb5c0831bb7))
+    (pin "3" (uuid 15e5fe47-a74d-4c3f-9219-7861c2c1eb63))
+    (pin "5" (uuid 869a94de-958d-4012-b34f-59d68f2e1470))
+    (pin "6" (uuid 6e89d3ea-bf92-45c0-8cc3-eb1db89e82b5))
+    (pin "7" (uuid 0e057800-7934-48fd-ac0f-0932c9a393f2))
+    (pin "4" (uuid b24161ba-c240-4e1b-b593-fd420d818709))
+    (pin "8" (uuid 75d39548-fa3c-4d25-815e-6789bcfa8448))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -5877,12 +5877,12 @@
     (property "PN" "SN74LVC1G3208DBVR" (at 228.6 95.25 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 99821821-48cd-4be4-b400-136c355f651e))
-    (pin "2" (uuid e6ea3f1a-891b-402f-b731-f79a7646c7f5))
-    (pin "3" (uuid 251b2fd2-aa68-41f0-9783-1b1d796bdf7b))
-    (pin "4" (uuid e1129a26-5329-4819-a0a3-478af0d8c1b7))
-    (pin "5" (uuid ca500c63-b86c-40f9-bc5d-8ee7edd4e4f0))
-    (pin "6" (uuid 4208b004-d179-45d6-bb55-5441d9c09035))
+    (pin "1" (uuid 76a7a6f8-ec10-4198-9a7a-e396b1fc70ff))
+    (pin "2" (uuid 3053da17-4c13-4e2b-8f07-5e342733785c))
+    (pin "3" (uuid fb29cb84-b517-4a35-9de8-784c6dfbc103))
+    (pin "4" (uuid 1f87d341-b11b-41f2-86c5-e19580a85287))
+    (pin "5" (uuid b0922982-01e4-41b7-b357-9478da270897))
+    (pin "6" (uuid e48f5b7b-6b08-44be-a1c7-088a3e0844c0))
     (instances
       (project "Loconet DCC Interface"
         (path "/4bc2d225-6556-4bf4-a464-1b6c28a4d653"
@@ -5918,12 +5918,12 @@
     (property "PN" "SN74LVC1G3208DBVR" (at 228.6 107.95 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 843253ca-f3a4-4486-a0c9-52a8e42043eb))
-    (pin "2" (uuid a0df5188-ff49-4efa-ac5a-303582a048f2))
-    (pin "3" (uuid 44fdd92b-0b32-4e20-a667-40264ccca4a1))
-    (pin "4" (uuid 29dfb5aa-e0d2-4729-a5d0-542e7d112857))
-    (pin "5" (uuid 9b429589-e922-43f2-bc3c-689ec3d69c1f))
-    (pin "6" (uuid be52c3a8-e29e-493f-bab6-420d2d50aaa0))
+    (pin "1" (uuid a8f600ae-9292-4ea9-a8e4-eb890a510868))
+    (pin "2" (uuid 7f1aacf1-a4a9-4324-8fc8-e540446128ff))
+    (pin "3" (uuid 942d64fc-8fba-450f-ad5a-3dc71c8a2210))
+    (pin "4" (uuid 4d7feced-8c7a-40cf-8f9b-b8b9dc78e67f))
+    (pin "5" (uuid e63506aa-40c8-4397-a7fd-7514ec681937))
+    (pin "6" (uuid 6ae5049a-5d96-44e4-9a07-cec47970bc03))
     (instances
       (project "Loconet DCC Interface"
         (path "/4bc2d225-6556-4bf4-a464-1b6c28a4d653"
@@ -5984,8 +5984,8 @@
     (property "PN" "PTS120616V025" (at 182.88 80.01 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 0b55562b-488b-4064-a7ed-a45a0a602bdc))
-    (pin "2" (uuid 016b6627-8306-4408-9446-b0ec62699381))
+    (pin "1" (uuid ed1c45a4-8f66-4fd4-9662-aa08a9d7e714))
+    (pin "2" (uuid a331bb24-76a9-4786-973a-3042857ae5d5))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6016,8 +6016,8 @@
     (property "PN" "PTS120615V050 " (at 29.21 194.31 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 167c0aa7-93f0-40e9-bbb9-2ba8e2f43b56))
-    (pin "2" (uuid a2e8d148-2425-4f7a-995a-0906da4d908c))
+    (pin "1" (uuid f1f2461e-4208-406b-91c8-a54c8d9e38b1))
+    (pin "2" (uuid 0241b1be-43ed-4c5c-93c0-564f08d9723c))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6048,9 +6048,9 @@
     (property "PN" "MJE2955TG" (at 193.04 87.63 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid f4b79311-939a-4079-bfe1-22fa89084e12))
-    (pin "2" (uuid b39444c4-9f9c-4431-93bf-3efede0148ea))
-    (pin "3" (uuid 3a8432d3-9b39-4067-b1d3-a30773d3f01a))
+    (pin "1" (uuid c1538ffd-17e9-4729-abe6-5e6846ac620e))
+    (pin "2" (uuid 729f27d6-c41a-41c3-94e7-b604f63bf626))
+    (pin "3" (uuid 80f00a4d-a7a6-4e12-beca-abfa5a9d68a4))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6081,8 +6081,8 @@
     (property "PN" "FKN2WSJT-73-20R" (at 190.5 80.01 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 384d6b96-9085-47df-a0ae-46b003517b6c))
-    (pin "2" (uuid dff395bd-b027-49fd-8a90-b33d9574869d))
+    (pin "1" (uuid 98e38a74-ecb0-4311-99b6-009dd6b1fffa))
+    (pin "2" (uuid fe14ac8d-f6d5-4fe1-bc0c-a0c1cdbe9194))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6113,8 +6113,8 @@
     (property "PN" "RC1206FR-073KL" (at 182.88 90.17 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 4e476c2f-aa4a-4713-84fe-99325dc6d094))
-    (pin "2" (uuid 9a8d91f9-c31e-448e-a036-a1a3151eb3f1))
+    (pin "1" (uuid e5e12231-65d8-4b53-8120-773fe541818f))
+    (pin "2" (uuid 550c80b5-de5f-4f04-9765-eed19c553bd6))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6145,8 +6145,8 @@
     (property "PN" "1N5231B" (at 181.61 85.09 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 283e7d8c-f9a9-40de-9347-7f288610a5d3))
-    (pin "2" (uuid 35e68331-2532-4792-ac32-7ebdb9bbdc15))
+    (pin "1" (uuid c73b9ac3-c3f8-4c90-8c31-f4d0668f856d))
+    (pin "2" (uuid f195bd41-2c3a-4be4-bd91-0687744896f4))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6227,11 +6227,11 @@
     (property "MFG" "Texas Insturments" (at 122.555 189.865 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid b90ce2fd-6732-4f78-a04a-b4e28b86279b))
-    (pin "2" (uuid 1aa456d6-43ff-4a43-9049-3d2b20ec8c42))
-    (pin "3" (uuid 2f37fb6d-d7c4-4cf2-ab63-c11ce61485dc))
-    (pin "4" (uuid 989bcdb3-9936-4573-807a-6dc187a62ded))
-    (pin "5" (uuid 51a878f2-3a9f-41b3-8761-243ad7eca1ab))
+    (pin "1" (uuid 6aceca40-ad42-4ef3-8e61-c9cf06f0de6b))
+    (pin "2" (uuid 48f5d2cb-ef00-4e48-b809-a61102cec876))
+    (pin "3" (uuid 886bd0bb-9d1d-49d8-9c16-b0fffd551e69))
+    (pin "4" (uuid 81762643-b2a7-4455-acfe-b0c53f448187))
+    (pin "5" (uuid ed43967d-d316-4e04-b883-fe99a9b88c98))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6262,10 +6262,10 @@
     (property "MFG" "Texas Insturments" (at 107.95 180.34 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "2" (uuid 64278733-e781-4f27-ae39-1fa6a6e11d3c))
-    (pin "3" (uuid c47feefb-5191-468c-9e89-439acb984356))
-    (pin "4" (uuid 6d6f1e9a-d410-4d38-bd70-d22726d19cc7))
-    (pin "5" (uuid dc1e6899-0739-4c55-a9c7-553753b1a146))
+    (pin "2" (uuid c96980ac-679b-452c-a55c-b5b719fe5650))
+    (pin "3" (uuid f30e3b42-28d8-4f9f-a3cf-9522022868ec))
+    (pin "4" (uuid d4f479bd-29d1-4513-b9a1-4a5f58c3f183))
+    (pin "5" (uuid d47a0c2e-ba8d-455f-8abd-2f1b510eca98))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6296,12 +6296,12 @@
     (property "PN" "TLP2770(TP,E" (at 73.66 142.875 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid aaaea70a-ef5c-45d2-ae45-c184aa623934))
-    (pin "2" (uuid b243a5c2-e378-474f-88dc-dc6a4b4ea52f))
-    (pin "3" (uuid f8b8536f-3bdd-4fd6-954f-ed581471098c))
-    (pin "4" (uuid d0befdaa-fa0a-4dbe-a510-ad97a9d5aa0e))
-    (pin "5" (uuid 6abde4f2-3f82-48f7-af22-8cce480f546f))
-    (pin "6" (uuid fef3c813-f2f7-43c2-b597-59da5d75a4f5))
+    (pin "1" (uuid e9b48d71-9f6e-47a6-b24e-71d6f9889cd7))
+    (pin "2" (uuid 5550de27-f954-4fcd-8052-ed82a82999d7))
+    (pin "3" (uuid 92bb6b85-4d64-43d9-95a7-94c47f61dfab))
+    (pin "4" (uuid 211fc8e2-4722-4c1d-a64f-078741b2cd95))
+    (pin "5" (uuid 5478b9e4-b417-46f6-8a5f-ae047dbf3b6d))
+    (pin "6" (uuid cb1c9946-cc5a-4305-919f-b1866ccdb135))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6382,8 +6382,8 @@
     (property "PN" "SQM500JB-10R" (at 20.32 194.31 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 2f44376a-ac7f-4271-8b3b-81e6fbf7fed2))
-    (pin "2" (uuid 3df8a91e-4022-40a3-a308-db71d47fab09))
+    (pin "1" (uuid 3afa99cf-ff19-45fc-8afe-ca71ea3324a3))
+    (pin "2" (uuid 3e64b90d-677a-4f38-84ed-e26d1e7ddd01))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6439,9 +6439,9 @@
     (property "PN" "MJE2955TG" (at 28.575 160.655 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 237b3558-528a-4210-bb64-fad1280767e5))
-    (pin "2" (uuid 3a2092c0-6c51-4481-8eed-cea7843af932))
-    (pin "3" (uuid 763e7caf-4efb-453b-b24f-4d27b7bebaa2))
+    (pin "1" (uuid fbf4bb72-4511-439d-b6ae-ef8b5902acf8))
+    (pin "2" (uuid dfe2a776-e2d8-4529-91ea-1c67a43713b7))
+    (pin "3" (uuid 56fc2d08-b47a-4cfc-97d7-a6aad86ec742))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6472,8 +6472,8 @@
     (property "PN" "RC1206FR-07287RL" (at 19.05 158.115 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid c75f7245-1314-41ab-8c04-95aed880c021))
-    (pin "2" (uuid 17bb8c7e-0e85-4731-9497-a4a9c0d6b582))
+    (pin "1" (uuid c7892686-b64d-44a5-99d3-fe47763ad75e))
+    (pin "2" (uuid 5540192c-9f73-4609-9203-246e3e67f005))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6504,8 +6504,8 @@
     (property "PN" "RC1206FR-0733KL" (at 32.385 167.005 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 49604701-ed62-4943-bf41-60f62ecc7a37))
-    (pin "2" (uuid a9997f86-9a9c-4f79-a8bc-ebd12bdaaf19))
+    (pin "1" (uuid fc10ac89-1e87-45ed-bd9a-d9ab233c35da))
+    (pin "2" (uuid 2d396f07-3083-48a9-96a1-d2d62c325dd0))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6536,8 +6536,8 @@
     (property "PN" "1N5231B" (at 23.495 167.005 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid e9497eb5-b674-44bc-9cd9-3ac4e4288e66))
-    (pin "2" (uuid bc05bf52-5f84-455c-a748-391ceafed528))
+    (pin "1" (uuid 7de90a97-c371-4eb3-bf2e-1b4aea345762))
+    (pin "2" (uuid 1566d63d-b660-4080-a14a-b14c1af46481))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6568,8 +6568,8 @@
     (property "PN" "87224-2 " (at 38.1 158.115 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 5789621b-9d5e-4e4b-b7ad-c5adfe3a9236))
-    (pin "2" (uuid c23badef-6512-4888-abbf-360f5e32d55a))
+    (pin "1" (uuid 7ff6fa56-9eca-49ff-9b13-161542432516))
+    (pin "2" (uuid ca745f01-d95d-4661-a7ad-077713b289f8))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6600,8 +6600,8 @@
     (property "PN" "C1206C104K5RAC7210" (at 71.12 20.32 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 4a11fb22-4602-450b-8f80-34698bd6ea3d))
-    (pin "2" (uuid 030fb47e-deb6-4d44-a352-08bbe2ee5546))
+    (pin "1" (uuid 28b2e8ed-d9aa-4a45-8307-cae6208869ee))
+    (pin "2" (uuid 6497bcd2-acae-4e51-a942-0cf875507b2e))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6657,8 +6657,8 @@
     (property "PN" "C1206C104K5RAC7210" (at 229.87 162.56 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 2bcdccbf-8b91-4dd7-b060-6e72d18f3e4f))
-    (pin "2" (uuid b6f56770-60c8-4414-b132-93394d7c705a))
+    (pin "1" (uuid 67adc899-8066-40a5-8c05-546dbdb40c0c))
+    (pin "2" (uuid e02df08e-5e97-418d-b435-c7f368ab1e0e))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6689,8 +6689,8 @@
     (property "PN" "C1206C104K5RAC7210" (at 250.19 162.56 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid e932933a-613d-45f5-9f24-398f5a9c393c))
-    (pin "2" (uuid 3217b185-ade1-478b-9279-c299377d1185))
+    (pin "1" (uuid dffd348d-93a9-4287-b0de-7b4266fc0a51))
+    (pin "2" (uuid 3b74669d-4427-4b9f-bf84-ada0c2ea73d5))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6771,12 +6771,12 @@
     (property "PN" "54601-906WPLF" (at 26.67 142.875 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 62171aae-7e56-4adc-a5ec-02f6ae23a76b))
-    (pin "2" (uuid 2f2d0d50-921a-4d93-bc50-553f16f545aa))
-    (pin "3" (uuid c4d4c593-ce0d-4ede-8b4b-e6b5dc92770a))
-    (pin "4" (uuid 7dfe3105-55f1-4bfe-a96a-795b48564b4d))
-    (pin "5" (uuid de4158a9-a59a-4e5b-bb9e-097a3d022bce))
-    (pin "6" (uuid 350bf2ae-dbbd-4c64-b9cd-c496d7039449))
+    (pin "1" (uuid f38fb68a-6acb-4026-878d-7476c79ef6ce))
+    (pin "2" (uuid e2694ea1-4f1c-470f-a0dd-d32538ebd605))
+    (pin "3" (uuid 73aa2e91-ed05-4d24-8735-fc42bd48efb7))
+    (pin "4" (uuid 49f3b06a-5d93-4f72-9d2e-3da8517beb6c))
+    (pin "5" (uuid 5875dab5-8d63-4a41-9521-c23c2fcd7966))
+    (pin "6" (uuid f7c2b173-4af4-4ca4-8f85-f96546fd6b06))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6832,8 +6832,8 @@
     (property "PN" "C1206C104K5RAC7210" (at 241.3 162.56 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 43a67325-8ef7-44ec-a031-6648dfb4dad4))
-    (pin "2" (uuid 5170450e-37a2-4b89-9a9b-297fd32a0d41))
+    (pin "1" (uuid d0088f47-0a15-4d1d-bbe4-4af0c4a4159b))
+    (pin "2" (uuid 59873e2c-138c-4a62-91a2-7c05c6e05f23))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6889,12 +6889,12 @@
     (property "PN" "54601-906WPLF" (at 26.67 117.475 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid ee285380-6e6f-4878-8362-89b8e816e30e))
-    (pin "2" (uuid 319fee8c-b625-4886-9af4-497e3696d5fb))
-    (pin "3" (uuid 855531e9-6658-44bc-94ba-280495e3727d))
-    (pin "4" (uuid ff6b7024-189a-43e4-9ed8-3f20211bb6a3))
-    (pin "5" (uuid 34882b07-14b7-4fc7-a488-10d58b32d892))
-    (pin "6" (uuid 62cfcff5-aba9-4218-beb8-aa8711b858de))
+    (pin "1" (uuid 09235d15-d6e6-49b7-8e65-add65cfc8015))
+    (pin "2" (uuid d45e1b0e-7b9e-4056-9255-13a538c2a1ed))
+    (pin "3" (uuid 16f59a20-5c67-4218-8c75-a2b396aef641))
+    (pin "4" (uuid 5f9f538d-50b7-49e9-ad4b-3361ae90ac39))
+    (pin "5" (uuid c641fac2-742d-455b-be4b-d7bdb873f99b))
+    (pin "6" (uuid e1c3ba46-7837-48d2-ad4c-56062c58824f))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -6950,8 +6950,8 @@
     (property "PN" "865080545012" (at 170.18 31.75 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 161f7929-9ecb-4077-8417-709371b4c045))
-    (pin "2" (uuid 602b0b7c-2c10-4382-b163-313a356bf816))
+    (pin "1" (uuid bf1d21e5-144e-4052-8417-f02e834eb5b1))
+    (pin "2" (uuid 012d9295-0a73-4a34-9c0b-21c7af71eae2))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7015,9 +7015,9 @@
     (property "PN" "TLV1117-33CDCYR" (at 247.65 27.94 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 36fdae49-98e3-4e6d-b09c-4d53a43531e5))
-    (pin "2" (uuid aca78b39-f3fe-4d14-8fcc-4aef4dd14cc2))
-    (pin "3" (uuid df778c7c-3324-4980-99ff-1923438b12af))
+    (pin "1" (uuid 03eb489f-46c7-42ab-a84f-3e22b2cf2ea9))
+    (pin "2" (uuid 3d97dbf9-cc45-4728-92f5-b268082e04a9))
+    (pin "3" (uuid 88aebfd5-7ba0-460a-bcf5-3451d39dc1a1))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7053,8 +7053,8 @@
     (property "MFG" "YAEGO" (at 165.1 33.02 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid b75f3759-8302-47b9-bc4e-9e4cb0f0119c))
-    (pin "2" (uuid 897a287a-fc32-4150-a4de-0d2465ea14eb))
+    (pin "1" (uuid d47a35dd-b92f-4daf-9dbb-9ae7d8830e04))
+    (pin "2" (uuid 7a980078-86be-4189-bc7d-285ea5766bdf))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7110,10 +7110,10 @@
     (property "MFG" "Texas Insturments" (at 246.38 92.71 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "2" (uuid 91f9b033-de99-4771-86c1-063f090e54ab))
-    (pin "3" (uuid 1b299c67-e88b-4e62-bada-c881f7a48873))
-    (pin "4" (uuid b1a45477-09dc-490f-954a-e8929fdf9d65))
-    (pin "5" (uuid dd321193-a9fb-48f2-a91d-a581962a4a64))
+    (pin "2" (uuid 9edbff96-ecb7-4e82-8902-abf735ad55f7))
+    (pin "3" (uuid 4b56e395-8c7a-4640-9c25-ced297827458))
+    (pin "4" (uuid dca3528f-1455-41dd-8bb3-01039d596c75))
+    (pin "5" (uuid 592542f8-1c4c-4a55-8afb-5c138e344881))
     (instances
       (project "Loconet DCC Interface"
         (path "/4bc2d225-6556-4bf4-a464-1b6c28a4d653"
@@ -7174,8 +7174,8 @@
     (property "PN" "865080542006" (at 185.42 33.02 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 6c71ec7e-a61e-43e6-a934-3bbf425e6362))
-    (pin "2" (uuid ebea0f3e-658d-4348-846e-1826579fd664))
+    (pin "1" (uuid 55d24fbc-d727-4f5c-b84b-5bff06f5b13a))
+    (pin "2" (uuid 8b048132-437c-4197-9f09-8db0adbf57d3))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7214,8 +7214,8 @@
     (property "PN" "RC1206FR-071KL" (at 119.38 196.215 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid c76411c6-d3a4-4929-a04d-1fd3808f574d))
-    (pin "2" (uuid 078c6904-8662-425f-886d-fb2c73619a16))
+    (pin "1" (uuid 237772b6-7bf8-4401-9931-0e31dbe530f6))
+    (pin "2" (uuid 8db48e31-ff8f-4f99-9791-2b9330a60b76))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7246,8 +7246,8 @@
     (property "PN" "RC1206FR-1310KL" (at 245.11 113.03 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 808212f0-a85d-46a8-97f5-ecd0e2e4077d))
-    (pin "2" (uuid 5b9710ce-ce53-41ea-823a-8a5bef2bb51b))
+    (pin "1" (uuid 5f3da9b6-5f65-4f76-b152-88f0db8d657b))
+    (pin "2" (uuid 9965e773-5d99-4570-967a-b247b773e18e))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7303,8 +7303,8 @@
     (property "PN" "RC1206FR-1310KL" (at 185.42 134.62 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 8cd274bf-b5c0-496b-b4b8-a6a5ba6785b1))
-    (pin "2" (uuid 6ffe2952-ca36-4bf1-89c4-23932af783ce))
+    (pin "1" (uuid 6183744f-5038-460a-9fc9-4d665ddf2076))
+    (pin "2" (uuid f56fb537-fdba-45f6-962a-0d17a0965bcf))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7400,12 +7400,12 @@
     (property "PN" "SN74LVC1G3208DBVR" (at 228.6 53.34 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid ba011c25-265f-4d43-ac7e-b29e871f5671))
-    (pin "2" (uuid 19f5e92a-8a83-4890-a6a8-cc60b24332a7))
-    (pin "3" (uuid ac6a7f02-52ed-4b40-a5ae-76e6897e1ae4))
-    (pin "4" (uuid 43073cab-938c-492e-85ad-036475a0e027))
-    (pin "5" (uuid 9ee6a2ff-d2b5-4a69-97a4-a4ba30ce81af))
-    (pin "6" (uuid cf7ed17c-3a91-43fd-aacd-565cddded551))
+    (pin "1" (uuid f1b1db33-d421-4bea-b20b-5dd345695a3d))
+    (pin "2" (uuid 79015774-c7c0-4ad3-9ed8-22d2bbce0ab8))
+    (pin "3" (uuid 2ce864c5-77d8-4d85-92ed-06a6a323847e))
+    (pin "4" (uuid dff91fa2-d650-4317-a2e7-1707f6d9d691))
+    (pin "5" (uuid b6f0e8b4-1866-420a-b886-5331df07690a))
+    (pin "6" (uuid 5e3ba328-aafe-4843-9389-d4afe8fb2ff9))
     (instances
       (project "Loconet DCC Interface"
         (path "/4bc2d225-6556-4bf4-a464-1b6c28a4d653"
@@ -7441,9 +7441,9 @@
     (property "PN" "929850-01-03-RA" (at 213.36 149.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid c5ef99e3-628c-4242-a052-681c47a26d28))
-    (pin "2" (uuid d86f157c-8672-4a41-b2c3-c4976402d635))
-    (pin "3" (uuid 22d9b95d-4f16-446a-8273-31ecb6d48727))
+    (pin "1" (uuid 8e6bd018-7846-4558-b67f-cc3b4a0e832f))
+    (pin "2" (uuid ae384319-fec7-41a4-a807-331f61faf104))
+    (pin "3" (uuid c7398eb7-8813-4527-aefb-c39273d4324c))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7474,8 +7474,8 @@
     (property "MFG" "Wurth Elektronik " (at 218.44 30.48 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid fbab2196-fb06-4e90-94d3-4a268245a76e))
-    (pin "2" (uuid 96194bae-bbde-4841-bb44-bf7d873b5825))
+    (pin "1" (uuid 7f37056b-d8dc-4abd-bfbb-50eccfa093bd))
+    (pin "2" (uuid d05c8e24-50c2-4b67-91c9-ad11b27ccaea))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7514,47 +7514,47 @@
     (property "PN" "ESP32-S3-WROOM-1U-N16" (at 78.74 66.04 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 8bef772d-af37-4e54-89cf-a476651aed65))
-    (pin "10" (uuid 5397188c-cb6a-4242-89b4-1db36668d16f))
-    (pin "11" (uuid 634b6cd2-3a03-4507-9027-a7eda9cf6804))
-    (pin "12" (uuid 4cb39e9d-9c80-492e-b453-7f8d190cda65))
-    (pin "13" (uuid 1df9f489-d8f8-4fe6-9d9b-53bc54e1bbf6))
-    (pin "14" (uuid ea8cafaa-4e22-4a05-9e0a-f0e755f05625))
-    (pin "15" (uuid 628d8dd0-370b-4cd5-9bc7-bad2f62ce831))
-    (pin "16" (uuid a9838aef-75f9-4bde-87e6-dfb25aa161c5))
-    (pin "17" (uuid 3285aaad-c5d6-4a4a-84c6-3b6894f2ea24))
-    (pin "18" (uuid dd39cf18-2d47-448c-9962-170c176b6e72))
-    (pin "19" (uuid 2cbf2df6-2282-4e2e-b346-b3d1f4cee3a0))
-    (pin "2" (uuid a7ece7db-0d78-4732-992c-7f157f8f47a6))
-    (pin "20" (uuid 7d4d80e1-e250-404b-8774-15f1839026cd))
-    (pin "21" (uuid 021e74ee-b5b4-41c4-b121-403220b3a85f))
-    (pin "22" (uuid b948a0f5-5f88-49d8-b81e-36a1398867f3))
-    (pin "23" (uuid ad09c59d-12b4-4ab7-bb92-41219544e757))
-    (pin "24" (uuid 88ca7098-af5e-44ca-b58b-4a3b55f9108f))
-    (pin "25" (uuid b3aa1ad8-bd33-4cb1-b079-22bc8979802f))
-    (pin "26" (uuid 53152d46-6b37-402b-882c-2354d8000094))
-    (pin "27" (uuid 4eb00c3e-b3df-4d0a-bcac-9ee6a5f6d85d))
-    (pin "28" (uuid 3adf5e24-0b0b-4eca-8ee3-e68532905a2d))
-    (pin "29" (uuid 1c8492af-1956-4ac2-bde0-657fc3470810))
-    (pin "3" (uuid fc9e0d35-2ee5-4775-b676-ac29a6a58466))
-    (pin "30" (uuid f066341c-1ab1-40eb-a57d-28c3858f83a8))
-    (pin "31" (uuid 95a723c2-ba94-4f2c-9cd2-8872db3ef578))
-    (pin "32" (uuid 25c2861a-b72c-464c-9e14-b40d1f1ea790))
-    (pin "33" (uuid 1d6191ee-9213-42ec-af61-5227aee044ed))
-    (pin "34" (uuid 7e402370-058a-4647-8312-9d147043610e))
-    (pin "35" (uuid 0a220e44-98bc-4540-9995-cbd513fffa95))
-    (pin "36" (uuid 4ea1a49f-e4a4-4a31-a199-1cfc5010e9b1))
-    (pin "37" (uuid fe1ed7fb-b0ea-4461-b146-4b831386b2d5))
-    (pin "38" (uuid 0c4b5775-4416-4829-a6f9-f4c2e18e5a72))
-    (pin "39" (uuid a71c5ea0-de35-4e4d-9d7c-2459ca0f7e65))
-    (pin "4" (uuid 5fdd28fe-6b91-4f7b-811f-b4001e1f95c2))
-    (pin "40" (uuid c2fdfb90-3f3e-40e8-bacc-74b0645f2430))
-    (pin "41" (uuid 39dc07b4-1863-44f9-8d51-b0b7e15a1965))
-    (pin "5" (uuid 178fdc6e-c7ad-4b26-973b-7d2c59481b03))
-    (pin "6" (uuid 24b3cdc9-f32a-4029-9676-d4cc2affb0ac))
-    (pin "7" (uuid daed729a-f209-4512-b9e5-e6ce092a0e79))
-    (pin "8" (uuid 656c2ec3-8ffd-4657-b526-3a202c7cdd8c))
-    (pin "9" (uuid b6e354e9-87b2-4305-bf56-c0c3613b6fd0))
+    (pin "1" (uuid 0cfaaf3b-9211-4b46-b8b6-9e3962fa7a9b))
+    (pin "10" (uuid 5be30593-024c-402a-9d87-8edc8f86e9cd))
+    (pin "11" (uuid 673a8e46-cbc1-409d-93bc-1a84c52b843e))
+    (pin "12" (uuid 613bee46-5475-4f39-a7f2-74839604131f))
+    (pin "13" (uuid 186f2f04-016b-4581-bf41-e96e9aae5839))
+    (pin "14" (uuid ea866be9-a15a-4bbf-8554-6f69baa85919))
+    (pin "15" (uuid 3ddda04e-8826-4d00-a41d-8a2fdb1d7f5d))
+    (pin "16" (uuid 5b9b6e35-67eb-4b56-a569-e000ca165e5c))
+    (pin "17" (uuid f7179bc6-19be-42cb-a100-477d8b5a2ae1))
+    (pin "18" (uuid ae9a72aa-5a19-476b-a3ad-97da5878f846))
+    (pin "19" (uuid d34c7400-aeed-4f5e-aa03-cf5443c90b73))
+    (pin "2" (uuid 8dbe8b7c-237f-420f-a60a-3e1cd0ef3445))
+    (pin "20" (uuid 4a3b076b-a0fd-40c2-994c-6e496828d0e2))
+    (pin "21" (uuid 31e8adc8-5460-4b36-87ae-5af019e60bce))
+    (pin "22" (uuid 77580bda-2ad1-4325-87fb-698995cb3e6f))
+    (pin "23" (uuid 4bbfdc88-81cf-4e66-8151-58ad11abd47b))
+    (pin "24" (uuid e9856613-f256-4444-a9ac-d3e58a5b3913))
+    (pin "25" (uuid 57b34a07-60a7-466e-baa3-7ef3614ec83c))
+    (pin "26" (uuid 92e37067-a904-48c2-a942-00847f0c7880))
+    (pin "27" (uuid 4b55b4c7-f03b-4b2f-a52a-a0e8a543e73c))
+    (pin "28" (uuid b3ee6910-b782-476b-b97f-9ccb7e4f2270))
+    (pin "29" (uuid a9a7eaa7-5fa3-4464-a250-3962d92f35ce))
+    (pin "3" (uuid 20bb8d16-62b5-4153-91bd-406c945144e9))
+    (pin "30" (uuid f054e84a-d4a9-4d6c-9eb2-00e0016391c9))
+    (pin "31" (uuid b9bfde16-0f03-4a19-abb9-0c7ed7f05a92))
+    (pin "32" (uuid 8c99f789-16d0-42f2-86ed-5172206a8dd6))
+    (pin "33" (uuid 77b7a8e2-20a8-4534-8263-0d5e93b03dfc))
+    (pin "34" (uuid 1e0a918d-c7d5-498d-b16c-da0b8c7f1596))
+    (pin "35" (uuid e9b85ecd-5e3b-48a6-8c53-cf997c9fdb2f))
+    (pin "36" (uuid 23b738be-920b-42f1-84d4-d44abf01ad6b))
+    (pin "37" (uuid c6977df9-2ec7-4738-ad3e-2a18e40ad387))
+    (pin "38" (uuid 2732e4af-85d4-4ce4-af75-4f680848a7ab))
+    (pin "39" (uuid 5288abdb-cb6b-4ca1-a2e5-1ff100112621))
+    (pin "4" (uuid 7b54b4ad-3faa-4519-8d8d-a5d93b04f5fb))
+    (pin "40" (uuid 844490d8-0b8f-45c3-9cf9-ab0a17870c5c))
+    (pin "41" (uuid 790184f6-9310-4ea5-9e59-9ee51a160c0f))
+    (pin "5" (uuid 1330cb38-b124-4779-8ee3-208fa463c7c2))
+    (pin "6" (uuid a52d99a8-5dc0-4c96-931f-6cfcbead178e))
+    (pin "7" (uuid 91fccab4-549a-46bf-b66d-473f6e7cc453))
+    (pin "8" (uuid ce3895ba-de7a-4708-9c2d-3e697f1416b1))
+    (pin "9" (uuid 6426300c-5ec7-4f3a-99d9-b308962b632d))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7585,8 +7585,8 @@
     (property "PN" "C1206C104K5RAC7210" (at 21.59 30.48 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 9b1d3b84-ef64-4e30-a0f7-579d4a2d711f))
-    (pin "2" (uuid 28f5289b-ed40-4109-8919-6cbd31aa225e))
+    (pin "1" (uuid c1004629-e0f2-4bc7-bffc-da317f87e00e))
+    (pin "2" (uuid e954e2e0-c484-478f-a1e3-89315a6c06ec))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7672,10 +7672,10 @@
     (property "PN" "929850-01-04-RA " (at 264.16 68.58 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 0c3ee4df-7096-4e52-aaf4-7c03e9185484))
-    (pin "2" (uuid be7cc788-447e-42b6-a8fa-5f164dd250a4))
-    (pin "3" (uuid e1ff175c-cafa-4f9e-be2f-ac0dee16a35f))
-    (pin "4" (uuid 4ad031f4-eec7-4d6e-9a98-73ba9197fc06))
+    (pin "1" (uuid ed329706-548e-435f-b16f-3c02e25f9953))
+    (pin "2" (uuid 67a862ff-05b2-4f6c-a113-ddc3f6ce3db7))
+    (pin "3" (uuid d46aa215-9d6a-41fc-86a8-85d50d65cea0))
+    (pin "4" (uuid b4a968cb-da03-45f2-8317-3ededf70f91f))
     (instances
       (project "Loconet DCC Interface"
         (path "/4bc2d225-6556-4bf4-a464-1b6c28a4d653"
@@ -7736,8 +7736,8 @@
     (property "PN" "RC1206FR-1310KL" (at 245.11 71.12 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 01c1f482-dff9-41eb-84e5-84ff695f5d2b))
-    (pin "2" (uuid 187d1384-d870-45e5-92b5-cac9c51b976a))
+    (pin "1" (uuid 1d31403b-7ad8-4eb7-bcff-60855c39e23a))
+    (pin "2" (uuid 0b875edf-c277-4094-8ddc-4787f84037d3))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7793,8 +7793,8 @@
     (property "PN" "C1206C104K5RAC7210" (at 213.36 25.4 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 7a873347-719f-4ed2-ac2a-5691872acac0))
-    (pin "2" (uuid cf49d5c9-c1c6-49c5-8033-f2e6e7007073))
+    (pin "1" (uuid 8e3cce03-31a6-4ad2-82fd-c4959027dc20))
+    (pin "2" (uuid 41b25be2-a531-4564-a2b5-2043fd7324be))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7833,8 +7833,8 @@
     (property "PN" "B3U-3000P" (at 19.05 30.48 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid a1d13080-be17-4ba5-ae70-b97dcd1d4236))
-    (pin "2" (uuid a9f76e07-61c4-4100-98ec-d88432b81119))
+    (pin "1" (uuid ffdff70e-c532-4834-a36b-0861d6d3cdfe))
+    (pin "2" (uuid bb681a0f-b9fb-43d4-bbbf-157a82631778))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7865,8 +7865,8 @@
     (property "PN" "RC1206FR-1310KL" (at 144.78 134.62 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 3f1e2a32-197e-4cc7-88d1-355bf103598b))
-    (pin "2" (uuid 4311e8a2-caef-4175-9809-bd5104628eb4))
+    (pin "1" (uuid ff38dd61-dc7c-4b48-a0b0-a8c8f2fa4231))
+    (pin "2" (uuid 5fee1b7b-b6f6-421c-9931-eeca348acd67))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7932,9 +7932,9 @@
     (property "PN" "929850-01-03-RA" (at 172.72 149.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 45965bda-6e88-4127-bae3-02b4ca2554eb))
-    (pin "2" (uuid 064e2b25-3e1d-419d-8b66-f8db2bacba53))
-    (pin "3" (uuid bbc9f854-af2a-4713-8283-d2d003d70530))
+    (pin "1" (uuid e781b9d9-7559-4b72-bba9-e629469ed6f0))
+    (pin "2" (uuid d19ebf6b-2483-4d85-9bea-e4dca1de2702))
+    (pin "3" (uuid 4d32dc97-242d-41dd-8cfd-80a0c6b42862))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7965,8 +7965,8 @@
     (property "PN" "865080542006" (at 227.33 33.02 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 1e7e5707-8e2f-436d-9018-b81e735a9013))
-    (pin "2" (uuid d9bae3f0-9afb-4cb0-96d2-68914b5f19e5))
+    (pin "1" (uuid cebf2c7c-baf0-43d3-b0da-93246cfd74b9))
+    (pin "2" (uuid 1f1979dc-968b-427c-9f35-4372a2b4b403))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -8065,14 +8065,14 @@
     (property "PN" "TXS0102DCTT" (at 141.605 176.53 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 0c948ac2-a1cc-4c35-b429-683c9a4b6312))
-    (pin "2" (uuid f97478df-38fb-4334-8c77-af934bbf672a))
-    (pin "3" (uuid 8ac01129-bb80-4538-ac44-c9f6666077d1))
-    (pin "4" (uuid 637349b5-a777-481e-895c-4c8bff024622))
-    (pin "5" (uuid 4c1b1daa-97b0-4f5a-be58-c03f3fda4e43))
-    (pin "6" (uuid f911e423-c6e1-4767-afe5-733ad5bef223))
-    (pin "7" (uuid 7171df2a-5c4c-41fa-aada-3a17f055ace7))
-    (pin "8" (uuid 5c768b9b-be30-4a29-ba75-9021a820dbcd))
+    (pin "1" (uuid 83e12b97-71c3-49cd-90ee-42f59a4bbfb8))
+    (pin "2" (uuid 04ebca4c-1ed9-4e9f-8d2b-4122ccd8cae1))
+    (pin "3" (uuid f71f97c9-892b-492e-8652-03921e7903a0))
+    (pin "4" (uuid f2b70c6c-6c59-4dbf-9947-f8f23a1d06d4))
+    (pin "5" (uuid 9234f9b7-e187-4819-8040-52d0e2dbfb16))
+    (pin "6" (uuid 00958c19-f8f0-43e6-ab8c-849eff1237f1))
+    (pin "7" (uuid 272e9774-6d61-47d5-8eb2-3b790173f03c))
+    (pin "8" (uuid 63982eb7-ed52-4f5a-90e1-c501dd506cfc))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -8128,8 +8128,8 @@
     (property "PN" "74405042047" (at 227.33 25.4 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid b34152cd-1b3d-49e0-a4e9-f470bc5cda6e))
-    (pin "2" (uuid 162bb685-477e-445e-b4f8-f2fca220eb30))
+    (pin "1" (uuid 2493828a-3271-4314-977b-6904468c289b))
+    (pin "2" (uuid 9f90a5db-b765-4b6e-abbf-a788bde7a46a))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -8168,12 +8168,12 @@
     (property "PN" "AP63205WU-7 " (at 198.12 25.4 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 9c11a785-0551-4347-9abf-9a78f1ac2397))
-    (pin "2" (uuid 886a4504-3bd1-4305-ba4f-7ae9f4b84713))
-    (pin "3" (uuid 56634e4f-49aa-4f45-bf5a-92e124b51595))
-    (pin "4" (uuid 01148a99-bff7-455a-8537-afdbd008c31e))
-    (pin "5" (uuid 21ffd797-3ce7-4636-897a-6fb8c14ec63a))
-    (pin "6" (uuid 9acb1fe8-37af-4490-af55-46674675d755))
+    (pin "1" (uuid 7078563d-3780-4947-b552-74262b7dfb9d))
+    (pin "2" (uuid ca5685a9-f263-45f5-9ff8-6e352eeb8070))
+    (pin "3" (uuid 4f7b84ec-7752-445d-a75b-fb0cd4682917))
+    (pin "4" (uuid 2dd05eda-e540-4883-a959-f5a713d96758))
+    (pin "5" (uuid a71deceb-6db5-42d4-99db-5eb94aa9629d))
+    (pin "6" (uuid 71d59c7b-74e1-4c61-a419-2bb8188e1205))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -8267,8 +8267,8 @@
     (property "PN" "RT1206BRD07910RL" (at 208.28 76.2 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 806ea4a4-f703-443e-865e-e9e2d56d7af6))
-    (pin "2" (uuid 65ff423b-0dbf-44a8-8b8f-d739b41ef13c))
+    (pin "1" (uuid d15bb7ab-224f-44b3-a3c5-4dd6cd412410))
+    (pin "2" (uuid eb6bf3a6-4178-468a-af9b-0ed6ae6c9eba))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -8349,8 +8349,8 @@
     (property "PN" "RC1206FR-1310KL" (at 125.095 173.99 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 10a9d032-6afe-4895-95bd-b5d836b070c4))
-    (pin "2" (uuid 9b194670-a5c1-44d5-b08d-787f16ba6e61))
+    (pin "1" (uuid edd36a99-ba7a-4cbe-b343-6bbb02a5d93d))
+    (pin "2" (uuid 92f11602-6ab2-496e-a190-1b03a0116184))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -8386,26 +8386,26 @@
     (property "PN" "TXS0108EPWR" (at 113.03 143.51 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 8e671b78-7a7b-44ba-8486-4f5e6a3369fb))
-    (pin "10" (uuid babd8b56-da20-469c-be4f-e6c6cb5c2b9b))
-    (pin "11" (uuid b60d65d0-d10f-45a2-9a0b-f1b45dddf96a))
-    (pin "12" (uuid e7d64bd7-d506-44a3-aa47-e55e363694cb))
-    (pin "13" (uuid 049bdf85-9924-4b3c-adf4-1cfdbfad73c5))
-    (pin "14" (uuid 6b8affa9-2d63-4de9-a792-61c1d1c23bd0))
-    (pin "15" (uuid 672dafde-4d60-487e-b7c1-779537bca826))
-    (pin "16" (uuid 515271ec-d41f-4659-abae-436795efc8b4))
-    (pin "17" (uuid 7ab8da3d-e98f-4d61-821f-f09ea94290af))
-    (pin "18" (uuid 7f701f35-ff39-4ffe-a653-6d4e72884cdb))
-    (pin "19" (uuid 1d1b21d7-d6c9-4696-8cac-f55ebba961c0))
-    (pin "2" (uuid c2acc592-c351-4244-9fdf-999ae589b40d))
-    (pin "20" (uuid 9602d9a7-64f8-4fac-9a4e-35e92c66c6fd))
-    (pin "3" (uuid 16953551-7e85-4fe7-8a92-cac239480203))
-    (pin "4" (uuid 67c3d7be-c3d5-4f36-9a19-f0b131802192))
-    (pin "5" (uuid bd9439a4-fd70-4055-9149-33c217efd1d5))
-    (pin "6" (uuid 5ba2b24c-3e2e-4a33-b7d7-f3cf9770dc10))
-    (pin "7" (uuid 156f65e9-7a92-49a1-96e4-7ea0ad6a51aa))
-    (pin "8" (uuid db3bf20b-78ed-4ca7-9943-85e0eab32066))
-    (pin "9" (uuid 9c0589d0-da1b-4844-a263-3b837f63a596))
+    (pin "1" (uuid 380341b1-a8e0-4502-aa95-ee900aaada7b))
+    (pin "10" (uuid b18656c6-dd22-47c0-b4de-36fe29e4cdf7))
+    (pin "11" (uuid 47d52e38-065f-4f71-93dc-cf1477fb02e3))
+    (pin "12" (uuid 814e005c-520d-40ad-8256-aace0487b258))
+    (pin "13" (uuid 92977467-2cee-4ea9-a976-0fa603412242))
+    (pin "14" (uuid 4b442b82-0201-4f8b-89f1-b467b8660ce3))
+    (pin "15" (uuid baa27d0a-64ea-452b-9cb2-849943e36507))
+    (pin "16" (uuid 0e234d42-3f85-48b6-a353-30d7968b1d3e))
+    (pin "17" (uuid ef531239-0a2b-45e6-9510-3ecc7f8b71e4))
+    (pin "18" (uuid 957111b8-3541-4d8f-98ab-5b751174d803))
+    (pin "19" (uuid d0d82c7a-fc5e-493c-ad4a-2cd3b5e74300))
+    (pin "2" (uuid 635f7852-3eb8-4820-a488-8fabe7b62c26))
+    (pin "20" (uuid d791554d-1ffa-428f-ba6f-d160d13f54d0))
+    (pin "3" (uuid 0de39c3d-d5ab-4e43-9fdd-f7d0af80f193))
+    (pin "4" (uuid 54cb3383-95d9-4e12-8e81-2c21c51f9c4a))
+    (pin "5" (uuid a0014e3d-28da-45b1-ad54-722c792d4c8d))
+    (pin "6" (uuid 12589702-09cc-4c33-9198-6c9bcc230c36))
+    (pin "7" (uuid e62744fc-fa7f-4698-9693-2a70f9a6bccc))
+    (pin "8" (uuid be62b996-499a-4bcd-ae21-3bb44afe9271))
+    (pin "9" (uuid f0f899c7-1b2c-453c-8d8f-4d2fdc9c2a31))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -8436,8 +8436,8 @@
     (property "PN" "C1206C104K5RAC7210" (at 259.08 162.56 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid a0b6f3cc-489d-442e-a9fa-5d81c9556c40))
-    (pin "2" (uuid 1de71296-4c2c-4ef5-9a3b-088c9b0b67a1))
+    (pin "1" (uuid b1b8c8d1-3ff6-4af8-b5a5-690cbcdaa7e1))
+    (pin "2" (uuid 4eb0dcc3-9d56-4f9f-b304-aebb262d7fe2))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -8468,8 +8468,8 @@
     (property "PN" "865080542006" (at 257.81 33.02 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid ba6c6b03-80fc-40b9-bd08-9c9bad805e11))
-    (pin "2" (uuid fed7e5d7-e97e-4570-9680-9e8bf5273393))
+    (pin "1" (uuid be34c116-a95c-4f2f-b5bc-c2fd6f425a2e))
+    (pin "2" (uuid 9fffbe27-1b65-436c-b9e5-6c6cd7a72c38))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -8533,10 +8533,10 @@
     (property "PN" "929850-01-04-RA " (at 264.16 110.49 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 15e2bd20-d8ba-4f6f-b55e-9195c7f12f94))
-    (pin "2" (uuid 43b7a0ef-87a9-4879-8136-e6e5e22af452))
-    (pin "3" (uuid 3ceb2871-e833-4366-979e-63a27c1b6ed4))
-    (pin "4" (uuid d5284267-8ed6-43a5-8796-3cf92bce64a6))
+    (pin "1" (uuid 348fecbf-3b50-4934-a854-8da0899923fe))
+    (pin "2" (uuid 384c84cc-53a0-4049-94f5-843bf6855358))
+    (pin "3" (uuid 6056bf0e-e378-41f0-89a9-6bc19d5632ef))
+    (pin "4" (uuid 4efece9b-ab98-48fc-8a78-c730701301ed))
     (instances
       (project "Loconet DCC Interface"
         (path "/4bc2d225-6556-4bf4-a464-1b6c28a4d653"
@@ -8632,26 +8632,26 @@
     (property "PN" "TXS0108EPWR" (at 151.13 86.36 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 0c4695e0-3d93-43f7-9205-22211c8a969e))
-    (pin "10" (uuid 4cb0a191-7568-44fa-bc62-47d0c2381185))
-    (pin "11" (uuid 07e6d3c3-5e4b-4234-9d2a-ecb09cecaa05))
-    (pin "12" (uuid f46b1b0c-23fb-46e9-882a-9812cafc7d4b))
-    (pin "13" (uuid 341234ff-fdc0-4aad-b6da-93f3fccb86f7))
-    (pin "14" (uuid 46370b39-46a7-48e6-8a68-8f42ea3b3e4a))
-    (pin "15" (uuid 61735a98-610e-4cb9-a3b2-5a87982f9c3c))
-    (pin "16" (uuid c44e1ffe-bbfe-4351-8441-760c52c9a33c))
-    (pin "17" (uuid 11e6c611-d0ce-4c66-a892-ef522b3fbcb8))
-    (pin "18" (uuid 940152a1-4e92-45be-bd12-f930d36cc142))
-    (pin "19" (uuid fb89eb13-8aea-44d5-9e30-cf2da429fddc))
-    (pin "2" (uuid 4974b37c-0c7c-49c3-970f-11b800624163))
-    (pin "20" (uuid a22d76c6-dcea-4bd3-ae39-2499f0088e4f))
-    (pin "3" (uuid 02abb55e-2e92-4d91-a6ee-15ec130bb542))
-    (pin "4" (uuid ca5f09fa-a390-4403-aa47-512b226d2eb1))
-    (pin "5" (uuid e94c4375-14b8-43e0-8af0-add2107ab8f3))
-    (pin "6" (uuid 53c0a893-419b-4b09-b05d-bfb2901751f1))
-    (pin "7" (uuid c8f65d89-d5f7-448c-aa35-768176305940))
-    (pin "8" (uuid b4b5be4f-fa2a-4274-9e77-5fff2c1d1322))
-    (pin "9" (uuid 3ee4e373-836a-4841-b32c-4c9eedf7c93a))
+    (pin "1" (uuid b7d7d85c-53e9-4a0d-8f66-66fbbcf2dda5))
+    (pin "10" (uuid 3692e2b3-8050-44f6-880f-45078d74f857))
+    (pin "11" (uuid 492a10f4-fbaf-4c59-aca2-2b1ede085200))
+    (pin "12" (uuid 406ea3ea-e316-4204-81ef-904bb0409b71))
+    (pin "13" (uuid 0b5da849-a1a4-41fa-9ff1-b344285dab9e))
+    (pin "14" (uuid 75145888-f5c5-44b7-902f-b8598b8d6daa))
+    (pin "15" (uuid f1ee4d76-c631-465d-abd6-5843bde1191e))
+    (pin "16" (uuid 04743691-c9ad-4386-8d09-ab5a8e8e10bc))
+    (pin "17" (uuid bc86b23a-7ae6-4449-918f-2034e645a9ce))
+    (pin "18" (uuid d43b5b2f-669d-4224-a373-09453f70fd00))
+    (pin "19" (uuid 14688bb2-20eb-43d5-8cca-c6e0f937f5fe))
+    (pin "2" (uuid 9d7428cf-c24c-44b6-b894-a3f7c30ecd1c))
+    (pin "20" (uuid 3ccac1f0-f073-4015-bc42-964222d2cf11))
+    (pin "3" (uuid a18123fd-e770-4076-92cf-5934512f6d00))
+    (pin "4" (uuid 4eb23161-7ea9-4b82-ad75-9ad3b71d4335))
+    (pin "5" (uuid 4c4c2ffa-5d1a-451c-a083-862c5b98495d))
+    (pin "6" (uuid 4d47f43d-174e-4763-8453-5560add68ddc))
+    (pin "7" (uuid 2c649cb8-f611-4942-86ff-ba812d747c8f))
+    (pin "8" (uuid 4b6ddfb3-f96d-4ff0-882c-1dc90bacaff5))
+    (pin "9" (uuid 1cb07ecf-1df1-40b7-a7ca-8edc7003d114))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -8682,8 +8682,8 @@
     (property "PN" "691322310002 " (at 177.8 58.42 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid e40d1df6-4c3e-45c7-81de-66ee199c8606))
-    (pin "2" (uuid 05eed6d0-78d6-4b0f-aff8-9fb86fd7e3f4))
+    (pin "1" (uuid c112616b-c0de-4980-a668-0aee356c24d3))
+    (pin "2" (uuid 574004cb-1771-49b5-8a8f-6957c25dbf1c))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -8714,8 +8714,8 @@
     (property "PN" "C1206C104K5RAC7210" (at 220.98 162.56 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 79e8076d-07a0-4f38-bdef-9a12001fdfea))
-    (pin "2" (uuid ccbd1f63-a9d9-4572-bc84-f3804beb8a13))
+    (pin "1" (uuid 3cbedfe1-16b7-4ffa-bbbf-91c85a727ce2))
+    (pin "2" (uuid 9698caec-6e38-4bfa-aa3c-5efdb53313c1))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -8746,10 +8746,10 @@
     (property "MFG" "Texas Insturments" (at 246.38 50.8 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "2" (uuid a9b67c96-990a-4985-86f4-0771a4870adb))
-    (pin "3" (uuid d33d971b-7c73-4c21-bb2e-b57a983df1c8))
-    (pin "4" (uuid 5515134e-eb8e-487d-b57a-ad5d8e7a062f))
-    (pin "5" (uuid a97e61ae-2bbb-44f7-a69d-cc93ba46e9b7))
+    (pin "2" (uuid 9e738dcd-7c37-489b-9be2-840f0c0a801a))
+    (pin "3" (uuid 93116485-466a-4f06-9c82-2eaeead8c933))
+    (pin "4" (uuid cc30b26f-6969-426b-88a6-c288426a298c))
+    (pin "5" (uuid aeafb122-178b-4653-8885-5385d0875bd8))
     (instances
       (project "Loconet DCC Interface"
         (path "/4bc2d225-6556-4bf4-a464-1b6c28a4d653"
@@ -8915,8 +8915,8 @@
     (property "PN" "B3U-3000P" (at 138.43 30.48 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 7b39d20a-76fe-4a0f-a54b-c91af5ecd5ff))
-    (pin "2" (uuid 8419dbd9-dd75-4628-85b2-5bfe8ffa8fa3))
+    (pin "1" (uuid 9835bdf4-3b7e-47bb-9ae4-eb4fc87c8495))
+    (pin "2" (uuid fad374a4-d46f-4052-abac-f2e0478d8f99))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -8947,12 +8947,12 @@
     (property "PN" "105017-0001" (at 242.57 135.89 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid f560985c-17c6-47d4-962c-f2fdcbf8e7c7))
-    (pin "2" (uuid f71c278d-862c-49ed-a5f7-75c17586f2ae))
-    (pin "3" (uuid 538b9219-ce2e-46dc-acf0-7963d28147cb))
-    (pin "4" (uuid 6c3d8e7e-f350-41d8-b8e9-2b9bf1e5c31c))
-    (pin "5" (uuid 49d5ac7c-1dd3-4501-930a-a62459d88041))
-    (pin "6" (uuid 41ccde12-087f-4aab-bef8-117c9a7cef80))
+    (pin "1" (uuid 64354d3c-a26d-436a-8f64-8209db872354))
+    (pin "2" (uuid 438de710-9cd3-4bf4-a4c8-ad1dde186272))
+    (pin "3" (uuid 5b0c5af5-1bfa-4371-9559-da29f5f88070))
+    (pin "4" (uuid 5ad218b4-2e3c-4bfa-8b5b-04be1b874f23))
+    (pin "5" (uuid 811327ff-8737-4c3f-a817-decf67ad4055))
+    (pin "6" (uuid 1812d87b-44bd-4704-ae97-ee6c0df39613))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -8983,8 +8983,8 @@
     (property "PN" "A202202" (at 175.26 22.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 0a1efe4a-c33c-411e-94e4-2a6fee2ea18e))
-    (pin "2" (uuid 17121ec4-5228-4d0d-8809-8e20ab30a3ae))
+    (pin "1" (uuid f3f91a69-3aec-450e-8c69-3cb88977de84))
+    (pin "2" (uuid f73c3a34-763f-4a0a-9fbf-2f29e61b9357))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -9040,14 +9040,14 @@
     (property "PN" "TXS0102DCTT" (at 193.04 142.24 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 618b9d6b-0c93-4d49-a2c7-c538d7c31581))
-    (pin "2" (uuid 21bdce6d-6b69-4260-85f0-2471f5e391b4))
-    (pin "3" (uuid 65116b32-13f2-48e4-8aca-6225901dba79))
-    (pin "4" (uuid 7e488f20-847e-4f2e-b3ca-5b102d246b06))
-    (pin "5" (uuid de744b34-6b1a-498c-b8ef-318d259d2fba))
-    (pin "6" (uuid 1093b9cb-94f7-4843-8407-b690eb279bba))
-    (pin "7" (uuid 3fd0316c-2fc9-445c-84f7-d16fee7961fa))
-    (pin "8" (uuid b9cae917-ee2e-42f5-b017-1ee3b6145be8))
+    (pin "1" (uuid 9a7cd1a8-8fd3-46c3-913a-36f9980afa81))
+    (pin "2" (uuid fea936ac-d5fe-4b32-b520-5337e6af058b))
+    (pin "3" (uuid 44ead22d-aa2b-4e6f-b984-6a046176a656))
+    (pin "4" (uuid a15b6e39-9acf-4529-b560-bbf3a97c8d10))
+    (pin "5" (uuid 9571de18-d2a7-480d-8ae4-d2bffb745e7a))
+    (pin "6" (uuid 0129f988-3621-4c2d-a62c-e856974630cd))
+    (pin "7" (uuid 79fd060f-22e5-4fd5-9aed-d05187681b08))
+    (pin "8" (uuid fef801b5-097f-47f1-8ce4-0ed3e778ea6e))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -9168,8 +9168,8 @@
     (property "MFG" "Bourns" (at 207.01 50.8 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 7398de7d-a649-4e0f-a832-c9653841e521))
-    (pin "2" (uuid d0c94bd5-fb1e-4d2b-81c3-3d8432dd65a1))
+    (pin "1" (uuid fce1a8a3-6c09-474f-bd7b-3ae97bfbc894))
+    (pin "2" (uuid 08c811ee-08ca-46eb-bbf9-1a28f4843295))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -9200,8 +9200,8 @@
     (property "PN" "RC1206FR-071KL" (at 212.09 34.29 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid fd93ddc9-ebad-4122-8017-697828599d30))
-    (pin "2" (uuid e020dd9d-2e47-4c72-a66c-34118d6cb467))
+    (pin "1" (uuid 72a22444-7ccb-4429-b22b-df6c1aa03dfe))
+    (pin "2" (uuid eb4c1d6d-0de6-4baf-8df0-f20626010c5e))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -9265,8 +9265,8 @@
     (property "PN" "865080542006" (at 236.22 33.02 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid e220f438-228b-47d1-b197-c7d4610cb4f5))
-    (pin "2" (uuid 61717d90-997d-4fdf-9e8b-e2f8639e46e2))
+    (pin "1" (uuid 45073c92-1d38-460c-9edf-a2a80aa97a3f))
+    (pin "2" (uuid 9e29ae5a-2828-481a-b54a-77568240f56b))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -9305,8 +9305,8 @@
     (property "PN" "RC1206FR-1310KL" (at 130.81 22.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 0f81b1f9-ff2e-4673-a297-9171b3b6d08b))
-    (pin "2" (uuid eb498cd7-5410-43ff-adb6-ac864a73ad03))
+    (pin "1" (uuid 7aa24f13-5301-46f0-9eac-8fd3bbca4dab))
+    (pin "2" (uuid 0f976723-0471-4d72-9a32-d81f9db8a46b))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -9367,8 +9367,8 @@
     (property "MFG" "Wurth Elektronik " (at 126.365 196.215 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 50c0f73a-296f-4ab0-9e01-bf481019a37a))
-    (pin "2" (uuid 1f19ca5c-8f37-4644-9a4e-b5dce9f5cfb1))
+    (pin "1" (uuid 5cd690a2-aaf4-4b42-a3dd-96c60b2f945e))
+    (pin "2" (uuid f9dd2af8-f3d0-43fe-a4c8-fc104494479b))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -9424,12 +9424,12 @@
     (property "PN" "SN74LVC1G3208DBVR" (at 228.6 66.04 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid d7d71bfe-0e9a-42bf-a285-6b02a5c79109))
-    (pin "2" (uuid 23b56b3c-8068-4bd8-9156-2cc39884b3c7))
-    (pin "3" (uuid b2e05f29-2285-45b2-9e00-674364ba718a))
-    (pin "4" (uuid 6e8519b9-411a-4af0-b840-4f917b4ac18a))
-    (pin "5" (uuid f9c98088-48ec-4422-9d33-0d95949ce0eb))
-    (pin "6" (uuid 5f8d4f31-b655-4c41-abce-28fc3ae7e1c9))
+    (pin "1" (uuid 564937be-4e5c-4fa6-ada0-0791d3a7fd3e))
+    (pin "2" (uuid 2158ec40-6dd8-4e1f-8998-d4175f8707c4))
+    (pin "3" (uuid 001d6824-8183-4e65-9b6c-a0f788ac8739))
+    (pin "4" (uuid f2ced2da-0c37-49fc-bb7a-bd2435de810f))
+    (pin "5" (uuid d3e123a5-b720-4743-9a59-65667c3dab3e))
+    (pin "6" (uuid 3a03c70b-37c5-404b-b94f-1d429aef8c49))
     (instances
       (project "Loconet DCC Interface"
         (path "/4bc2d225-6556-4bf4-a464-1b6c28a4d653"
@@ -9465,8 +9465,8 @@
     (property "PN" "RC1206FR-1310KL" (at 33.02 22.86 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 419fe496-0603-4e3c-b52b-ce83a2e6a1c2))
-    (pin "2" (uuid 0cc07cb5-c50c-4afc-9290-db3357df0c0e))
+    (pin "1" (uuid c909e3db-ff4a-4762-b7c7-7af549def24f))
+    (pin "2" (uuid be082405-025c-4005-9047-fcc5c4ed19a4))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -9522,10 +9522,10 @@
     (property "PN" "929850-01-04-RA " (at 128.27 148.59 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid f76c1ff1-ba7a-41df-a912-db60bea111f9))
-    (pin "2" (uuid 416dcc41-3235-4f2f-9081-bff10b9eb273))
-    (pin "3" (uuid 44036b4c-93d4-4c02-99f8-93e1f4e14601))
-    (pin "4" (uuid 49acae4d-1189-408d-a225-56d2524fa07f))
+    (pin "1" (uuid 8035a093-a438-4793-8da3-2d2ad78dfe52))
+    (pin "2" (uuid 2e3edf77-cbc4-4904-b031-63edd9c82cc9))
+    (pin "3" (uuid cb328e5f-add6-42e9-a9a1-877cbd475f9f))
+    (pin "4" (uuid dbd7427d-d39b-42c4-8ca2-e9d5fe1ce90c))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -9581,15 +9581,15 @@
     (property "PN" "DRV8231ADDAR" (at 200.66 60.96 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 28936cd7-3499-4fc7-a511-8de6aaee4ddb))
-    (pin "2" (uuid ed7e7328-719d-416d-b598-d38906805c35))
-    (pin "3" (uuid 9d6e079f-d53e-4e13-9fe7-125f38579822))
-    (pin "4" (uuid dabbd1e9-dacc-4d55-ab4a-e51f52e8e83d))
-    (pin "5" (uuid 3cb14680-e550-40e1-8dd3-7224d2990e9a))
-    (pin "6" (uuid a035d477-cbb3-4fd8-8e53-b9da282807a3))
-    (pin "7" (uuid fdf2f396-b150-4f48-81c6-432c4cc405a8))
-    (pin "8" (uuid 58840fc1-be87-4ff5-90ec-7753d79bb35b))
-    (pin "9" (uuid 5af49c00-9a30-4415-85e0-4ca049d3bbac))
+    (pin "1" (uuid 163679bf-dfd6-4087-8ea4-71c3f18e2492))
+    (pin "2" (uuid 21d95eef-8743-4fc6-bba8-dc6e0aa61146))
+    (pin "3" (uuid 6d5e6014-1493-4ca1-a1d9-9abd4e74b07f))
+    (pin "4" (uuid 4445be12-fe16-4e0a-bc9b-60a981f1bb99))
+    (pin "5" (uuid 747c206f-d9a3-428a-9b6c-552ce984f6f5))
+    (pin "6" (uuid 43e656dd-8fd6-4b17-8d8a-9459527214a2))
+    (pin "7" (uuid 8494d979-3255-4363-9976-ec5389d2c1a0))
+    (pin "8" (uuid fe12956c-040c-4e4e-81f6-546a2e5bfcc5))
+    (pin "9" (uuid df902931-77fe-42bf-a5ce-bd923e8d5d0a))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -9620,10 +9620,10 @@
     (property "PN" "929850-01-04-RA " (at 128.27 138.43 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 4e7fafb6-54c2-4658-99d8-3f96331efaef))
-    (pin "2" (uuid e26fd48f-6f81-4803-95c0-71a5d540d25f))
-    (pin "3" (uuid 8376ce7f-6cf0-4f76-93d4-4d814f5da93c))
-    (pin "4" (uuid 86a601c7-1bb3-4e33-8c03-c4fc897220cd))
+    (pin "1" (uuid b296ae06-e9da-4e00-860c-8f5855070e76))
+    (pin "2" (uuid b1ecdf8a-8388-48cf-bb6c-d1be568ffcf5))
+    (pin "3" (uuid 470fb4a0-def9-4f61-9eea-12ec9485749a))
+    (pin "4" (uuid 0d36109c-4288-49bb-80af-66e6f794c9af))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -9654,14 +9654,14 @@
     (property "PN" "TXS0102DCTT" (at 152.4 142.24 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid caa06c43-959c-42ad-beee-3524b8bba01e))
-    (pin "2" (uuid 109da21f-ff7c-49a6-95fd-d93cb87b1c6f))
-    (pin "3" (uuid 3aa8e3b2-a411-4cfc-806d-133fbd15dcb9))
-    (pin "4" (uuid 52cdf84a-198c-4e9d-a303-36a70596d905))
-    (pin "5" (uuid 99328d99-ce5b-4b0e-96e1-c37d1ee56676))
-    (pin "6" (uuid 10ecbd54-f827-4e54-bb7f-8d924db528ce))
-    (pin "7" (uuid 3f855fb1-b9c3-4d59-8f94-2550d5e4e81b))
-    (pin "8" (uuid e1fe9b10-a99f-4382-af68-19f2c5de48ae))
+    (pin "1" (uuid ce57aa54-c17c-4cc7-861a-8c53819c4eee))
+    (pin "2" (uuid a3f3873d-f59f-4d79-b5eb-2ea1dd4b18ef))
+    (pin "3" (uuid 6e2ae972-be22-43e7-a12b-e2729444f9c0))
+    (pin "4" (uuid bb881322-11d1-4580-bbb2-7b9384573320))
+    (pin "5" (uuid ae01bf8a-7d0d-4830-9e11-9c48e5826bfe))
+    (pin "6" (uuid f63e8b29-907d-41aa-866c-5e15bf89d817))
+    (pin "7" (uuid 29d5897b-8645-401f-bb81-3f4072eadbf0))
+    (pin "8" (uuid 250b1aa0-6a7e-4442-939b-ba853e50a45d))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
