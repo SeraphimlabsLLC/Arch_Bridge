@@ -4,6 +4,11 @@
 #else
   #include "config.example.h"
 #endif
+
+#ifndef ESP32_UART_H
+  #include "ESP32_uart.h"
+#endif
+
 #ifndef ESP32_TRACKS_HW_H
   #include "ESP32_Tracks_HW.h"
 #endif

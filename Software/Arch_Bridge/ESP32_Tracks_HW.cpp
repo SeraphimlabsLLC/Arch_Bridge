@@ -2,12 +2,6 @@
   #include "ESP32_Tracks_HW.h"
 #endif
 
-//UART globals
-ESP_Uart tty; //normal serial port
-#ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, define a loconet uart
-ESP_Uart LN_port; //Loconet object
-#endif
-
 //TrackChannel(enable_out_pin, enable_in_pin, uint8_t reverse_pin, brake_pin, adc_pin, adcscale, adc_overload_trip)
 TrackChannel DCCSigs[4]; //Define track channel objects with empty values.
 uint8_t max_tracks = 1;
@@ -16,11 +10,10 @@ void ESP_serial_init(){
 //  TTY_CONFIG //Perform tty setup
 
 #ifdef BOARD_TYPE_ARCH_BRIDGE    
-  LN_CONFIG //Perform Loconet uart setup
+//  LN_CONFIG //Perform Loconet uart setup
 #endif 
   return;
 }
-
 
 void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
   adc1_config_width(ADC_WIDTH_BIT_12);
@@ -213,49 +206,6 @@ void setDCCBit0(rmt_item32_t* item) {
 void setEOT(rmt_item32_t* item) {
   item->val = 0;
 }
-
-//TTY config
-void ESP_Uart::uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8_t rxpin, uint16_t baudrate, uint16_t txbuff, uint16_t rxbuff, uint16_t readlen){ 
-
-  uart_num = uartnum; //store for later
-  uart_mode = uartmode; 
-  tx_pin = gpio_num_t(txpin);
-  rx_pin = gpio_num_t(rxpin);
-  tx_buff = txbuff;
-  rx_buff = rxbuff;
-  max_read = readlen;
-  const uart_port_t uart_num = uartnum;
-  uart_config_t uart_config = {
-    .baud_rate = baudrate,
-    .data_bits = UART_DATA_8_BITS,
-    .parity = UART_PARITY_DISABLE,
-    .stop_bits = UART_STOP_BITS_1,
-    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-    //.rx_flow_ctrl_thresh = 122, //not used with flowctrl_disable
-    //.source_clk = UART_SCLK_DEFAULT,  
-  };
-    ESP_ERROR_CHECK(uart_driver_install(uartnum, txbuff, rxbuff, 0, NULL, 0));
-    ESP_ERROR_CHECK(uart_param_config(uartnum, &uart_config));
-    ESP_ERROR_CHECK(uart_set_pin(uartnum, txpin, rxpin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
-return;
-}
-void ESP_Uart::uart_write(char write_str[]) {
-  //uint16_t write_len = 0;
-  //uart_write_bytes(uart_num, (const char*)write_str[], write_len);
-  return;
-}
-
-void ESP_Uart::uart_read(uint16_t readlen) {
-/*
-  ESP_ERROR_CHECK(uart_get_buffered_data_len(uart_num, (size_t*)&read_len));
-  if (read_len > TTY_READ_LEN) {
-    read_len = TTY_READ_LEN); 
-  }
-  read_len = uart_read_bytes(uart_num, tty_read_data, read_len, 100);
-  */
-  return;
-}
-
 
 void ESP_i2c_init(){
   i2c_config_t i2c_conf_slave;

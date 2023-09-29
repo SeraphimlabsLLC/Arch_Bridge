@@ -1,8 +1,9 @@
 //Contains some code snippets from DCC-EX ESP32 branch
 #define ESP32_TRACKS__HW_H
+#pragma once
+
 
 #include "driver/gpio.h"
-#include "driver/uart.h"
 #include "driver/i2c.h"
 #include "driver/rmt.h"
 #include "driver/adc.h"
@@ -45,16 +46,13 @@
   #define DIR_MONITOR_RMT 4 //On ESP32-S3, RMT channels 0-3 are TX only and 4-7 are RX only
   #define DIR_MONITOR 9 //GPIO9, rsync input
   //Loconet setup
-  #define LN_CONFIG LN_port.uart_init( 1, 2, 17, 18, 16666, 255, 16384, 255);
+//  #define LN_CONFIG LN_port.uart_init( 1, 2, 17, 18, 16666, 255, 16384, 255);
 #endif
 
 //RMT Constants
 #define RMT_CLOCK_DIVIDER 80  // make calculations easy and set up for microseconds. Taken from DCC-EX DCCRMT.h
 #define DCC_1_HALFPERIOD 58  //4640 // 1 / 80000000 * 4640 = 58us
 #define DCC_0_HALFPERIOD 100 //8000
-
-//TTY settings:
-#define TTY_CONFIG LN_port.uart_init( 0, 0, 43, 44, 115200, 255, 16384, 255);
 
 //I2C settings: 
 #define I2C_SDA_PIN 17 //GPIO17
@@ -90,23 +88,6 @@ class TrackChannel {
     gpio_num_t adc_pin;
 };
 
-
-class ESP_Uart {
-  public:
-  uint8_t uart_num; 
-  gpio_num_t tx_pin;
-  gpio_num_t rx_pin;
-  uint16_t baud_rate;
-  uint8_t uart_mode; //0 = tty, 1 = dccex, 2 = loconet
-  void uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8_t rxpin, uint16_t baudrate, uint16_t txbuff, uint16_t rxbuff, uint16_t readlen);
-  void uart_write(char* write_str);
-  void uart_read(uint16_t readlen);
-  uint16_t read_len();
-  private: 
-  uint16_t tx_buff;
-  uint16_t rx_buff;
-  uint16_t max_read;
-};
 
 void ESP_serial_init();
 void ESP32_Tracks_Setup();
