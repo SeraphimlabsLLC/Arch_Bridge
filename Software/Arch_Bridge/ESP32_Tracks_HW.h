@@ -1,25 +1,24 @@
 //Contains some code snippets from DCC-EX ESP32 branch
-#define ESP32_TRACKS__HW_H
 #pragma once
+#define ESP32_TRACKS__HW_H
 
-
+#include "Arduino.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "driver/rmt.h"
 #include "driver/adc.h"
 #include "soc/rmt_reg.h"
 #include "soc/rmt_struct.h"
-#include "string.h"
+
+//Define this symbol to enable diagnostic outputs
+#define DEBUG
 
 //What board are we using? BOARD_TYPE_DYNAMO or BOARD_TYPE_ARCH_BRIDGE
 #define BOARD_TYPE_ARCH_BRIDGE
 
-//ADC Settings:
-#define ADC_DMAX 4095 //4095 in single shot, 8191 in continuous
-#define ADC_VMAX 3.1 //Max readable voltage is actually 3.1v using mode ADC_ATTEN_DB_11  
 
 /*Track Configurations
- * Format: Enable Out pin, Enable In pin, rev/sig pin, brake pin, adc pin, adc ticks per amp, adc trip ticks
+ * Format: Enable Out pin, Enable In pin, rev/sig pin, brake pin, adc pin, adc ticks per amp x100, adc trip ticks x100
  * adc ticks per amp is calculated to match the hardware. 
  * adc trip ticks is calculated to where the hardware must shut off
  * 
@@ -28,10 +27,10 @@
  */
 
 #ifdef BOARD_TYPE_DYNAMO
-  #define TRACK_1 DCCSigs[0].SetupHW(9, 0, 6, 13, 1, 819, 4090);
-  #define TRACK_2 DCCSigs[1].SetupHW(10, 0, 7,  14, 2, 819, 4090);
-  #define TRACK_3 DCCSigs[2].SetupHW(11, 0, 8, 48, 3, 819, 4090);
-  #define TRACK_4 DCCSigs[3].SetupHW(12, 0, 9, 48, 4, 819, 4090);
+  #define TRACK_1 DCCSigs[0].SetupHW(9, 0, 6, 13, 1, 81900, 409000);
+  #define TRACK_2 DCCSigs[1].SetupHW(10, 0, 7,  14, 2, 81900, 409000);
+  #define TRACK_3 DCCSigs[2].SetupHW(11, 0, 8, 48, 3, 81900, 409000);
+  #define TRACK_4 DCCSigs[3].SetupHW(12, 0, 9, 48, 4, 81900, 409000);
   #define DIR_MONITOR 38 //GPIO38
   #define DIR_OVERRIDE 21 //GPIO21
   #define MASTER_EN 15 //GPIO15
@@ -40,14 +39,18 @@
 #endif
 
 #ifdef BOARD_TYPE_ARCH_BRIDGE
-  #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 16938, 4090);
-  #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 1693, 4090);
+  #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 1693840, 372700);
+  #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 169384, 409000);
   #define MASTER_EN 3
   #define DIR_MONITOR_RMT 4 //On ESP32-S3, RMT channels 0-3 are TX only and 4-7 are RX only
   #define DIR_MONITOR 9 //GPIO9, rsync input
   //Loconet setup
-//  #define LN_CONFIG LN_port.uart_init( 1, 2, 17, 18, 16666, 255, 16384, 255);
+//  
 #endif
+
+//ADC Settings:
+#define ADC_DMAX 4095 //4095 in single shot, 8191 in continuous
+#define ADC_VMAX 3.1 //Max readable voltage is actually 3.1v using mode ADC_ATTEN_DB_11  
 
 //RMT Constants
 #define RMT_CLOCK_DIVIDER 80  // make calculations easy and set up for microseconds. Taken from DCC-EX DCCRMT.h
@@ -68,6 +71,7 @@
 class TrackChannel {
   //Very similar to DCC-EX class MotorDriver, but no dual signal support. 
   public:
+    uint8_t index; //What track number is this? 
     uint8_t powerstate; //0 = off, 1 = overload, 2 = on_forward, 3 =on_reversed. 
     uint8_t powermode; //0 = none, 1 = DCC_external, 2 = DCC_override, 3 = DC.
     uint16_t adc_previous_ticks; //value read on prior scan
@@ -75,6 +79,7 @@ class TrackChannel {
     void SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint16_t adcscale, uint16_t adc_ol_trip); 
     void ModeChange (uint8_t newmode);
     void StateChange(uint8_t newstate);
+    uint8_t CheckEnable(); //Reads en_in, sets en_out the same, and returns on or off. 
     void adc_read();
     uint16_t adc_scale; //ADC ticks per amp. This can be higher than the adc max value if the hardware is <1A max. 
     uint16_t adc_overload_trip; //Pre-calculate trip threshold in adc ticks
@@ -91,6 +96,7 @@ class TrackChannel {
 
 void ESP_serial_init();
 void ESP32_Tracks_Setup();
+uint8_t MasterEnable();
 
 //void ESP_i2c_init();
 

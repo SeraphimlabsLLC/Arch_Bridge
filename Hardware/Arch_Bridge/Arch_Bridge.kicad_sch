@@ -8927,7 +8927,7 @@
   )
 
   (symbol (lib_id "Connector:USB_B_Micro") (at 242.57 135.89 0) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (in_bom no) (on_board yes) (dnp yes) (fields_autoplaced)
     (uuid c2ba009d-e410-4302-8597-34bb9c6e846b)
     (property "Reference" "USB1" (at 242.57 123.19 0)
       (effects (font (size 1.27 1.27)))
