@@ -1,0 +1,13 @@
+Could decrease R9 from 5w to 3w if staying at 500mA fuse, since it would never see more than 2.5W.
+
+
+Q2 badly underperforming, HFE showing as only 11 when datasheet minimum says 20.
+Load is only 114mW, perhaps switch to a 2N2907?
+Alternatively, R10 to 270 ohms and R11 to 4.7kohm   Yaego RC1206FR-10270RL and RC1206FR-104K7L 
+
+
+
+
+
+
+

@@ -6,7 +6,7 @@
 
   (title_block
     (title "DCC-EX Loconet Driver")
-    (date "2023-04-19")
+    (date "2023-10-04")
     (rev "04")
   )
 
@@ -5529,7 +5529,7 @@
     (property "MFG" "YAEGO" (at 67.31 196.85 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "PN" "RC1206FR-0747KL" (at 67.31 196.85 0)
+    (property "PN" "RC1206FR-104K7L" (at 67.31 196.85 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 12144099-3cba-4b16-826c-729399b9907a))
@@ -7226,7 +7226,7 @@
   )
 
   (symbol (lib_id "Device:R_Small") (at 245.11 113.03 90) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid 2375af1e-43ad-4e5b-b08f-6d79b2170844)
     (property "Reference" "R22" (at 245.11 115.57 90)
       (effects (font (size 1.27 1.27)))
@@ -7246,8 +7246,8 @@
     (property "PN" "RC1206FR-1310KL" (at 245.11 113.03 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 5f3da9b6-5f65-4f76-b152-88f0db8d657b))
-    (pin "2" (uuid 9965e773-5d99-4570-967a-b247b773e18e))
+    (pin "1" (uuid 27c8710e-3813-4803-ad28-225f920093bd))
+    (pin "2" (uuid ab769c40-81b2-48e7-a475-30e6686e4958))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"
@@ -7716,7 +7716,7 @@
   )
 
   (symbol (lib_id "Device:R_Small") (at 245.11 71.12 90) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no)
+    (in_bom no) (on_board yes) (dnp yes)
     (uuid 52ce45bf-f3e2-47d7-92c9-347e0de0cd9e)
     (property "Reference" "R23" (at 245.11 73.66 90)
       (effects (font (size 1.27 1.27)))
@@ -7736,8 +7736,8 @@
     (property "PN" "RC1206FR-1310KL" (at 245.11 71.12 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (pin "1" (uuid 1d31403b-7ad8-4eb7-bcff-60855c39e23a))
-    (pin "2" (uuid 0b875edf-c277-4094-8ddc-4787f84037d3))
+    (pin "1" (uuid 7f981fe5-40f9-4eda-b2d6-e55d36fa1468))
+    (pin "2" (uuid 1032944f-d3d1-432a-b48d-9c09afcde526))
     (instances
       (project "Arch_Bridge"
         (path "/56f7722c-599e-4f4b-8e1a-4387b51291ab"

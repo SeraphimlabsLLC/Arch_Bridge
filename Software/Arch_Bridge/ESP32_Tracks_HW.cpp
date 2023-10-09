@@ -25,6 +25,7 @@ void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
 #endif
 #ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, define these control pins.
   Serial.print("Configuring board for Arch Bridge mode \n");
+
   gpio_reset_pin(gpio_num_t(MASTER_EN)); //Is used on both boards
   gpio_set_direction(gpio_num_t(MASTER_EN), GPIO_MODE_OUTPUT);
   gpio_set_pull_mode(gpio_num_t(MASTER_EN), GPIO_PULLUP_PULLDOWN);    
@@ -43,7 +44,7 @@ void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
   return;
 }
 
-void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint16_t adcscale, uint16_t adc_ol_trip) { 
+void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint32_t adcscale, uint32_t adc_ol_trip) { 
     max_tracks++; //Add 1 to max tracks
     index = max_tracks; //store the index of this track. 
     #ifdef DEBUG
@@ -68,11 +69,11 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
       gpio_reset_pin(gpio_num_t(enable_in_pin));
       gpio_set_direction(gpio_num_t(enable_in_pin), GPIO_MODE_INPUT);
     }
-    //  adc1_config_channel_atten(pinToADC1Channel(adc_pin),ADC_ATTEN_DB_11); //ADC range 0-3.1
+    //adc1_config_channel_atten(pinToADC1Channel(adc_pin),ADC_ATTEN_DB_11); //ADC range 0-3.1
     adc_current_ticks = adc_previous_ticks = adc_base_ticks = 0; //Set all 3 ADC values to 0 initially
+    ModeChange(0); //set power mode none, which will also set power state off.
     adc_read(); //actually read the ADC
     adc_base_ticks = adc_current_ticks; //Copy the zero output ticks to adc_base_ticks
-    ModeChange(0); //set power mode none, which will also set power state off.
     return;
 }
 
@@ -162,7 +163,14 @@ void TrackChannel::StateChange(uint8_t newstate){
 
 void TrackChannel::adc_read() { //Needs the actual ADC read implemented still
   adc_previous_ticks = adc_current_ticks; //update value read on prior scan
-  adc_current_ticks = analogRead(adc_pin); // + adc_base_ticks;
+  //ADC runs at a max of 5MHz, and needs 25 clock cycles to complete. Effectively 200khz or 5usec minimum. 
+  adc_current_ticks = analogRead(adc_pin);
+  
+  if (adc_current_ticks >= ADC_MIN_OFFSET) {
+    adc_current_ticks = adc_current_ticks - ADC_MIN_OFFSET;
+  } else {
+    adc_current_ticks = 0;
+  }
   if (adc_current_ticks > adc_overload_trip) {
     StateChange(1); //Set power state overload   
   }
@@ -209,7 +217,8 @@ void ESP_rmt_rx_init(){
   rmt_rx_config.mem_block_num = 3; 
   ESP_ERROR_CHECK(rmt_config(&rmt_rx_config));
   // NOTE: ESP_INTR_FLAG_IRAM is *NOT* included in this bitmask
-  ESP_ERROR_CHECK(rmt_driver_install(rmt_rx_config.channel, 0, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED));   
+  ESP_ERROR_CHECK(rmt_driver_install(rmt_rx_config.channel, 0, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED));  
+  Serial.printf("RMT RX Initialized \n"); 
   return;
 }
 
@@ -229,6 +238,7 @@ void rmt_tx_init(){
   ESP_ERROR_CHECK(rmt_config(&rmt_tx_config));
   // NOTE: ESP_INTR_FLAG_IRAM is *NOT* included in this bitmask
   ESP_ERROR_CHECK(rmt_driver_install(rmt_tx_config.channel, 0, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED));    
+  Serial.printf("RMT TX Initialized \n"); 
   #endif
   return;
 }

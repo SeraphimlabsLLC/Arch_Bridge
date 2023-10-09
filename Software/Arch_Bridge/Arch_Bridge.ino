@@ -30,34 +30,48 @@ int brake_pin = 12;
 int adc_pin = 1;
 */
 void setup() {
-  Serial.begin(115200);
-  ESP_uart_init();
+  ESP_uart_init(); //Initialize tty and Loconet
   ESP32_Tracks_Setup();  //Initialize GPIO and RMT hardware
 
 //For testing purposes.
-  DCCSigs[0].ModeChange(3); //set to DC
-  DCCSigs[1].ModeChange(3);
-
-  DCCSigs[0].StateChange(3);//Set to ON_REV
-  DCCSigs[1].StateChange(3);  
+  //DCCSigs[0].ModeChange(3); //set to DC
+  //DCCSigs[1].ModeChange(3);
+  //DCCSigs[0].StateChange(3);//Set to ON_REV
+  //DCCSigs[1].StateChange(3);  
 }
 
-void loop() {
+void loop() {  
 uint8_t i = 0;
-uint16_t milliamps = 0;
+uint32_t milliamps = 0;
+  delay(250);
 Master_Enable = MasterEnable(); //Update Master status. Dynamo this is external input, ArchBridge is always true.
   while (i < max_tracks){ //Check active tracks for faults
     if (DCCSigs[i].powerstate >= 2){ //State is set to on forward or on reverse, ok to enable. 
       DCCSigs[i].CheckEnable();
-      //gpio_set_level(gpio_num_t(DCCSigs[i].enable_out_pin), 1); //Write 1 to enable out on each track
+      gpio_set_level(gpio_num_t(DCCSigs[i].enable_out_pin), 1); //Write 1 to enable out on each track
       DCCSigs[i].adc_read(); //actually read the ADC and enforce overload shutdown
-      milliamps = DCCSigs[i].adc_current_ticks * 1000 / DCCSigs[i].adc_scale; //scaled mA
-      //milliamps = DCCSigs[i].adc_current_ticks; //raw ticks
-      Serial.printf("Track %d ",i);
-      Serial.printf("ADC analog value = %d\n",milliamps);
-    }   
+      milliamps = DCCSigs[i].adc_current_ticks; //raw ticks
+      milliamps = (DCCSigs[i].adc_current_ticks * 100000)/ DCCSigs[i].adc_scale; //scaled mA
+      Serial.printf("Track %d ",i + 1);
+      Serial.printf("ADC analog value = %d milliamps \n",milliamps);
+    }
     i++;
-    
-    delay(350); 
   }
+
+#ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, define a loconet uart
+  i = LN_port.read_len();
+  int k = 0;
+  while (i > 0) { //Loop to read until no more data.
+    i = LN_port.uart_read(i);
+    Serial.printf("%d ", LN_port.rx_data);
+    i = LN_port.read_len();
+    k++;
+  }
+  if (k > 0) {
+    Serial.print ("\n");
+    k = 0;
+  }
+  
+#endif 
+
 }
