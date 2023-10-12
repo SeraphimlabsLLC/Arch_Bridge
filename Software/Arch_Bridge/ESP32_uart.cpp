@@ -4,16 +4,9 @@
 
 //UART globals
 ESP_Uart tty; //normal serial port
-#ifdef LN_CONFIG //if a Loconet config exists, activate it
-//
-ESP_Uart LN_port; //Loconet object
-#endif
 
 void ESP_uart_init(){ //Set up uarts
  TTY_CONFIG 
- #ifdef LN_CONFIG //if a Loconet config exists, activate it
-   LN_CONFIG
- #endif
  return;
 }
 
@@ -27,15 +20,15 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8
   rx_pin = gpio_num_t(rxpin);
   tx_buff = txbuff;
   rx_buff = rxbuff;
-  tx_data_len = 0; //Initialize the length counters
-  rx_data_len = 0;
+  tx_write_ptr = tx_read_ptr = 0; //Initialize tx ring buffer pointers
+  rx_write_ptr = rx_read_ptr = 0; //Inialize rx ring buffer pointers
   const uart_port_t uart_num = uartnum;
   if (uartnum == 0) { //Use Arduino serial library for now. This will eventually need to be replaced. 
     Serial.begin (115200);
     Serial.printf("UART Initialized, %d baudrate \n", baudrate);
     return;
   } else { //Is not uart0
-  if (uart_mode == 2) { //Loconet transmitter needs to be 1 unless transmitting a 0
+  if (uart_mode == 2) { //Loconet transmitter needs to be 1 unless transmitting a 0. This is temporary, move it to the Loconet code when possible.
     Serial.printf("Configuring Loconet on UART %d ", uartnum);
     Serial.printf("baudrate %d \n", baudrate);
     gpio_reset_pin(tx_pin); //Is used on both boards
@@ -63,26 +56,39 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8
 return;
 }
 
-void ESP_Uart::uart_write(uint8_t writelen) {//write the specified number of bytes from tx_data and subtract from tx_data_len
-  
-  if (tx_data_len < writelen){
-    writelen = tx_data_len; //empty the buffer
+void ESP_Uart::uart_write(uint8_t writelen) {//Write the data in the TX ring to the port. 
+  uint8_t bytes_written = 0;
+  while ((tx_read_ptr != tx_write_ptr) || (bytes_written = writelen)) { //Because the buffer will wrap, so keep writing unil the pointers are in the same spot
+    uart_write_bytes(uart_num, (const char*) tx_data[tx_read_ptr], 1); //Writing 1 byte at a time is simpler, if less efficient.
+    tx_read_ptr++;
+    bytes_written++;
   }
-  uart_write_bytes(uart_num, (const char*) tx_data, writelen);
-  tx_data_len = tx_data_len - writelen;
-
+  if (uart_mode == 2) { //Loconet needs a constant 1 when not writing. This really needs to be in an ISR. 
+    ESP_ERROR_CHECK(uart_wait_tx_done(uart_num, 100)); //This function blocks until the TX buffer is empty.
+    gpio_set_level(tx_pin, 1);     
+  }
   return;
 }
 
-  uint16_t ESP_Uart::read_len(){ //returns how much data there is to be read
+uint16_t ESP_Uart::read_len(){ //returns how much data there is to be read
     uint16_t readlen = 0;
     ESP_ERROR_CHECK(uart_get_buffered_data_len(uart_num, (size_t*)&readlen));
     return readlen;
   }
 
-uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of bytes into rx_data and add to rx_data_len
-  rx_data_len = 0;
-  rx_data_len = uart_read_bytes(uart_num, rx_data, readlen, 100);
-  return rx_data_len;
-  
+uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of bytes into rx_data
+  uint16_t bytes_read = 0;
+  char* rx_read;
+  while ((read_len() > 0) && (bytes_read < readlen) && (rx_write_ptr != rx_read_ptr)) { //read up to readlen bytes as long as there is data and the ring is not full
+    uart_read_bytes(uart_num, rx_read, 1, 100); //Read 1 byte with a 100 rt_tick timeout if there isn't anything to read 
+    rx_data[rx_write_ptr] = rx_read[0];
+    bytes_read++;     
+    rx_write_ptr++;
+  }  
+  return bytes_read;
+}
+
+void ESP_Uart::uart_rx_flush() {//Erase all data in the buffer
+  ESP_ERROR_CHECK(uart_flush(uart_num));
+  return;
 }

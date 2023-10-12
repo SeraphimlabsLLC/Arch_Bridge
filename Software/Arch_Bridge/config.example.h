@@ -3,7 +3,7 @@
 /*
   #include "ESP32_uart.h" //ESP Uart hardware
   #include "ESP32_Tracks_HW.h" //ESP Track GPIO and RMT
-  #include "Loconet.h" //Loconet interface
+  #include "ESP32_Loconet.h" //Loconet interface
 #endif
 #define BOARD_TYPE_DYNAMO //Configure board style
 

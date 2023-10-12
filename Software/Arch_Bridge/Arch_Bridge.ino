@@ -15,7 +15,10 @@
 
 extern ESP_Uart tty; //normal serial port
 #ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, define a loconet uart
-  extern ESP_Uart LN_port; //Loconet object
+  #ifndef ESP32_LOCONET_H
+    #include "ESP32_Loconet.h"
+  #endif
+  extern LN_Class Loconet; //Loconet memory object
 #endif
 
 extern TrackChannel DCCSigs[];
@@ -30,7 +33,10 @@ int brake_pin = 12;
 int adc_pin = 1;
 */
 void setup() {
-  ESP_uart_init(); //Initialize tty and Loconet
+  ESP_uart_init(); //Initialize tty
+  #ifdef BOARD_TYPE_ARCH_BRIDGE
+    ESP_LN_init(); //Initialize Loconet
+  #endif
   ESP32_Tracks_Setup();  //Initialize GPIO and RMT hardware
 
 //For testing purposes.
@@ -58,20 +64,8 @@ Master_Enable = MasterEnable(); //Update Master status. Dynamo this is external 
     i++;
   }
 
-#ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, define a loconet uart
-  i = LN_port.read_len();
-  int k = 0;
-  while (i > 0) { //Loop to read until no more data.
-    i = LN_port.uart_read(i);
-    Serial.printf("%d ", LN_port.rx_data);
-    i = LN_port.read_len();
-    k++;
-  }
-  if (k > 0) {
-    Serial.print ("\n");
-    k = 0;
-  }
-  
+#ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, check the loconet
+  Loconet.rx_detect(); //Try the parser  
 #endif 
 
 }
