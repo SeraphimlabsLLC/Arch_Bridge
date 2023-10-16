@@ -17,22 +17,32 @@ void LN_Class::rx_detect(){
   //char opcode; Is now redundant with the class definition
   uint8_t rx_offset = 0; //We don't want to change read_ptr itself till we find an opcode
   uint8_t packet_size = 0;
+  bool found = false;
   while (LN_port.rx_read_ptr != LN_port.rx_write_ptr)  { //Scan till we run out of data.
     opcode = LN_port.rx_data[LN_port.rx_read_ptr];
-    Serial.print(opcode); 
+    //Serial.printf("Trying byte %d \n", opcode); 
     if (((opcode && 0x80) > 0) && (opcode != 0xFF)) { //we found an opcode
+      //Serial.printf ("Found opcode at %d \n", LN_port.rx_read_ptr);
+      found = true;
       break; 
-    } else {
-      LN_port.rx_read_ptr++; 
-    }
-  return; //No opcode was found.   
+    } 
+    LN_port.rx_read_ptr++;   
+  }
+  if (found == false){ //No opcode found, return.
+    return;
   }
   //Opcode was found. Lets use it.
-  Serial.printf("Found opcode %d \n", opcode); 
+  //Serial.printf("Found opcode %d \n", opcode); 
   packet_size = opcode && 0x60; //D7 was 1, check D6 and D5 for packet length
   switch (packet_size) {
     case 0x00: {//2 byte packets
       packet_size = 1;//Value is size - 1 since we already have the opcode
+      checksum = LN_port.rx_data[(LN_port.rx_read_ptr + 1)];
+      if ((checksum ^ opcode) != 0xFF) {
+        Serial.printf("Invalid 2 byte packet opcode %d with checksum %d. \n", opcode, checksum);
+      } else {
+        Serial.printf("Valid packet: opcode $d with checksum $d \n", opcode, checksum);
+      }
       break;
     }
     case 0x20: {//4 byte packets
@@ -47,18 +57,18 @@ void LN_Class::rx_detect(){
       packet_size = LN_port.rx_data[(LN_port.rx_read_ptr + 1)] - 2; //value is size - 2 since we already have opcode + size byte
       break;
     }
+    Serial.printf("Packet size was packet_size %d \n", packet_size);
   }
   //Check that there is enough data for the specified type and buffer it
-  Serial.printf("Opcode has %d bytes included \n", packet_size); 
-  if ((LN_port.rx_read_ptr + packet_size) > LN_port.tx_read_ptr){
+  if ((LN_port.rx_read_ptr + packet_size) > LN_port.rx_write_ptr){
     Serial.print("Not enough bytes to process yet. Waiting for more. \n");
     return;
   }
-  
+
   return;
 }
 void LN_Class::tx_encode(){
-
+  LN_port.uart_write(32); //Loconet has a 32 byte max packet size
   return;
 }
 void LN_Class::transmit_break(){

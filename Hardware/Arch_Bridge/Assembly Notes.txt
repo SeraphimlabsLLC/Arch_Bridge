@@ -5,7 +5,7 @@ Load is only 114mW, perhaps switch to a 2N2907?
 Alternatively, R10 to 270 ohms and R11 to 4.7kohm   Yaego RC1206FR-10270RL and RC1206FR-104K7L
 Better, change only R11 to 3k using RC1206FR-073KL
 
-
+Original PCB contains a mistake in U18, the 5v and 3.3v sides of the chip are reversed. Somehow the ESP seems ok with this.
 
 
 

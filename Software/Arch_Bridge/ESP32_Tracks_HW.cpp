@@ -2,12 +2,14 @@
   #include "ESP32_Tracks_HW.h"
 #endif
 
-//TrackChannel(enable_out_pin, enable_in_pin, uint8_t reverse_pin, brake_pin, adc_pin, adcscale, adc_overload_trip)
+//TrackChannel(enable_out_pin, enable_in_pin, uint8_t reverse_pin, brake_pin, adc_channel, adcscale, adc_overload_trip)
 TrackChannel DCCSigs[4]; //Define track channel objects with empty values.
 uint8_t max_tracks = 0;
 
+//ADC Handle
+//adc_oneshot_unit_handle_t adc1_handle;
+
 void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
-//  adc1_config_width(ADC_WIDTH_BIT_12);  
   #ifdef BOARD_TYPE_DYNAMO //If this is a Dynamo type booster, define these control pins.
   Serial.print("Configuring board for Dynamo booster mode \n");
     gpio_reset_pin(gpio_num_t(MASTER_EN)); //Is used on both boards
@@ -17,7 +19,7 @@ void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
     gpio_reset_pin(gpio_num_t(DIR_MONITOR));
     gpio_set_direction(gpio_num_t(DIR_MONITOR), GPIO_MODE_INPUT);
     gpio_set_pull_mode(gpio_num_t(DIR_MONITOR), GPIO_FLOATING);  
-    ESP_rmt_rx_init(); //Initialize DIR_MONITOR for RMT monitoring
+    //ESP_rmt_rx_init(); //Initialize DIR_MONITOR for RMT monitoring
 
     gpio_reset_pin(gpio_num_t(DIR_OVERRIDE));
     gpio_set_direction(gpio_num_t(DIR_OVERRIDE), GPIO_MODE_OUTPUT);
@@ -31,6 +33,16 @@ void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
   gpio_set_pull_mode(gpio_num_t(MASTER_EN), GPIO_PULLUP_PULLDOWN);    
   gpio_set_level(gpio_num_t(MASTER_EN), 1); //Turn OE on 
 #endif
+  //ADC Setup
+  adc1_config_width(ADC_WIDTH_12Bit);//config adc1 width
+/*
+  
+  adc_oneshot_unit_init_cfg_t init_config1 = {
+    .unit_id = ADC_UNIT_1,
+    .ulp_mode = ADC_ULP_MODE_DISABLE,
+  };
+  ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config1, &adc1_handle));
+*/
   TRACK_1 //each track definition subsitites the complete function call to DCCSigs::SetupHW 
   #ifdef TRACK_2
   TRACK_2
@@ -57,7 +69,7 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
     enable_in_pin = gpio_num_t(en_in_pin);
     reverse_pin = gpio_num_t(rev_pin);
     brake_pin = gpio_num_t(brk_pin);
-    adc_pin = gpio_num_t(adcpin);
+    adc_channel = adc1_channel_t (adcpin - 1);
     adc_scale = adcscale;
     adc_overload_trip = adc_ol_trip;
     //Configure Enable Out
@@ -69,7 +81,14 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
       gpio_reset_pin(gpio_num_t(enable_in_pin));
       gpio_set_direction(gpio_num_t(enable_in_pin), GPIO_MODE_INPUT);
     }
-    //adc1_config_channel_atten(pinToADC1Channel(adc_pin),ADC_ATTEN_DB_11); //ADC range 0-3.1
+/*
+    adc_oneshot_chan_cfg_t config = {
+        .bitwidth = ADC_BITWIDTH_DEFAULT,
+        .atten = ADC_ATTEN_DB_11,   //ADC range 0-3.1
+    };
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, adc_channel, &config));
+    */
+    adc1_config_channel_atten(adc_channel,ADC_ATTEN_11db);//config attenuation
     adc_current_ticks = adc_previous_ticks = adc_base_ticks = 0; //Set all 3 ADC values to 0 initially
     ModeChange(0); //set power mode none, which will also set power state off.
     adc_read(); //actually read the ADC
@@ -162,10 +181,14 @@ void TrackChannel::StateChange(uint8_t newstate){
 }
 
 void TrackChannel::adc_read() { //Needs the actual ADC read implemented still
+  //uint16_t adcraw = 0;
   adc_previous_ticks = adc_current_ticks; //update value read on prior scan
   //ADC runs at a max of 5MHz, and needs 25 clock cycles to complete. Effectively 200khz or 5usec minimum. 
-  adc_current_ticks = analogRead(adc_pin);
-  
+  //adc_current_ticks = analogRead(adc_channel); //Read using Arduino IDE, now obsolete
+  //ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, adc_channel, adcraw));
+  adc_current_ticks = adc1_get_raw(adc1_channel_t (adc_channel));
+  //Serial.printf("ADC read %d \n", adc_current_ticks);
+  //adc_current_ticks = adcraw;
   if (adc_current_ticks >= ADC_MIN_OFFSET) {
     adc_current_ticks = adc_current_ticks - ADC_MIN_OFFSET;
   } else {
@@ -177,7 +200,7 @@ void TrackChannel::adc_read() { //Needs the actual ADC read implemented still
   return;
 }
 
-uint8_t TrackChannel::CheckEnable(){ //Arch Bridge has to check enable_input_pin for each track. Others this always returns 1. 
+uint8_t TrackChannel::CheckEnable(){ //Arch Bridge has to check enable_input_pin for each track. Others this always returns 1 with no pin changes.
   uint8_t enable_in = 1; //default value for enable in
   #ifdef BOARD_TYPE_ARCH_BRIDGE //Enable In is only used on Arch Bridge
     if (enable_in_pin != 0) { //If enable_in is configured, read it
@@ -192,11 +215,14 @@ uint8_t TrackChannel::CheckEnable(){ //Arch Bridge has to check enable_input_pin
 uint8_t MasterEnable(){ //Dyamo type boards have an input for master enable. Others this always returns 1. 
     uint8_t master_en = 1; //default value for master_en
 #ifdef BOARD_TYPE_DYNAMO
-      master_en = gpio_get_level(MASTER_ENABLE);
-      while (i < max_tracks){
-        DCCSigs[i].powerstate(0); //Change all tracks to the off state. They have to be individually turned on again. 
-        i++;     
-      }
+      uint8_t i = 0;
+      master_en = gpio_get_level(gpio_num_t(MASTER_EN));
+      //if (master_en != 1) {
+      //  while (i < max_tracks){
+      //    DCCSigs[0].StateChange(0); //Change all tracks to the off state. They have to be individually turned on again. 
+      //    i++;     
+      //  }
+      //}
 #endif
 // BOARD_TYPE_ARCHBRIDGE has no master_en input, this will always return 1. 
   return master_en;

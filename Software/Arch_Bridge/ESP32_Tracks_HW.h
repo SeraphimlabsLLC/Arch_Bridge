@@ -7,6 +7,7 @@
 #include "driver/i2c.h"
 #include "driver/rmt.h"
 #include "driver/adc.h"
+//#include "esp_adc/adc_oneshot.h"
 #include "soc/rmt_reg.h"
 #include "soc/rmt_struct.h"
 
@@ -33,18 +34,19 @@
 #ifdef BOARD_TYPE_DYNAMO
   #define TRACK_1 DCCSigs[0].SetupHW(9, 0, 6, 13, 1, 81900, 409000);
   #define TRACK_2 DCCSigs[1].SetupHW(10, 0, 7,  14, 2, 81900, 409000);
-  #define TRACK_3 DCCSigs[2].SetupHW(11, 0, 8, 48, 3, 81900, 409000);
-  #define TRACK_4 DCCSigs[3].SetupHW(12, 0, 9, 48, 4, 81900, 409000);
+  #define TRACK_3 DCCSigs[2].SetupHW(11, 0, 8, 48, 4, 81900, 409000);
+  #define TRACK_4 DCCSigs[3].SetupHW(12, 0, 9, 48, 5, 81900, 409000);
   #define DIR_MONITOR 38 //GPIO38, use for RMT Input
   #define DIR_OVERRIDE 21 //GPIO21, use for RMT Output
   #define MASTER_EN 15 //GPIO15
+  #define ADC_MIN_OFFSET 60 //ADC is inaccurate at low values.
 
 #endif
 
 #ifdef BOARD_TYPE_ARCH_BRIDGE
   #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 1693840, 372700);
   #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 169348, 409000);
-  #define MASTER_EN 3
+  #define MASTER_EN 3 //Is an Output Enable instead of an input
   #define DIR_MONITOR 9 //GPIO9, railsync input. 
   #define ADC_MIN_OFFSET 60 //ADC is inaccurate at low values.
   //Arch_Bridge boards do not generate a DIR_OVERRIDE, but the TX RMT can be attached to individual track REV pins.  
@@ -96,7 +98,7 @@ class TrackChannel {
     gpio_num_t enable_in_pin; //Not used in Dynamo, will be used in ArchBridge. 
     gpio_num_t reverse_pin;
     gpio_num_t brake_pin;
-    gpio_num_t adc_pin;
+    adc1_channel_t adc_channel;
 };
 
 

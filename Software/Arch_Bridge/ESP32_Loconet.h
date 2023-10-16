@@ -9,7 +9,7 @@
 #include "Arduino.h"
 
 //Loconet UART settings, see ESP32_uart.h for meanings
-#define LN_UART Loconet.LN_port.uart_init(1, 2, 17, 18, 16666, 255, 255);
+#define LN_UART Loconet.LN_port.uart_init(1, 2, 17, 8, 16666, 255, 255);
 
 #define LN_PRIORITY 32
 
