@@ -18,9 +18,10 @@ void LN_Class::rx_detect(){
   uint8_t rx_offset = 0; //We don't want to change read_ptr itself till we find an opcode
   uint8_t packet_size = 0;
   bool found = false;
+  Serial.printf("Receiving: ");
   while (LN_port.rx_read_ptr != LN_port.rx_write_ptr)  { //Scan till we run out of data.
     opcode = LN_port.rx_data[LN_port.rx_read_ptr];
-    //Serial.printf("Trying byte %d \n", opcode); 
+    Serial.printf(" %x ", opcode); 
     if (((opcode && 0x80) > 0) && (opcode != 0xFF)) { //we found an opcode
       //Serial.printf ("Found opcode at %d \n", LN_port.rx_read_ptr);
       found = true;
@@ -28,6 +29,7 @@ void LN_Class::rx_detect(){
     } 
     LN_port.rx_read_ptr++;   
   }
+  Serial.printf(" \n");
   if (found == false){ //No opcode found, return.
     return;
   }
@@ -73,6 +75,10 @@ void LN_Class::tx_encode(){
 }
 void LN_Class::transmit_break(){
   //Write 15 bits low
+  //ESP_ERROR_CHECK(uart_set_line_inverse(uart_num, UART_SIGNAL_TXD_INV)); //Line defaults to high, set low for break
+  //delay_microseconds(900); //15 bit periods
+  //Todo: Set txd normal again
+  
   
   return;
 }

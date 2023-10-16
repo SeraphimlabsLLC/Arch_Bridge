@@ -45,11 +45,12 @@ void setup() {
 
 //  DCCSigs[0].StateChange(3);//Set to ON_REV
 //  DCCSigs[1].StateChange(3);  
-
+/*
   Loconet.LN_port.rx_data[248] = 0x81;
   Loconet.LN_port.rx_data[249] = (0x81 ^ 0xFF);  
   Loconet.LN_port.rx_read_ptr = 248;
   Loconet.LN_port.rx_write_ptr = 250;
+*/
 }
 
 void loop() {  
@@ -71,12 +72,23 @@ Master_Enable = MasterEnable(); //Update Master status. Dynamo this is external 
   }
 #ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, check the loconet
   Loconet.rx_detect(); //Try the parser
-  //Test payload of OPC_BUSY
-  
+  //Test payload of OPC_BUSY is 0x81 + 0x7e
   Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x81;
   Loconet.LN_port.tx_write_ptr++;
-  Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x7e; //0x81 xor FF
+  Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x7e;
   Loconet.LN_port.tx_write_ptr++;
+
+  //Replay a switch close command for testing
+/*
+  Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0xB0;
+  Loconet.LN_port.tx_write_ptr++;
+  Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x00; //0x81 xor FF
+  Loconet.LN_port.tx_write_ptr++;
+  Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x20; //0x81 xor FF
+  Loconet.LN_port.tx_write_ptr++;
+  Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x6F; //0x81 xor FF = 0x7e
+  Loconet.LN_port.tx_write_ptr++;
+*/
   Loconet.tx_encode(); //Transmit a signal to read
   
 #endif 

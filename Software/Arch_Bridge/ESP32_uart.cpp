@@ -30,7 +30,7 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8
   } else { //Is not uart0 
   if (uart_mode == 2) { //Loconet transmitter needs to be 1 unless transmitting a 0. This is temporary, move it to the Loconet code when possible.
     Serial.printf("Configuring Loconet on UART %d, baud rate %d \n", uart_num, baudrate);
-    gpio_reset_pin(tx_pin); //Is used on both boards
+    //gpio_reset_pin(tx_pin); //Is used on both boards
     //gpio_set_direction(tx_pin, GPIO_MODE_OUTPUT);
     //gpio_set_pull_mode(tx_pin, GPIO_PULLUP_PULLDOWN);    
     //gpio_set_level(tx_pin, 1);//For now fix tx_pin to 1.
@@ -44,9 +44,9 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8
       //.rx_flow_ctrl_thresh = 122, //not used with flowctrl_disable
       //.source_clk = UART_SCLK_DEFAULT,  
     };
-    ESP_ERROR_CHECK(uart_driver_install(uart_num, txbuff, rxbuff, 0, NULL, 0));
+    ESP_ERROR_CHECK(uart_driver_install(uart_num, tx_buff, rx_buff, 0, NULL, 0));
     ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
-    ESP_ERROR_CHECK(uart_set_pin(uart_num, txpin, rxpin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    ESP_ERROR_CHECK(uart_set_pin(uart_num, tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
     ESP_ERROR_CHECK(uart_flush(uart_num));
     //ESP_ERROR_CHECK(uart_set_tx_empty_threshold(0)) //Enables interrupt on TX empty. Can use this to turn on gpio=1
   }
@@ -63,22 +63,15 @@ void ESP_Uart::uart_write(uint8_t writelen) {//Write the data in the TX ring to 
   }
   uint8_t bytes_written = 0;
   char write_data[32];//Holder for cutting out the bytes to be written
-    if (uart_mode == 2) { //Loconet needs a constant 1 when not writing. This really needs to be in an ISR. 
-    //ESP_ERROR_CHECK(uart_set_line_inverse(uart_num, UART_SIGNAL_INV_DISABLE)); //Just to see what this does   
-  }
+  Serial.printf("Transmitting: ");
   while ((tx_read_ptr != tx_write_ptr) || (bytes_written == writelen)) { //Because the buffer will wrap, so keep writing unil the pointers are in the same spot
-    write_data[0] = tx_data[tx_read_ptr];
-    //uart_write_bytes(uart_num, &write_data[0], 1); //Writing 1 byte at a time is simpler, if less efficient.
-    Serial.printf("Transmitting < %u > from buffer location %u \n", &write_data, tx_read_ptr);
+    write_data[bytes_written] = tx_data[tx_read_ptr];
+    Serial.printf(" %x ", write_data[bytes_written]);
     tx_read_ptr++;
     bytes_written++;
   }
-  
-  //uart_write_bytes(uart_num, write_data, bytes_written); //Writing 1 byte at a time is simpler, if less efficient.
-  if (uart_mode == 2) { //Loconet needs a constant 1 when not writing. This really needs to be in an ISR. 
-    ESP_ERROR_CHECK(uart_wait_tx_done(uart_num, 100)); //This function blocks until the TX buffer is empty.
-    //ESP_ERROR_CHECK(uart_set_line_inverse(uart_num, UART_SIGNAL_TXD_INV)); //Just to see what this does   
-  }
+  Serial.printf("\n");
+  uart_write_bytes(uart_num, write_data, bytes_written); //Somehow we ended up being able to write multiple bytes at once after all. 
   return;
 }
 
