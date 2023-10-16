@@ -25,7 +25,7 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8
   const uart_port_t uart_num = uartnum; 
   if (uart_num == 0) { //Use Arduino serial library for now. This will eventually need to be replaced. 
     Serial.begin (115200);
-    Serial.printf("UART0 Initialized using Arduino driver, %d baudrate \n", baudrate);
+    Serial.printf("Configuring Arduino Serial on UART %d, baud rate %d \n", uart_num, baudrate);
     return;
   } else { //Is not uart0 
   if (uart_mode == 2) { //Loconet transmitter needs to be 1 unless transmitting a 0. This is temporary, move it to the Loconet code when possible.
@@ -79,9 +79,10 @@ uint16_t ESP_Uart::read_len(){ //returns how much data there is to be read
   if (uart_num == 0) {
     return 0;
   }    
-    uint16_t readlen = 0;
-    ESP_ERROR_CHECK(uart_get_buffered_data_len(uart_num, (size_t*)&readlen));
-    return readlen;
+    uint8_t ready_len = 0;
+    ESP_ERROR_CHECK(uart_get_buffered_data_len(uart_num, (size_t*)&ready_len));
+    //Serial.printf("Readlen was %d, ready_len was %d \n", readlen, ready_len);
+    return ready_len;
   }
 
 uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of bytes into rx_data
@@ -89,13 +90,36 @@ uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of by
     return 0;
   }
   uint16_t bytes_read = 0;
-  char* rx_read;
-  while ((read_len() > 0) && (bytes_read < readlen) && (rx_write_ptr != rx_read_ptr)) { //read up to readlen bytes as long as there is data and the ring is not full
-    uart_read_bytes(uart_num, rx_read, 1, 100); //Read 1 byte with a 100 rt_tick timeout if there isn't anything to read 
-    rx_data[rx_write_ptr] = rx_read[0];
-    bytes_read++;     
+  uint8_t ready_len = 0;
+  char rx_read[80];
+  ESP_ERROR_CHECK(uart_get_buffered_data_len(uart_num, (size_t*)&ready_len));
+  //Serial.printf("Readlen was %d, ready_len was %d \n", readlen, ready_len);
+  if (readlen > 80) { //Limit max read size to 80, same as a vt100 terminal
+    readlen = 80;
+  }
+  if (!(ready_len > 0)){ //No data to read at this time. 
+    return 0;
+  } 
+  if (readlen == 0) {//readlen wasn't specified, take what the buffer has.
+    readlen = ready_len;
+  }
+  if (readlen > ready_len){ //Asked to read more bytes than we have. Best to wait for more data.
+    return 0;
+  }
+  bytes_read = uart_read_bytes(uart_num, &rx_read, readlen, 100); //Read up to rx_read bytes from uart_num with a 100 rt tick timeout
+  if (bytes_read != readlen){
+    //Serial.printf("Read only %d bytes when told to read %d bytes \n", bytes_read, readlen);
+    return bytes_read;
+  }
+  uint8_t i = 0;
+  Serial.printf("Receiving: ");
+  while (i < bytes_read){ 
+    rx_data[rx_write_ptr] = rx_read[i];
+    Serial.printf(" %x ", rx_read[i]);
+    i++;
     rx_write_ptr++;
-  }  
+  }
+  Serial.printf("\n");
   return bytes_read;
 }
 

@@ -14,37 +14,32 @@ void LN_Class::rx_detect(){
    * Read the command length bits, check if there is enough data in the buffer to match it
    * If yes, process it. If no, leave the RX read pointer at the opcode byte to try again later.
    */
-  //char opcode; Is now redundant with the class definition
   uint8_t rx_offset = 0; //We don't want to change read_ptr itself till we find an opcode
   uint8_t packet_size = 0;
   bool found = false;
-  Serial.printf("Receiving: ");
+  char xsum; 
+  uint8_t i = 0;
+  
+  packet_size = LN_port.uart_read(packet_size); //read data into the ring buffer, we don't really care how many bytes
+  packet_size = 0; //Set to 0 again. 
   while (LN_port.rx_read_ptr != LN_port.rx_write_ptr)  { //Scan till we run out of data.
     opcode = LN_port.rx_data[LN_port.rx_read_ptr];
-    Serial.printf(" %x ", opcode); 
-    if (((opcode && 0x80) > 0) && (opcode != 0xFF)) { //we found an opcode
-      //Serial.printf ("Found opcode at %d \n", LN_port.rx_read_ptr);
+    if (((opcode && 0x80) > 0) && (opcode != 0xff)) { //we found an opcode
       found = true;
       break; 
     } 
     LN_port.rx_read_ptr++;   
   }
-  Serial.printf(" \n");
   if (found == false){ //No opcode found, return.
     return;
   }
   //Opcode was found. Lets use it.
-  //Serial.printf("Found opcode %d \n", opcode); 
+  Serial.printf("Found opcode %x \n", opcode); 
   packet_size = opcode && 0x60; //D7 was 1, check D6 and D5 for packet length
+  
   switch (packet_size) {
     case 0x00: {//2 byte packets
       packet_size = 1;//Value is size - 1 since we already have the opcode
-      checksum = LN_port.rx_data[(LN_port.rx_read_ptr + 1)];
-      if ((checksum ^ opcode) != 0xFF) {
-        Serial.printf("Invalid 2 byte packet opcode %d with checksum %d. \n", opcode, checksum);
-      } else {
-        Serial.printf("Valid packet: opcode $d with checksum $d \n", opcode, checksum);
-      }
       break;
     }
     case 0x20: {//4 byte packets
@@ -58,18 +53,32 @@ void LN_Class::rx_detect(){
     case 0x60: {//n byte packets, read size from next byte
       packet_size = LN_port.rx_data[(LN_port.rx_read_ptr + 1)] - 2; //value is size - 2 since we already have opcode + size byte
       break;
-    }
-    Serial.printf("Packet size was packet_size %d \n", packet_size);
+    }    
   }
+  //Serial.printf("Packet size %d \n", packet_size);
   //Check that there is enough data for the specified type and buffer it
   if ((LN_port.rx_read_ptr + packet_size) > LN_port.rx_write_ptr){
     Serial.print("Not enough bytes to process yet. Waiting for more. \n");
     return;
   }
+  i = 0;
+  Serial.printf("Checksum calculation: "); 
+  while (i <= packet_size) {
+    xsum = xsum ^ LN_port.rx_data[LN_port.rx_read_ptr + i];
+    Serial.printf(" %x ", xsum);
+    i++;
+  }
+  Serial.printf (" \n "); 
+  if (xsum != 0xff) { //Invalid packet. Discard it by moving the read pointer past it. 
+    LN_port.rx_read_ptr = LN_port.rx_read_ptr + i;   
+  }
+
+  //Finally ready to process the packet. That took way too long. 
 
   return;
 }
 void LN_Class::tx_encode(){
+  char xsum; //For checksum calculation
   LN_port.uart_write(32); //Loconet has a 32 byte max packet size
   return;
 }

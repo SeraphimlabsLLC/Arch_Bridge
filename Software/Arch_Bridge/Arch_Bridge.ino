@@ -40,23 +40,16 @@ void setup() {
   ESP32_Tracks_Setup();  //Initialize GPIO and RMT hardware
 
 //For testing purposes.
-  DCCSigs[0].ModeChange(3); //set to DC
+//  DCCSigs[0].ModeChange(3); //set to DC
 //  DCCSigs[1].ModeChange(3);
 
 //  DCCSigs[0].StateChange(3);//Set to ON_REV
 //  DCCSigs[1].StateChange(3);  
-/*
-  Loconet.LN_port.rx_data[248] = 0x81;
-  Loconet.LN_port.rx_data[249] = (0x81 ^ 0xFF);  
-  Loconet.LN_port.rx_read_ptr = 248;
-  Loconet.LN_port.rx_write_ptr = 250;
-*/
 }
 
 void loop() {  
 uint8_t i = 0;
 uint32_t milliamps = 0;
-  delay(250);
 Master_Enable = MasterEnable(); //Update Master status. Dynamo this is external input, ArchBridge is always true.
   while (i < max_tracks){ //Check active tracks for faults
     if (DCCSigs[i].powerstate >= 2){ //State is set to on forward or on reverse, ok to enable. 
@@ -73,11 +66,12 @@ Master_Enable = MasterEnable(); //Update Master status. Dynamo this is external 
 #ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, check the loconet
   Loconet.rx_detect(); //Try the parser
   //Test payload of OPC_BUSY is 0x81 + 0x7e
+  /*
   Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x81;
   Loconet.LN_port.tx_write_ptr++;
   Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x7e;
   Loconet.LN_port.tx_write_ptr++;
-
+*/
   //Replay a switch close command for testing
 /*
   Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0xB0;
@@ -88,9 +82,9 @@ Master_Enable = MasterEnable(); //Update Master status. Dynamo this is external 
   Loconet.LN_port.tx_write_ptr++;
   Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x6F; //0x81 xor FF = 0x7e
   Loconet.LN_port.tx_write_ptr++;
-*/
   Loconet.tx_encode(); //Transmit a signal to read
+  */
   
 #endif 
-
+delay(500);
 }
