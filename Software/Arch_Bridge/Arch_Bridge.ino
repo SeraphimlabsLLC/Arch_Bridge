@@ -18,7 +18,11 @@ extern ESP_Uart tty; //normal serial port
   #ifndef ESP32_LOCONET_H
     #include "ESP32_Loconet.h"
   #endif
+#ifndef ESP32_DCCEX_H
+  #include "ESP32_dccex.h"
+#endif
   extern LN_Class Loconet; //Loconet memory object
+  extern DCCEX_Class dccex_port;
 #endif
 
 extern TrackChannel DCCSigs[];
@@ -64,7 +68,8 @@ Master_Enable = MasterEnable(); //Update Master status. Dynamo this is external 
     i++;
   }
 #ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, check the loconet
-  Loconet.rx_detect(); //Try the parser
+  Loconet.uart_rx(); //Read data from uart into rx ring
+  Loconet.rx_scan(); //Scan rx ring for opcodes
   //Test payload of OPC_BUSY is 0x81 + 0x7e
   /*
   Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x81;
@@ -75,6 +80,8 @@ Master_Enable = MasterEnable(); //Update Master status. Dynamo this is external 
   //Replay a switch close command for testing
 /*
   Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0xB0;
+  Loconet.tx_opcode = 0xB0;
+  Loconet.tx_opcode_ptr = Loconet.LN_port.tx_write_ptr; //Track the opcode pointer
   Loconet.LN_port.tx_write_ptr++;
   Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x00; //0x81 xor FF
   Loconet.LN_port.tx_write_ptr++;
@@ -82,9 +89,8 @@ Master_Enable = MasterEnable(); //Update Master status. Dynamo this is external 
   Loconet.LN_port.tx_write_ptr++;
   Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x6F; //0x81 xor FF = 0x7e
   Loconet.LN_port.tx_write_ptr++;
-  Loconet.tx_encode(); //Transmit a signal to read
-  */
-  
+  Loconet.tx_send(); //Transmit a signal to read
+*/  
 #endif 
 delay(500);
 }

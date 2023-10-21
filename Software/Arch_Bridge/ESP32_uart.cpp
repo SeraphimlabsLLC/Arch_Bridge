@@ -28,12 +28,11 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8
     Serial.printf("Configuring Arduino Serial on UART %d, baud rate %d \n", uart_num, baudrate);
     return;
   } else { //Is not uart0 
-  if (uart_mode == 2) { //Loconet transmitter needs to be 1 unless transmitting a 0. This is temporary, move it to the Loconet code when possible.
+    if (uart_mode == 1) { //DCC-EX transmitter
+    Serial.printf("Configuring DCC-EX on UART %d, baud rate %d \n", uart_num, baudrate);
+  }
+  if (uart_mode == 2) { //Loconet transmitter
     Serial.printf("Configuring Loconet on UART %d, baud rate %d \n", uart_num, baudrate);
-    //gpio_reset_pin(tx_pin); //Is used on both boards
-    //gpio_set_direction(tx_pin, GPIO_MODE_OUTPUT);
-    //gpio_set_pull_mode(tx_pin, GPIO_PULLUP_PULLDOWN);    
-    //gpio_set_level(tx_pin, 1);//For now fix tx_pin to 1.
   }
     uart_config_t uart_config = {
       .baud_rate = baudrate,
@@ -50,10 +49,6 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8
     ESP_ERROR_CHECK(uart_flush(uart_num));
     //ESP_ERROR_CHECK(uart_set_tx_empty_threshold(0)) //Enables interrupt on TX empty. Can use this to turn on gpio=1
   }
-  if (uart_mode == 2) { //Loconet code again
-    //ESP_ERROR_CHECK(uart_set_line_inverse(uartnum, UART_SIGNAL_TXD_INV)); //Just to see what this does
-    //ESP_ERROR_CHECK(uart_set_line_inverse(uartnum, UART_SIGNAL_RXD_INV)); //Just to see what this does
-  }
 return;
 }
 
@@ -61,8 +56,11 @@ void ESP_Uart::uart_write(uint8_t writelen) {//Write the data in the TX ring to 
   if (uart_num == 0) {
     return;
   }
+  if (writelen == 0) { //Enforce minimum length  of 1 to avoid crashing
+    writelen = 1;
+  }
   uint8_t bytes_written = 0;
-  char write_data[32];//Holder for cutting out the bytes to be written
+  char write_data[writelen];//Holder for cutting out the bytes to be written
   Serial.printf("Transmitting: ");
   while ((tx_read_ptr != tx_write_ptr) || (bytes_written == writelen)) { //Because the buffer will wrap, so keep writing unil the pointers are in the same spot
     write_data[bytes_written] = tx_data[tx_read_ptr];
@@ -128,5 +126,23 @@ void ESP_Uart::uart_rx_flush() {//Erase all data in the buffer
     return;
   }
   ESP_ERROR_CHECK(uart_flush(uart_num));
+  return;
+}
+
+void ESP_Uart::rx_shift(uint8_t start, int8_t offset){ //Move rx data at specification location ahead or behind by offset
+  
+  return; 
+}
+void ESP_Uart::rx_flush(){ //Reset the rx ring buffer to 0,0
+  rx_read_ptr = rx_write_ptr = 0;
+  return;
+}
+
+void ESP_Uart::tx_shift(uint8_t start, int8_t offset) { //Move tx data at specification location ahead or behind by offset
+
+  return;
+}
+void ESP_Uart::tx_flush() { //Reset the tx ring buffer to 0,0
+  tx_read_ptr = tx_write_ptr = 0;
   return;
 }

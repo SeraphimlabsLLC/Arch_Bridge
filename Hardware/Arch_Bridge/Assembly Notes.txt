@@ -7,6 +7,8 @@ Better, change only R11 to 3k using RC1206FR-073KL
 
 Original PCB contains a mistake in U18, the 5v and 3.3v sides of the chip are reversed. Somehow the ESP seems ok with this.
 
+Reassign UART0 to be labelled Console, and bring boot and reset to the header to work with cts and rts automation.
+DCC-EX TTY should be on uart2 since LN uses 1. The CS doesn't want to deal with debug and could crash. 
 
 
 
