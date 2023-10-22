@@ -19,9 +19,9 @@
 
 
 /*Track Configurations
- * Format: Enable Out pin, Enable In pin, rev/sig pin, brake pin, adc pin, adc ticks per amp x100, adc trip ticks x100
+ * Format: Enable Out pin, Enable In pin, rev/sig pin, brake pin, adc pin, adc ticks per amp x1000, adc zero offset x 1000, adc trip ticks x1000
  * adc ticks per amp is calculated to match the hardware. 
- * adc trip ticks is calculated to where the hardware must shut off. Max is 4095 * 100. 
+ * adc trip ticks is calculated to where the hardware must shut off. Max is 4095 * 1000. 
  * 
  * Loconet hardware configuration
  * Format: uart#, mode, tx pin, rx pin, baud, txbuff, rxbuff, read size
@@ -32,10 +32,10 @@
  */
 
 #ifdef BOARD_TYPE_DYNAMO
-  #define TRACK_1 DCCSigs[0].SetupHW(9, 0, 6, 13, 1, 81900, 409000);
-  #define TRACK_2 DCCSigs[1].SetupHW(10, 0, 7,  14, 2, 81900, 409000);
-  #define TRACK_3 DCCSigs[2].SetupHW(11, 0, 8, 48, 4, 81900, 409000);
-  #define TRACK_4 DCCSigs[3].SetupHW(12, 0, 9, 48, 5, 81900, 409000);
+  #define TRACK_1 DCCSigs[0].SetupHW(9, 0, 6, 13, 1, 81900, -60000, 3500000);
+  #define TRACK_2 DCCSigs[1].SetupHW(10, 0, 7,  14, 2, 81900, -60000, 3500000);
+  #define TRACK_3 DCCSigs[2].SetupHW(11, 0, 8, 48, 4, 81900, -60000, 3500000);
+  #define TRACK_4 DCCSigs[3].SetupHW(12, 0, 9, 48, 5, 81900, -60000, 3500000);
   #define DIR_MONITOR 38 //GPIO38, use for RMT Input
   #define DIR_OVERRIDE 21 //GPIO21, use for RMT Output
   #define MASTER_EN 15 //GPIO15
@@ -44,8 +44,8 @@
 #endif
 
 #ifdef BOARD_TYPE_ARCH_BRIDGE
-  #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 1693840, 372700);
-  #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 169348, 409000);
+  #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 16938409, -65000, 3541000);
+  #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 1693480, -65000, 3541000);
   #define MASTER_EN 3 //Is an Output Enable instead of an input
   #define DIR_MONITOR 9 //GPIO9, railsync input. 
   #define ADC_MIN_OFFSET 60 //ADC is inaccurate at low values.
@@ -84,12 +84,13 @@ class TrackChannel {
     uint8_t powermode; //0 = none, 1 = DCC_external, 2 = DCC_override, 3 = DC.
     uint32_t adc_previous_ticks; //value read on prior scan
     uint32_t adc_current_ticks; //value read on most recent scan
-    void SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint32_t adcscale, uint32_t adc_ol_trip); 
+    void SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint32_t adcscale, int32_t adcoffset, uint32_t adc_ol_trip); 
     void ModeChange (uint8_t newmode);
     void StateChange(uint8_t newstate);
     uint8_t CheckEnable(); //Reads en_in, sets en_out the same, and returns on or off. 
     void adc_read();
-    uint32_t adc_scale; //ADC ticks per amp. This can be higher than the adc max value if the hardware is <1A max. 
+    uint32_t adc_scale; //ADC ticks per amp * 1000. This can be higher than the adc max value if the hardware is <1A max. 
+    int32_t adc_offset; //ADC offset in ticks * 1000. Note this is signed. 
     uint32_t adc_overload_trip; //Pre-calculate trip threshold in adc ticks
     uint8_t overload_state; //holds previous state on OL, or 0. 
     uint32_t overload_cooldown; //Holds ticks remaining before retry

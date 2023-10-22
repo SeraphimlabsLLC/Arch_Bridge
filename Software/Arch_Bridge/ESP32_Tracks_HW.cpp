@@ -56,7 +56,7 @@ void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
   return;
 }
 
-void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint32_t adcscale, uint32_t adc_ol_trip) { 
+void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint32_t adcscale, int32_t adcoffset, uint32_t adc_ol_trip) { 
     max_tracks++; //Add 1 to max tracks
     index = max_tracks; //store the index of this track. 
     #ifdef DEBUG
@@ -71,7 +71,8 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
     brake_pin = gpio_num_t(brk_pin);
     adc_channel = adc1_channel_t (adcpin - 1);
     adc_scale = adcscale;
-    adc_overload_trip = adc_ol_trip;
+    adc_offset = adcoffset * 1000; //Fix scale factor to work with ticks * 1000000 while keeping scale *1000 consistency
+    adc_overload_trip = adc_ol_trip * 1000; //Fix scale factor to work with ticks * 1000000 while keeping scale *1000 consistency
     //Configure Enable Out
     gpio_reset_pin(gpio_num_t(enable_out_pin)); //Always configure enable_out_pin
     gpio_set_direction(gpio_num_t(enable_out_pin), GPIO_MODE_OUTPUT_OD); //Open Drain output, level shifters have integral pull-up
@@ -181,20 +182,20 @@ void TrackChannel::StateChange(uint8_t newstate){
 }
 
 void TrackChannel::adc_read() { //Needs the actual ADC read implemented still
-  //uint16_t adcraw = 0;
+  uint16_t adcraw = 0;
   adc_previous_ticks = adc_current_ticks; //update value read on prior scan
   //ADC runs at a max of 5MHz, and needs 25 clock cycles to complete. Effectively 200khz or 5usec minimum. 
   //adc_current_ticks = analogRead(adc_channel); //Read using Arduino IDE, now obsolete
   //ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, adc_channel, adcraw));
-  adc_current_ticks = adc1_get_raw(adc1_channel_t (adc_channel));
-  //Serial.printf("ADC read %d \n", adc_current_ticks);
-  //adc_current_ticks = adcraw;
-  if (adc_current_ticks >= ADC_MIN_OFFSET) {
-    adc_current_ticks = adc_current_ticks - ADC_MIN_OFFSET;
-  } else {
-    adc_current_ticks = 0;
+  adcraw = adc1_get_raw(adc1_channel_t (adc_channel));
+  adc_current_ticks = adcraw * 1000000 + adc_offset; //Expand from uint16_t to uint32_t
+  if (adc_current_ticks > (adcraw * 1000000)){ //int rollover happened due to adc_offset being less than adcraw. Just set it to 0
+    adc_current_ticks = 0; 
   }
+  
+  //Serial.printf("ADC read %u, upscaled %u \n", adcraw, adc_current_ticks);
   if (adc_current_ticks > adc_overload_trip) {
+    Serial.printf("ADC detected overload at %u ticks, threshold %u \n", adc_current_ticks, adc_overload_trip);
     StateChange(1); //Set power state overload   
   }
   return;

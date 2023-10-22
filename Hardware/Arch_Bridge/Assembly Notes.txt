@@ -3,13 +3,18 @@ Could decrease R9 from 5w to 3w if staying at 500mA fuse, since it would never s
 Q2 badly underperforming, HFE showing as only 11 when datasheet minimum says 20.
 Load is only 114mW, perhaps switch to a 2N2907?
 Alternatively, R10 to 270 ohms and R11 to 4.7kohm   Yaego RC1206FR-10270RL and RC1206FR-104K7L
-Better, change only R11 to 3k using RC1206FR-073KL
+Better, change only R11 to 3k using RC1206FR-073KL << Worked perfectly, 14.5mA on 12.8v input
+
+Q3 is also badly underperforming. HFE measured at only 13 again for datasheet minimum of 20.
+Could try changing R15 to 470 ohms, giving 208mA.
 
 Original PCB contains a mistake in U18, the 5v and 3.3v sides of the chip are reversed. Somehow the ESP seems ok with this.
 
 Reassign UART0 to be labelled Console, and bring boot and reset to the header to work with cts and rts automation.
-DCC-EX TTY should be on uart2 since LN uses 1. The CS doesn't want to deal with debug and could crash. 
+DCC-EX TTY should be on uart2 since LN uses 1. The CS doesn't want to deal with debug and could crash.
 
+Falstead Simulation: 
+https://www.falstad.com/circuit/circuitjs.html?ctz=CQAgjCAMB0l3BWcMBMcUHYMGZIA4UA2ATmIxABYkxIQFaEBTAWjDACgAnKcQ22lCgo8KkdgHMeg4QNE8xAJR7YU8tXLApoeNTATsAziBW9aJ6WoBmAQwA2BxuwDuUocdUWxL2mD7vTUM48vvzgKDrYXDzEhMqqAmLczITCFsnCISIYXiDp-mbx7AAuuSngmsEVqqwgGNAkCBQopIIYeL5gOswwONiEfU1C-QSQEGggACaMNgCutkVBeZ4gnuzYwgBejAB2jJzMCNAQx9AYYBTYCOFgxNfwKCzkArDwr2-4wofH7BulGRV5cwgLa7fZfYrlVRsKEYWLQla5CAwc7YPB8ISQDDhUQYMi5GCEfq3NE3IjES5XcqTabWOYLbhgWEgGLgJkmAR4DBRRlwvw8lZuBiibkVTLw5a4OA-SEy+FAkF7A5HIL8iziwUq0V80WilVMzQ6fmZSIufkmOWFJRmmGxUK0DRaHR26D6SSqtyquT8PW8hKGvw5d2pfACmSGFYhzJoHTLCA2eyOFx5TLJ3VAA
 
 
 

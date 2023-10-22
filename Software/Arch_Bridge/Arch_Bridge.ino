@@ -44,10 +44,10 @@ void setup() {
   ESP32_Tracks_Setup();  //Initialize GPIO and RMT hardware
 
 //For testing purposes.
-//  DCCSigs[0].ModeChange(3); //set to DC
+DCCSigs[0].ModeChange(3); //set to DC
 //  DCCSigs[1].ModeChange(3);
 
-//  DCCSigs[0].StateChange(3);//Set to ON_REV
+DCCSigs[0].StateChange(3);//Set to ON_REV
 //  DCCSigs[1].StateChange(3);  
 }
 
@@ -61,15 +61,15 @@ Master_Enable = MasterEnable(); //Update Master status. Dynamo this is external 
       gpio_set_level(gpio_num_t(DCCSigs[i].enable_out_pin), 1); //Write 1 to enable out on each track
       DCCSigs[i].adc_read(); //actually read the ADC and enforce overload shutdown
       milliamps = DCCSigs[i].adc_current_ticks; //raw ticks
-      milliamps = (DCCSigs[i].adc_current_ticks * 100000)/ DCCSigs[i].adc_scale; //scaled mA
-      Serial.printf("Track %d ",i + 1);
-      Serial.printf("ADC analog value = %d milliamps \n",milliamps);
+      Serial.printf("Track %u ADC analog value = %u ticks \n", i + 1, milliamps);      
+      milliamps = (DCCSigs[i].adc_current_ticks)/ DCCSigs[i].adc_scale; //scaled mA
+      Serial.printf("Track %u ADC analog value = %u milliamps \n", i + 1, milliamps);
     }
     i++;
   }
 #ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, check the loconet
-  Loconet.uart_rx(); //Read data from uart into rx ring
-  Loconet.rx_scan(); //Scan rx ring for opcodes
+  //Loconet.uart_rx(); //Read data from uart into rx ring
+  //Loconet.rx_scan(); //Scan rx ring for opcodes
   //Test payload of OPC_BUSY is 0x81 + 0x7e
   /*
   Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x81;
@@ -92,5 +92,6 @@ Master_Enable = MasterEnable(); //Update Master status. Dynamo this is external 
   Loconet.tx_send(); //Transmit a signal to read
 */  
 #endif 
+Serial.print("Beep \n");
 delay(500);
 }
