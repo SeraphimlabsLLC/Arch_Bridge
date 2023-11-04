@@ -12,7 +12,6 @@ void ESP_uart_init(){ //Set up uarts
 
 //TTY config
 void ESP_Uart::uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff){ 
-
   //store for later 
   uart_num = uartnum; 
   uart_mode = uartmode; 
@@ -59,8 +58,12 @@ void ESP_Uart::uart_write(uint8_t writelen) {//Write the data in the TX ring to 
   if (writelen == 0) { //Enforce minimum length  of 1 to avoid crashing
     writelen = 1;
   }
+  if (tx_read_ptr == tx_write_ptr) {//No data to transmit.
+    return;;
+  }
   uint8_t bytes_written = 0;
   char write_data[writelen];//Holder for cutting out the bytes to be written
+  
   Serial.printf("Transmitting: ");
   while ((tx_read_ptr != tx_write_ptr) || (bytes_written == writelen)) { //Because the buffer will wrap, so keep writing unil the pointers are in the same spot
     write_data[bytes_written] = tx_data[tx_read_ptr];
@@ -69,6 +72,8 @@ void ESP_Uart::uart_write(uint8_t writelen) {//Write the data in the TX ring to 
     bytes_written++;
   }
   Serial.printf("\n");
+
+ 
   uart_write_bytes(uart_num, write_data, bytes_written); //Somehow we ended up being able to write multiple bytes at once after all. 
   return;
 }
