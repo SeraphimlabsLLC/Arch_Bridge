@@ -59,11 +59,13 @@
 #define ADC_DMAX 4095 //4095 in single shot, 8191 in continuous
 #define ADC_VMAX 3.1 //Max readable voltage is actually 3.1v using mode ADC_ATTEN_DB_11  
 
-
-//RMT Constants
-#define RMT_CLOCK_DIVIDER 80  // make calculations easy and set up for microseconds. Taken from DCC-EX DCCRMT.h
+//RMT time Constants. Periods from NMRA S9.1 with some additional fudge factor
 #define DCC_1_HALFPERIOD 58  //4640 // 1 / 80000000 * 4640 = 58us
+#define DCC_1_MIN_HALFPERIOD 50 //NMRA S9.1 says 55uS Minimum half-1. 
+#define DCC_1_MAX_HALFPERIOD 66 //NMRA S9.1 says 61uS Maximum half-1
 #define DCC_0_HALFPERIOD 100 //8000
+#define DCC_0_MIN_HALFPERIOD 90 //NMRA S9.1 says 95uS Minimum half-0
+#define DCC_0_MAX_HALFPERIOD 12000 //NMRA S9.1 says 10000uS Maximum half-0, and 12000uS maximum full-0. 
 
 //I2C settings: 
 #define I2C_SDA_PIN 8 //GPIO17 on Dynamo
@@ -102,9 +104,9 @@ class TrackChannel {
     adc1_channel_t adc_channel;
 };
 
-
 void ESP_serial_init();
 void ESP32_Tracks_Setup();
+void ESP32_Tracks_Loop();
 uint8_t MasterEnable();
 
 //void ESP_i2c_init();

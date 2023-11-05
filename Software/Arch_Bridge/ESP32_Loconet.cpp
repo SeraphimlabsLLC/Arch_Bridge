@@ -185,7 +185,7 @@ void LN_Class::rx_decode(uint8_t packet_size){  //Opcode was found. Lets use it.
       break; 
     case 0xBB: //Request SLOT DATA/status block
       Serial.printf("Throttle requesting slot %u data \n", LN_port.rx_data[LN_port.rx_read_ptr + 1]);
-      tx_opcode_ptr = LN_port.tx_write_ptr;
+      /*tx_opcode_ptr = LN_port.tx_write_ptr;
       LN_port.tx_data[LN_port.tx_write_ptr] = 0xE7; //OPC_SL_RD_DATA
       LN_port.tx_data[LN_port.tx_write_ptr + 1] = 0x0E; //14 byte packet length
       LN_port.tx_data[LN_port.tx_write_ptr + 2] = LN_port.rx_data[LN_port.rx_read_ptr + 1]; //slot number
@@ -210,7 +210,9 @@ void LN_Class::rx_decode(uint8_t packet_size){  //Opcode was found. Lets use it.
       ///Serial.printf("Packet size %u bytes \n", i); 
       LN_port.tx_data[LN_port.tx_write_ptr + 13]= txsum;  
       LN_port.tx_write_ptr = LN_port.tx_write_ptr + 14 ;
-      Loconet.tx_send();
+      Loconet.tx_send();*/
+
+      
       break;
     case 0xBC: //REQ state of SWITCH
       break;   

@@ -28,7 +28,6 @@ extern ESP_Uart tty; //normal serial port
 
 extern TrackChannel DCCSigs[];
 extern uint8_t max_tracks;
-bool Master_Enable = false;
 uint64_t time_us = 0; 
 uint64_t last_time_us = 0;
 /*
@@ -47,33 +46,22 @@ void setup() {
   ESP32_Tracks_Setup();  //Initialize GPIO and RMT hardware
 
 //For testing purposes.
-DCCSigs[0].ModeChange(3); //set to DC
+//DCCSigs[0].ModeChange(1); //set to DCC EXT
 //  DCCSigs[1].ModeChange(3);
 
-DCCSigs[0].StateChange(3);//Set to ON_REV
-//  DCCSigs[1].StateChange(3);  
+//DCCSigs[0].StateChange(2);//Set to ON_FWD
+//  DCCSigs[1].StateChange(3);
+Serial.print("Setup Complete \n");  
 }
 
 void loop() {  
-uint8_t i = 0;
-uint32_t milliamps = 0;
+ESP32_Tracks_Loop(); //Process and update tracks
 
-Master_Enable = MasterEnable(); //Update Master status. Dynamo this is external input, ArchBridge is always true.
-  while (i < max_tracks){ //Check active tracks for faults
-    if (DCCSigs[i].powerstate >= 2){ //State is set to on forward or on reverse, ok to enable. 
-      DCCSigs[i].CheckEnable();
-      gpio_set_level(gpio_num_t(DCCSigs[i].enable_out_pin), 1); //Write 1 to enable out on each track
-      DCCSigs[i].adc_read(); //actually read the ADC and enforce overload shutdown
-      milliamps = DCCSigs[i].adc_current_ticks; //raw ticks     
-      milliamps = (DCCSigs[i].adc_current_ticks)/ DCCSigs[i].adc_scale; //scaled mA
-      //Serial.printf("Track %u ADC analog value = %u milliamps \n", i + 1, milliamps);
-    }
-    i++;
-  }
 #ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, check the loconet
-  Loconet.loop_process();
+  
+  //Loconet.loop_process(); //Process and update Loconet
 
-  Loconet.tx_send();
+//  Loconet.tx_send();
   //Test payload of OPC_BUSY is 0x81 + 0x7e
   /*
   Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x81;

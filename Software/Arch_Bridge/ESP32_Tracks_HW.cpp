@@ -5,9 +5,7 @@
 //TrackChannel(enable_out_pin, enable_in_pin, uint8_t reverse_pin, brake_pin, adc_channel, adcscale, adc_overload_trip)
 TrackChannel DCCSigs[4]; //Define track channel objects with empty values.
 uint8_t max_tracks = 0;
-
-//ADC Handle
-//adc_oneshot_unit_handle_t adc1_handle;
+bool Master_Enable = false;
 
 void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
   #ifdef BOARD_TYPE_DYNAMO //If this is a Dynamo type booster, define these control pins.
@@ -19,7 +17,6 @@ void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
     gpio_reset_pin(gpio_num_t(DIR_MONITOR));
     gpio_set_direction(gpio_num_t(DIR_MONITOR), GPIO_MODE_INPUT);
     gpio_set_pull_mode(gpio_num_t(DIR_MONITOR), GPIO_FLOATING);  
-    //ESP_rmt_rx_init(); //Initialize DIR_MONITOR for RMT monitoring
 
     gpio_reset_pin(gpio_num_t(DIR_OVERRIDE));
     gpio_set_direction(gpio_num_t(DIR_OVERRIDE), GPIO_MODE_OUTPUT);
@@ -33,16 +30,8 @@ void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
   gpio_set_pull_mode(gpio_num_t(MASTER_EN), GPIO_PULLUP_PULLDOWN);    
   gpio_set_level(gpio_num_t(MASTER_EN), 1); //Turn OE on 
 #endif
-  //ADC Setup
   adc1_config_width(ADC_WIDTH_12Bit);//config adc1 width
-/*
   
-  adc_oneshot_unit_init_cfg_t init_config1 = {
-    .unit_id = ADC_UNIT_1,
-    .ulp_mode = ADC_ULP_MODE_DISABLE,
-  };
-  ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config1, &adc1_handle));
-*/
   TRACK_1 //each track definition subsitites the complete function call to DCCSigs::SetupHW 
   #ifdef TRACK_2
   TRACK_2
@@ -53,8 +42,28 @@ void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
   #ifdef TRACK_4
   TRACK_4
   #endif
+  ESP_rmt_rx_init(); //Initialize DIR_MONITOR for RMT monitoring
   return;
 }
+void ESP32_Tracks_Loop(){ //Check tasks each scan cycle.
+  uint8_t i = 0;
+  //uint32_t milliamps = 0;
+  Master_Enable = MasterEnable(); //Update Master status. Dynamo this is external input, ArchBridge is always true.
+    while (i < max_tracks){ //Check active tracks for faults
+    if (DCCSigs[i].powerstate >= 2){ //State is set to on forward or on reverse, ok to enable. 
+      DCCSigs[i].CheckEnable();
+      //gpio_set_level(gpio_num_t(DCCSigs[i].enable_out_pin), 1); //Write 1 to enable out on each track
+      DCCSigs[i].adc_read(); //actually read the ADC and enforce overload shutdown
+      //milliamps = DCCSigs[i].adc_current_ticks; //raw ticks     
+      //milliamps = (DCCSigs[i].adc_current_ticks)/ DCCSigs[i].adc_scale; //scaled mA
+      //Serial.printf("Track %u ADC analog value = %u milliamps \n", i + 1, milliamps);
+    }
+    i++;
+  }
+
+  return;
+}
+
 
 void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint32_t adcscale, int32_t adcoffset, uint32_t adc_ol_trip) { 
     max_tracks++; //Add 1 to max tracks
@@ -79,16 +88,11 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
     gpio_set_level(gpio_num_t(enable_out_pin), 0); //Enable Out stays off until a mode is selected. 
     //Configure Enable In if present
     if (enable_in_pin != 0) { //Only configure enable_in_pin if it is nonzero
-      gpio_reset_pin(gpio_num_t(enable_in_pin));
-      gpio_set_direction(gpio_num_t(enable_in_pin), GPIO_MODE_INPUT);
+      Serial.printf ("Configuring Enable In pin to %u \n", uint8_t (enable_in_pin));
+      gpio_reset_pin(enable_in_pin);
+      gpio_set_direction(enable_in_pin, GPIO_MODE_INPUT);
     }
-/*
-    adc_oneshot_chan_cfg_t config = {
-        .bitwidth = ADC_BITWIDTH_DEFAULT,
-        .atten = ADC_ATTEN_DB_11,   //ADC range 0-3.1
-    };
-    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, adc_channel, &config));
-    */
+    
     adc1_config_channel_atten(adc_channel,ADC_ATTEN_11db);//config attenuation
     adc_current_ticks = adc_previous_ticks = adc_base_ticks = 0; //Set all 3 ADC values to 0 initially
     ModeChange(0); //set power mode none, which will also set power state off.
@@ -186,7 +190,6 @@ void TrackChannel::adc_read() { //Needs the actual ADC read implemented still
   adc_previous_ticks = adc_current_ticks; //update value read on prior scan
   //ADC runs at a max of 5MHz, and needs 25 clock cycles to complete. Effectively 200khz or 5usec minimum. 
   //adc_current_ticks = analogRead(adc_channel); //Read using Arduino IDE, now obsolete
-  //ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, adc_channel, adcraw));
   adcraw = adc1_get_raw(adc1_channel_t (adc_channel));
   adc_current_ticks = adcraw * 1000000 + adc_offset; //Expand from uint16_t to uint32_t
   if (adc_current_ticks > (adcraw * 1000000)){ //int rollover happened due to adc_offset being less than adcraw. Just set it to 0
@@ -204,11 +207,11 @@ void TrackChannel::adc_read() { //Needs the actual ADC read implemented still
 uint8_t TrackChannel::CheckEnable(){ //Arch Bridge has to check enable_input_pin for each track. Others this always returns 1 with no pin changes.
   uint8_t enable_in = 1; //default value for enable in
   #ifdef BOARD_TYPE_ARCH_BRIDGE //Enable In is only used on Arch Bridge
-    if (enable_in_pin != 0) { //If enable_in is configured, read it
+    if ((enable_in_pin != 0) && (powermode = 1)) { //If enable_in_pin is configured and powermode = 1 for DCC EXT, read and update enable_in_pin
       enable_in = gpio_get_level(enable_in_pin);
-      //Serial.printf("Enable In is %d \n",enable_in);
+      //Serial.printf("Enable In is %u \n", enable_in);
     }
-    gpio_set_level(enable_out_pin, enable_in); //enable_out = enable in or 1
+    gpio_set_level(enable_out_pin, enable_in);
   #endif
   return enable_in;
 }
@@ -230,33 +233,46 @@ uint8_t MasterEnable(){ //Dyamo type boards have an input for master enable. Oth
 }
 
 void ESP_rmt_rx_init(){
-  //Initialize RMT for DCC auditing
-  rmt_config_t rmt_rx_config;
-  // Configure the RMT channel for RX
-//  bzero(&config, sizeof(rmt_config_t));
-  rmt_rx_config.rmt_mode = RMT_MODE_RX;
-  rmt_rx_config.channel = rmt_channel_t(DIR_MONITOR_RMT);
-  rmt_rx_config.clk_div = RMT_CLOCK_DIVIDER;
-  rmt_rx_config.gpio_num = gpio_num_t(DIR_MONITOR);
+  // Configure the RMT channel for RX to audit incoming DCC
+    uint32_t APB_Div = getApbFrequency() / 1000000; //Reported bus frequency in MHz
+    //Serial.printf("APB Frequency %u MHz \n", APB_Div);
+    rmt_config_t rmt_rx_config = {                                           
+        .rmt_mode = RMT_MODE_RX,                
+        .channel = rmt_channel_t(DIR_MONITOR_RMT),                  
+        .gpio_num = gpio_num_t(DIR_MONITOR),                       
+        .clk_div = APB_Div,       
+        .mem_block_num = 3,                     
+        .flags = 0,                             
+        .rx_config = {                          
+            .idle_threshold = (DCC_1_MIN_HALFPERIOD * APB_Div),    //Timeout filter       
+            .filter_ticks_thresh = (DCC_0_MAX_HALFPERIOD * APB_Div), //Glitch filter       
+            .filter_en = true,                  
+        }                                       
+    };
 /* NMRA allows up to 32 bytes per packet, the max length would be 301 bits transmitted and need 38 bytes (3 bits extra). 
  * DCC_EX is limited to only 11 bytes max. Much easier to account for and uses a smaller buffer. 
   */
-  rmt_rx_config.mem_block_num = 3; 
+   
   ESP_ERROR_CHECK(rmt_config(&rmt_rx_config));
+  //Serial.printf("Loading RMT RX Driver \n");
   // NOTE: ESP_INTR_FLAG_IRAM is *NOT* included in this bitmask
+  //It may be necessary to replace the 0 with a ring buffer size. Use rmt_get_ringbuf_handle(rmt_channel_t channel, RingbufHandle_t *buf_handle) to get access.
   ESP_ERROR_CHECK(rmt_driver_install(rmt_rx_config.channel, 0, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED));  
-  Serial.printf("RMT RX Initialized \n"); 
+
+  ESP_ERROR_CHECK(rmt_rx_start(rmt_channel_t(DIR_MONITOR_RMT), true)); //Enable RMT RX, true to erase existing RX data
+  Serial.printf("DCC Auditing Initialized using ESP RMT \n"); 
   return;
 }
 
 void rmt_tx_init(){
   //Initialize RMT for DCC TX 
   #ifdef BOARD_TYPE_DYNAMO //for now only do this on Dynamo
+  uint32_t APB_Div = getApbFrequency() / 1000000;
   rmt_config_t rmt_tx_config;
   // Configure the RMT channel for TX
   rmt_tx_config.rmt_mode = RMT_MODE_TX;
   rmt_tx_config.channel = rmt_channel_t(DIR_OVERRIDE_RMT);
-  rmt_tx_config.clk_div = RMT_CLOCK_DIVIDER;
+  rmt_tx_config.clk_div = APB_Div; //Multiplier is now dynamic based on reported APB bus frequency. 
   rmt_tx_config.gpio_num = gpio_num_t(DIR_OVERRIDE);
   rmt_tx_config.mem_block_num = 2; // With longest DCC packet 11 inc checksum (future expansion)
                             // number of bits needed is 22preamble + start +
@@ -264,7 +280,7 @@ void rmt_tx_init(){
                             // 2 mem block of 64 RMT items should be enough
   ESP_ERROR_CHECK(rmt_config(&rmt_tx_config));
   // NOTE: ESP_INTR_FLAG_IRAM is *NOT* included in this bitmask
-  ESP_ERROR_CHECK(rmt_driver_install(rmt_tx_config.channel, 0, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED));    
+  ESP_ERROR_CHECK(rmt_driver_install(rmt_tx_config.channel, 0, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED);    
   Serial.printf("RMT TX Initialized \n"); 
   #endif
   return;
