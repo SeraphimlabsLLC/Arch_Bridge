@@ -20,12 +20,14 @@ class ESP_Uart {
 
   void uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
   void uart_write(uint8_t writelen); //write the specified number of bytes from tx_data and subtract from tx_data_len
+  //void uart_write(char* writedata, uint8_t writelen); //Write writelen bytes from *writedata 
   uint16_t uart_read(uint8_t readlen); //read the specified number of bytes into rx_data and add to rx_data_len
   uint16_t read_len(); //returns how much data there is to be read 
   void uart_rx_flush(); //Erase the RX buffer contents
   
   void rx_shift(uint8_t start, int8_t offset); //Move rx data at specification location ahead or behind by offset
   void rx_flush(); //Reset the rx ring buffer to 0,0
+  
   void tx_shift(uint8_t start, int8_t offset); //Move tx data at specification location ahead or behind by offset
   void tx_flush(); //Reset the tx ring buffer to 0,0
  

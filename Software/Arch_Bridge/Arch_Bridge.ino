@@ -18,6 +18,7 @@ extern ESP_Uart tty; //normal serial port
 #ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, define a loconet uart
   #ifndef ESP32_LOCONET_H
     #include "ESP32_Loconet.h"
+    
   #endif
 #ifndef ESP32_DCCEX_H
   #include "ESP32_dccex.h"
@@ -49,7 +50,7 @@ void setup() {
 //DCCSigs[0].ModeChange(1); //set to DCC EXT
 //  DCCSigs[1].ModeChange(3);
 
-//DCCSigs[0].StateChange(2);//Set to ON_FWD
+DCCSigs[0].StateChange(2);//Set to ON_FWD
 //  DCCSigs[1].StateChange(3);
 Serial.print("Setup Complete \n");  
 }
@@ -59,7 +60,7 @@ ESP32_Tracks_Loop(); //Process and update tracks
 
 #ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, check the loconet
   
-  //Loconet.loop_process(); //Process and update Loconet
+  Loconet.loop_process(); //Process and update Loconet
 
 //  Loconet.tx_send();
   //Test payload of OPC_BUSY is 0x81 + 0x7e
@@ -88,6 +89,6 @@ ESP32_Tracks_Loop(); //Process and update tracks
   time_us = esp_timer_get_time();
   if ((time_us - last_time_us) > HEARTBEAT_US) {
     Serial.printf("%Heartbeat scan Jitter: %u uS \n", (time_us - last_time_us - HEARTBEAT_US)); 
-    last_time_us = time_us;
+    last_time_us = time_us;   
   }
 }

@@ -3,14 +3,20 @@
 #endif
 
 //TrackChannel(enable_out_pin, enable_in_pin, uint8_t reverse_pin, brake_pin, adc_channel, adcscale, adc_overload_trip)
-TrackChannel DCCSigs[4]; //Define track channel objects with empty values.
-uint8_t max_tracks = 0;
-bool Master_Enable = false;
+TrackChannel DCCSigs[MAX_TRACKS]; //Define track channel objects with empty values.
+uint8_t max_tracks = 0; //Will count tracks as they are initialized. 
+bool Master_Enable = false; 
+uint64_t Master_en_chk_time = 0; //Store when it was checked last. 
+bool Master_en_deglitch = false; //Interim value
+bool rmt_dcc_ok = true; //RMT reports a valid DCC signal. 
+extern uint64_t time_us; //Reuse time_us from main
+
+uint32_t rmt_rxdata_ptr; //RMT RX Ring Buffer locator
 
 void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
   #ifdef BOARD_TYPE_DYNAMO //If this is a Dynamo type booster, define these control pins.
   Serial.print("Configuring board for Dynamo booster mode \n");
-    gpio_reset_pin(gpio_num_t(MASTER_EN)); //Is used on both boards
+    gpio_reset_pin(gpio_num_t(MASTER_EN)); //Input from Optocouplers and XOR verifying that at least one opto is on
     gpio_set_direction(gpio_num_t(MASTER_EN), GPIO_MODE_INPUT);
     gpio_set_pull_mode(gpio_num_t(MASTER_EN), GPIO_FLOATING);  
 
@@ -20,15 +26,16 @@ void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
 
     gpio_reset_pin(gpio_num_t(DIR_OVERRIDE));
     gpio_set_direction(gpio_num_t(DIR_OVERRIDE), GPIO_MODE_OUTPUT);
-    gpio_set_pull_mode(gpio_num_t(DIR_OVERRIDE), GPIO_PULLDOWN_ONLY); 
+    gpio_set_pull_mode(gpio_num_t(DIR_OVERRIDE), GPIO_PULLUP_PULLDOWN); 
 #endif
 #ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, define these control pins.
   Serial.print("Configuring board for Arch Bridge mode \n");
 
-  gpio_reset_pin(gpio_num_t(MASTER_EN)); //Is used on both boards
+  gpio_reset_pin(gpio_num_t(MASTER_EN)); //Serves as an Output Enable on Dynamo
   gpio_set_direction(gpio_num_t(MASTER_EN), GPIO_MODE_OUTPUT);
   gpio_set_pull_mode(gpio_num_t(MASTER_EN), GPIO_PULLUP_PULLDOWN);    
   gpio_set_level(gpio_num_t(MASTER_EN), 1); //Turn OE on 
+
 #endif
   adc1_config_width(ADC_WIDTH_12Bit);//config adc1 width
   
@@ -37,18 +44,18 @@ void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
   TRACK_2
   #endif 
   #ifdef TRACK_3
-  TRACK_3
+    TRACK_3
   #endif
   #ifdef TRACK_4
-  TRACK_4
+    TRACK_4
   #endif
-  ESP_rmt_rx_init(); //Initialize DIR_MONITOR for RMT monitoring
+  //ESP_rmt_rx_init(); //Initialize DIR_MONITOR for RMT monitoring
   return;
 }
 void ESP32_Tracks_Loop(){ //Check tasks each scan cycle.
   uint8_t i = 0;
   //uint32_t milliamps = 0;
-  Master_Enable = MasterEnable(); //Update Master status. Dynamo this is external input, ArchBridge is always true.
+  MasterEnable(); //Update Master status. Dynamo this is external input, ArchBridge is always true.
     while (i < max_tracks){ //Check active tracks for faults
     if (DCCSigs[i].powerstate >= 2){ //State is set to on forward or on reverse, ok to enable. 
       DCCSigs[i].CheckEnable();
@@ -216,19 +223,28 @@ uint8_t TrackChannel::CheckEnable(){ //Arch Bridge has to check enable_input_pin
   return enable_in;
 }
 
-uint8_t MasterEnable(){ //Dyamo type boards have an input for master enable. Others this always returns 1. 
-    uint8_t master_en = 1; //default value for master_en
+bool MasterEnable(){ //On Dynamo boards, read MASTER_IN twice MASTER_EN_DEGLITCH uS apart. If both agree, that is the new state. Arch_Bridge it always returns 1. 
+  //NMRA S-9.1 gives the rise/fall time as 2.5v/uS, the pin could be off for 6uS each edge.
+  
+  bool master_en = 1; //default value for master_en.
 #ifdef BOARD_TYPE_DYNAMO
-      uint8_t i = 0;
-      master_en = gpio_get_level(gpio_num_t(MASTER_EN));
-      //if (master_en != 1) {
-      //  while (i < max_tracks){
-      //    DCCSigs[0].StateChange(0); //Change all tracks to the off state. They have to be individually turned on again. 
-      //    i++;     
-      //  }
-      //}
+    time_us = esp_timer_get_time();
+    if ((time_us - Master_en_chk_time) > MASTER_EN_DEGLITCH){
+      master_en = gpio_get_level(gpio_num_t(MASTER_EN));  
+      if (master_en != Master_en_deglitch) { //State changed, update and rescan
+        Master_en_deglitch = master_en; 
+        master_en = Master_Enable; //Pass through the unchanged value to the return.  
+      } 
+      //Implied if master_en == Master_en_deglitch it will change Master_Enable too. 
+      Master_en_chk_time = time_us; //Update last scan time. 
+    }     
 #endif
+  master_en = master_en && rmt_dcc_ok; //Master Enable will still shut off if the RMT DCC decoder isn't getting valid packets. 
 // BOARD_TYPE_ARCHBRIDGE has no master_en input, this will always return 1. 
+   if (master_en != Master_Enable) { //Master Enable state has changed.
+     Serial.printf("Master Enable on gpio %u state changed, new state %u \n", MASTER_EN, master_en);
+     Master_Enable = master_en; //Function directly updates the Master_Enable global in addition to returning
+   }  
   return master_en;
 }
 
@@ -241,12 +257,12 @@ void ESP_rmt_rx_init(){
         .channel = rmt_channel_t(DIR_MONITOR_RMT),                  
         .gpio_num = gpio_num_t(DIR_MONITOR),                       
         .clk_div = APB_Div,       
-        .mem_block_num = 3,                     
+        .mem_block_num = 4,                   
         .flags = 0,                             
         .rx_config = {                          
             .idle_threshold = (DCC_1_MIN_HALFPERIOD * APB_Div),    //Timeout filter       
             .filter_ticks_thresh = (DCC_0_MAX_HALFPERIOD * APB_Div), //Glitch filter       
-            .filter_en = true,                  
+            .filter_en = false,                  
         }                                       
     };
 /* NMRA allows up to 32 bytes per packet, the max length would be 301 bits transmitted and need 38 bytes (3 bits extra). 
@@ -257,8 +273,8 @@ void ESP_rmt_rx_init(){
   //Serial.printf("Loading RMT RX Driver \n");
   // NOTE: ESP_INTR_FLAG_IRAM is *NOT* included in this bitmask
   //It may be necessary to replace the 0 with a ring buffer size. Use rmt_get_ringbuf_handle(rmt_channel_t channel, RingbufHandle_t *buf_handle) to get access.
-  ESP_ERROR_CHECK(rmt_driver_install(rmt_rx_config.channel, 0, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED));  
-
+  ESP_ERROR_CHECK(rmt_driver_install(rmt_rx_config.channel, 256, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED)); 
+  rmt_set_mem_block_num((rmt_channel_t) DIR_MONITOR_RMT, 4); 
   ESP_ERROR_CHECK(rmt_rx_start(rmt_channel_t(DIR_MONITOR_RMT), true)); //Enable RMT RX, true to erase existing RX data
   Serial.printf("DCC Auditing Initialized using ESP RMT \n"); 
   return;
@@ -280,7 +296,7 @@ void rmt_tx_init(){
                             // 2 mem block of 64 RMT items should be enough
   ESP_ERROR_CHECK(rmt_config(&rmt_tx_config));
   // NOTE: ESP_INTR_FLAG_IRAM is *NOT* included in this bitmask
-  ESP_ERROR_CHECK(rmt_driver_install(rmt_tx_config.channel, 0, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED);    
+  ESP_ERROR_CHECK(rmt_driver_install(rmt_tx_config.channel, 0, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED));    
   Serial.printf("RMT TX Initialized \n"); 
   #endif
   return;
