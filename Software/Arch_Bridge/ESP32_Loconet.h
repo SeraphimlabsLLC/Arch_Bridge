@@ -12,7 +12,6 @@
 #include "Arduino.h"
 #include "esp_timer.h" //Required for timer functions to work.
 
-
 //Loconet UART settings, from ESP32_uart.h: (uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
 #define LN_UART Loconet.LN_port.uart_init(1, 2, 17, 18, 16666, 255, 255);
 #define LN_PRIORITY MASTER //MASTER has priority delay 0. SENSOR has priority delay of 6 down to 2. THROTTLE has priority delay of 20 down to 6. 
@@ -22,14 +21,18 @@
 #define CLK_HOURS 12; //Initial clock hours
 #define CLK_MINUTES 0; //Initial clock minutes
 
-//Enums: 
-enum LN_packetstate {empty = 0, new_packet = 1, pending = 2, failed = 3, success = 4}; //Packet state flags 
+//Queue settings: 
+#define LN_RX_Q 32
+#define LN_TX_Q 32
 
+//Enums: 
+enum LN_packetstate {empty = 0, pending = 1, attempting = 2, sent = 3, failed = 4, success = 5}; //Packet state flags 
+enum LN_netstate {startup = 0, disconnected = 1, inactive = 2, active = 3};
 class LN_Packet{ //Track packet states. The packet data itself goes in a char[] and this only stores the ptr
   public: 
   uint8_t priority; //0 = highest, 20 = lowest. Throttles have min 20, Sensors have min 6, Master has min 0
-  LN_packetstate state; //See enum packetstate; 
-  uint8_t tx_attempts; //Starts at 15 and decrements, tx failure at 0.
+  uint8_t state; //See enum packetstate. Couldn't get the enum to actually work here. 
+  int8_t tx_attempts; //Starts at 25 and decrements, tx failure at 0.
   uint64_t tx_last_start; //Time in uS of last tx window start. Each window lasts 15mS. 
   uint8_t data_len; //Length of packet
   char* data_ptr; //Pointer to the char* with the actual packet in it. 
@@ -63,6 +66,7 @@ class LN_Slot_data{ //Each slot will be created and have a pointer stored in LN_
 class LN_Class {
   public:
   ESP_Uart LN_port; //Class inside a class
+  LN_netstate netstate; //Network operating condition
   char rx_opcode; //Last opcode received
   uint64_t rx_last_us; //time in startup us of last byte received  
   uint64_t rx_opcode_last_us; //time of last opcode detected
@@ -70,17 +74,16 @@ class LN_Class {
   
   char tx_opcode; //Last opcode transmitted
   uint64_t tx_last_us; //timestamp of last tx attempt
-  uint8_t tx_opcode_ptr; //Track where an opcode was sent
   uint8_t tx_pkt_len; //length of last tx packet
-  uint8_t rx_opcode_ptr; //Track where an opcode was seen in loopback
 
   void loop_process(); //Process time based data
   uint64_t fastclock_start; //Note the timestamp at which the fast clock was initialized
+  LN_Class(); //Constructor
 
   private:
-  LN_Packet* rx_packets[32]; //Pointers to RX packets
+  LN_Packet* rx_packets[LN_RX_Q]; //Pointers to RX packets
   int8_t rx_pending; //Index of which packet slot is receiving. Set to -1 if none.
-  LN_Packet* tx_packets[32]; //Pointers to TX packets
+  LN_Packet* tx_packets[LN_TX_Q]; //Pointers to TX packets
   int8_t tx_pending; //Index of which packet is actively sending. Set to -1 if none. 
 
   LN_Slot_data* slot_ptr[127]; //Stores pointers for accessing slot data.
@@ -88,7 +91,8 @@ class LN_Class {
   void rx_scan(); //Scan rx ring for a valid packet
   void rx_decode(); //Process the opcode that was found
 
-  void tx_send(); //Encode data for sending
+  void tx_queue(); //Process transactions in queue to send
+  void tx_send(uint8_t txptr); //Try to send data and update tracking info
   uint8_t tx_loopback(uint8_t packet_size); //RX ring found an opcode we just sent, check if it is ours
 
   uint8_t rx_packet_getempty(); //Scan packets and return 1st empty slot
@@ -96,14 +100,16 @@ class LN_Class {
 
   uint8_t tx_packet_getempty(); //Scan packets and return 1st empty slot
   void tx_packet_new(uint8_t index, uint8_t packetlen); //Create new packet and initialize it
+  void tx_packet_del(uint8_t index); //Delete a packet from the queue after confirmation of send. 
    
   void transmit_break();
   bool receive_break(uint8_t break_ptr);
 
   void fastclock_update(); //Calculate updated fast clock
-  void slot_read(); //Handle slot reads
-  void slot_write(); //Handle slot writes
-  void slot_move(); //Handle slot moves
+  int8_t loco_select(uint8_t low_addr); //Return the slot managing this locomotive, or assign one if new. 
+  void slot_read(int8_t slotnumber); //Handle slot reads
+  void slot_write(int8_t slotnumber); //Handle slot writes
+  void slot_move(int8_t slotnumber, int8_t newslotnumber); //Handle slot moves
   
   uint8_t slot_new(uint8_t index); //Check if a slot is empty and initialize it. 
   uint8_t slot_del(uint8_t index); //Remove a slot from memory

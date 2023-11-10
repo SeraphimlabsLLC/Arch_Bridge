@@ -1,5 +1,5 @@
 #pragma once
-  #define ESP32_DCCEX_H
+#define ESP32_DCCEX_H
 
 #ifndef ESP32_UART_H
   #include "ESP32_uart.h"

@@ -56,34 +56,15 @@ Serial.print("Setup Complete \n");
 }
 
 void loop() {  
+  uint64_t LN_Scan = 0;
 ESP32_Tracks_Loop(); //Process and update tracks
 
 #ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, check the loconet
-  
+  if ((time_us - LN_Scan) > (60*8)) { //Only scan once every 8 bytes at 60uS/byte.
   Loconet.loop_process(); //Process and update Loconet
+  LN_Scan = time_us;
+  }
 
-//  Loconet.tx_send();
-  //Test payload of OPC_BUSY is 0x81 + 0x7e
-  /*
-  Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x81;
-  Loconet.LN_port.tx_write_ptr++;
-  Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x7e;
-  Loconet.LN_port.tx_write_ptr++;
-*/
-  //Replay a switch close command for testing
-/*
-  Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0xB0;
-  Loconet.tx_opcode = 0xB0;
-  Loconet.tx_opcode_ptr = Loconet.LN_port.tx_write_ptr; //Track the opcode pointer
-  Loconet.LN_port.tx_write_ptr++;
-  Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x00; //0x81 xor FF
-  Loconet.LN_port.tx_write_ptr++;
-  Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x20; //0x81 xor FF
-  Loconet.LN_port.tx_write_ptr++;
-  Loconet.LN_port.tx_data[Loconet.LN_port.tx_write_ptr] = 0x6F; //0x81 xor FF = 0x7e
-  Loconet.LN_port.tx_write_ptr++;
-  Loconet.tx_send(); //Transmit a signal to read
-*/  
 #endif 
 #define HEARTBEAT_US 10000000 //10 seconds
   time_us = esp_timer_get_time();

@@ -4,6 +4,7 @@
 
 //UART globals
 ESP_Uart tty; //normal serial port
+extern uint64_t time_us; //Shared time global
 
 void ESP_uart_init(){ //Set up uarts
  TTY_CONFIG 
@@ -51,15 +52,15 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8
 return;
 }
 
-void ESP_Uart::uart_write(uint8_t writelen) {//Write the data in the TX ring to the port. 
-  if (uart_num == 0) {
-    return;
+uint8_t ESP_Uart::uart_write(uint8_t writelen) {//Write the data in the TX ring to the port. 
+  if (uart_num == 0) { //Don't write to uart0, the arduino library manages that
+    return 0;
   }
-  if (writelen == 0) { //Enforce minimum length  of 1 to avoid crashing
-    writelen = 1;
+  if (writelen == 0) { //Don't try to write if writelen is 0. 
+    return 0;
   }
   if (tx_read_ptr == tx_write_ptr) {//No data to transmit.
-    return;;
+    return 0;
   }
   uint8_t bytes_written = 0;
   char write_data[writelen];//Holder for cutting out the bytes to be written
@@ -72,10 +73,17 @@ void ESP_Uart::uart_write(uint8_t writelen) {//Write the data in the TX ring to 
     bytes_written++;
   }
   Serial.printf("\n");
-
- 
   uart_write_bytes(uart_num, write_data, bytes_written); //Somehow we ended up being able to write multiple bytes at once after all. 
-  return;
+  return bytes_written;
+}
+uint8_t ESP_Uart::uart_raw_write(const char* write_data){ //Write the contents of the pointer to the ring buffer
+  uint8_t bytes_written = 0;
+  uint8_t i = 0;
+  if (uart_num == 0) { //Don't write to uart0, the arduino Serial library manages that one
+    return 0;
+  }
+  uart_write_bytes(uart_num, write_data, bytes_written);
+  return bytes_written;
 }
 
 uint16_t ESP_Uart::read_len(){ //returns how much data there is to be read
@@ -140,6 +148,7 @@ void ESP_Uart::rx_shift(uint8_t start, int8_t offset){ //Move rx data at specifi
 }
 void ESP_Uart::rx_flush(){ //Reset the rx ring buffer to 0,0
   rx_read_ptr = rx_write_ptr = 0;
+  
   return;
 }
 
