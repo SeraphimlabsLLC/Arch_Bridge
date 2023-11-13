@@ -1,0 +1,87 @@
+//Contains some code snippets from DCC-EX ESP32 branch
+#pragma once
+#define ESP32_RMTDCC_HW_H
+#pragma message "Included rmtdcc.h"
+
+#include "Arduino.h"
+#include "driver/gpio.h"
+
+#include "driver/rmt.h"
+#include "soc/rmt_reg.h"
+#include "soc/rmt_struct.h"
+
+//Use config.h if present, otherwise defaults
+#ifndef CONFIG_H
+  #if __has_include ( "config.h")
+    #include "config.h"
+  #else
+    #include "config.example.h"
+  #endif
+#endif  
+#define BOARD_TYPE_ARCH_BRIDGE//Configure board style
+
+#ifdef BOARD_TYPE_DYNAMO
+  #define DIR_MONITOR 38 //RMT Input pin, 9 on Arch_Bridge 38 on Dynamo
+  #define DIR_OVERRIDE 21 //GPIO21, use for RMT Output
+#endif
+
+#ifdef BOARD_TYPE_ARCH_BRIDGE
+  #define DIR_MONITOR 9 //RMT Input pin, 9 on Arch_Bridge 38 on Dynamo
+#endif
+
+#define DCC_RX_Q 16
+#define DCC_TX_Q 8
+
+class dccpacket {
+  public:
+  void Make_Checksum(); //Populate last byte with valid checksum
+  bool Read_Checksum(); //Verify checksum, returns true if valid, false if invalid.
+  uint8_t packet_size_check(); //Check that a packet has a valid size. 
+  void reset_packet(); //Reset packet slot to defaults
+
+  private:
+  char packet_data[48]; //Should only need 38 bytes + a few odd bits. 
+  uint8_t state; //empty = 0, pending = 1, receiving = 2, complete = 3, failed = 4, success = 5} 
+  uint8_t data_len; //Length of packet
+
+};
+
+class Rmtdcc {
+  public:
+  void rmt_rx_init(); 
+  void rx_scan(); 
+#ifdef BOARD_TYPE_DYNAMO
+  void rmt_tx_init(); 
+  void tx_send(); 
+
+#endif
+  private:
+  rmt_item32_t* rmt_rx_ptr; //Handle for storing RMT RX ring buffer pointer
+  char rx_decoded[4]; //bytes of decoded data. Once a packet start is found, start moving data into a packet. 
+  dccpacket* rx_data[DCC_RX_Q]; //Array of pointers to DCC packet data
+
+  void setDCCBit1(rmt_item32_t* item);
+  void setDCCBit0(rmt_item32_t* item);
+  void setEOT(rmt_item32_t* item);
+#ifdef BOARD_TYPE_DYNAMO
+  
+  dccpacket* tx_data[DCC_TX_Q]; //Array of pointers to DCC packet data
+#endif
+};
+
+#define DIR_MONITOR_RMT 4 //On ESP32-S3, RMT channels 0-3 are TX only and 4-7 are RX only
+#define DIR_OVERRIDE_RMT 0 
+
+//RMT time Constants. Periods from NMRA S9.1 with some additional fudge factor
+#define DCC_1_HALFPERIOD 58  //4640 // 1 / 80000000 * 4640 = 58us
+#define DCC_1_MIN_HALFPERIOD 50 //NMRA S9.1 says 55uS Minimum half-1. 
+#define DCC_1_MAX_HALFPERIOD 66 //NMRA S9.1 says 61uS Maximum half-1
+#define DCC_0_HALFPERIOD 100 //8000
+#define DCC_0_MIN_HALFPERIOD 90 //NMRA S9.1 says 95uS Minimum half-0
+#define DCC_0_MAX_HALFPERIOD 12000 //NMRA S9.1 says 10000uS Maximum half-0, and 12000uS maximum full-0. 
+
+
+void ESP_rmt_rx_init(); //Initialize RMT RX
+void ESP_rmt_tx_init(); //Initialize RMT TX
+
+//Move these to DCC.h? They might be needed for RMT

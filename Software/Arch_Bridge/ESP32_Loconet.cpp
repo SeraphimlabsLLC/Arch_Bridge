@@ -1,7 +1,7 @@
 /*   IMPORTANT:
  *  Some of the message formats used in this code are Copyright Digitrax, Inc.
  */
-
+#define DEBUG
 #ifndef ESP32_UART_H
   #include "ESP32_uart.h"
 #endif
@@ -31,7 +31,7 @@
 ESP_Uart LN_port; //Loconet uart object
 LN_Class Loconet; //Loconet processing object
 
-extern DCCEX_Class dccex_port;
+//extern DCCEX_Class dccex_port;
 extern uint64_t time_us; 
 
 void ESP_LN_init(){//Initialize Loconet objects
@@ -40,7 +40,11 @@ void ESP_LN_init(){//Initialize Loconet objects
 }
 
 void LN_Class::loop_process(){
+  /*
   time_us = esp_timer_get_time();
+  if ((time_us - last_time_us) < 2) { //Give it 2uS between scans. 
+    return;
+  }*/
   uint8_t i = 0;
   if ((netstate == startup) || (netstate == disconnected)){
     //Wait for 250mS restart timer before accepting data. 
@@ -54,144 +58,185 @@ void LN_Class::loop_process(){
     return;
   }
   //Network should be ok to interact with: 
-  //Serial.printf("Loconet scan cycle: \n");
+  //Serial.printf("Loconet uart_rx cycle: \n");
   uart_rx(); //Read uart data into the RX ring
+  //Serial.printf("Loconet rx_scan cycle: \n");
   rx_scan(); //Scan RX ring for an opcode
-  //rx_decode() and tx_loopback(); are run automatically as needed by rx_scan() when an opcode is found.
+  //Serial.printf("Loconet rx_queue cycle: \n");
+  rx_queue(); //Process queued RX packets and run rx_decode
+  //Serial.printf("Loconet tx_queue cycle: \n");
   tx_queue(); //Try to send any queued packets
+  //Serial.printf("Loconet loop complete \n");
   return;
 } 
 
 uint8_t LN_Class::uart_rx(){
   uint8_t read_size = 0;
-  read_size = LN_port.uart_read(read_size); //read data into the ring buffer. read_size just because.
+  uint8_t i = 0;
+  read_size = LN_port.uart_read(read_size); //populate rx_read_data and rx_data
   if (read_size > 0){ //Data was actually moved, update the timer.
     rx_last_us = esp_timer_get_time();
-    Serial.printf("Read %u bytes \n", read_size);
+    Serial.printf("uart_rx has bytes: ");
+    while (i< read_size) {
+      Serial.printf("%x ", LN_port.rx_read_data[i]);
+      i++;
+    }
+    Serial.printf("\n");  
   }
   return read_size;
 }
 
-void LN_Class::rx_scan(){ //Scan ring buffer data for an opcode and return its location
-  bool eod = false;
-  uint8_t i = 0;
-  uint8_t packet_size;
-  char xsum;
-  last_rx_process = esp_timer_get_time();
-
- if ((LN_port.rx_read_ptr == LN_port.rx_write_ptr)) { //End of file
-    //Since we have the chance to while there is no data, reset both pointers to 0. The rollover has been inelegant.
-    LN_port.rx_read_ptr = 0;
-    LN_port.rx_write_ptr = 0;
-    eod = true;
+void LN_Class::rx_scan(){ //Scan received data for a valid frame
+  uint8_t i = 0;  
+  uint8_t location; 
+  if (LN_port.rx_read_processed != 0) { //Data has already been processed. 
+    return; 
   }
-  
- if (((rx_last_us - rx_opcode_last_us) > (10 * LN_BITLENGTH_US)) && (rx_opcode != 0x00)) { //Too long waiting for the rest of the packet. Move on. .
-          LN_port.rx_read_ptr++;
-          Serial.printf("Data timeout, discarding invalid packet \n");
-          rx_opcode = 0x00;
-          eod = true;
-        }
-  
-  while (!(eod))  { //Scan until end of file is true
-     
-    if (LN_port.rx_data[LN_port.rx_read_ptr]) { //Check if this is a break and not actually data value 0.
-      eod = receive_break(LN_port.rx_read_ptr); //receive_break returns true when resetting the buffer, which would make eod true as well.
-      if (eod == true) {
-        return;
-      }
+  time_us = esp_timer_get_time();
+  last_rx_process = time_us;
+  //Serial.printf("RX_Scan: %u bytes read %u \n", LN_port.rx_read_len, i);
+  while (i < LN_port.rx_read_len) {
+    //Serial.printf("RX_Scan While, rxpending %u, rxbyte %x \n", rx_pending, LN_port.rx_read_data[i]);
+    if (rx_pending < 0){ 
+      //Serial.printf("No packet pending, i %u, byte %x \n", i, LN_port.rx_read_data[i]);
     }
-    
-    if ((LN_port.rx_data[LN_port.rx_read_ptr] & 0x80) && (LN_port.rx_data[LN_port.rx_read_ptr] != 255)) { //we found an opcode
-      if (LN_port.rx_data[LN_port.rx_read_ptr] != rx_opcode){ //Only update rx_opcode_last if this is a new opcode
-        rx_opcode_last_us = rx_last_us; 
-        rx_opcode = LN_port.rx_data[LN_port.rx_read_ptr];
-      }
-
-      Serial.printf("Found opcode %x at position %u \n", rx_opcode, LN_port.rx_read_ptr); 
+    if ((LN_port.rx_read_data[i] & 0x80) && (LN_port.rx_read_data[i] != 255) && (rx_pending < 0)) { //we found an opcode 
+      Serial.printf("Found opcode %x, ", LN_port.rx_read_data[i]);
+      rx_pending = rx_packet_getempty(); //Get handle of next open packet
       
-      packet_size= rx_opcode & 0x60; //D7 was 1, check D6 and D5 for packet length
-      //Serial.printf("Packet Size %d \n", packet_size);
-      i = packet_size>>4; //1 + packetsize >> 4 results in correct packet_size by bitshifting the masked bits
-      packet_size = i + 2; //After shifting right 4 bytes, add 2
-      if (packet_size >= 6) { //variable length packet, read size from 2nd byte.  
-        if ((LN_port.rx_write_ptr - LN_port.rx_read_ptr) < 1){   //Check that there is enough data for the specified type and buffer it
-          Serial.print("Variable length packet hasn't sent size yet, waiting for next byte \n");
-          return;
-        }        
-          packet_size = LN_port.rx_data[(LN_port.rx_read_ptr + 1)]; //Size is in 2nd byte of packet.
-      }
-      if (packet_size > 127) { //Invalid packet
-        Serial.printf("Invalid size of packet with opcode at %d and size %u \n", LN_port.rx_read_ptr, packet_size);
-        LN_port.rx_data[LN_port.rx_read_ptr]= 0x00; //Remove the offending byte from the ring    
-        packet_size = 2;   
-      }
-      Serial.printf("Packet Size %d \n", packet_size);
-      if ((LN_port.rx_write_ptr - LN_port.rx_read_ptr) < packet_size ){   //Check that there is enough data for the specified type and buffer it
-        //Serial.printf("Malfunction, need input. Have %u bytes, need %u bytes \n", (LN_port.rx_write_ptr - LN_port.rx_read_ptr), (packet_size - 1));
-        return;
-      }
-
-      last_rx_process = esp_timer_get_time(); //Probably redundant. 
-      uint8_t netcontrol = ((last_rx_process - tx_last_us) < (LN_BITLENGTH_US * LN_COL_BACKOFF));
-      Serial.printf("Last RX %llu, Last TX %llu, CD %u \n", last_rx_process, tx_last_us, (LN_BITLENGTH_US * LN_COL_BACKOFF) );
-      if ((tx_pending >= 0) && ((last_rx_process - tx_last_us) < (LN_BITLENGTH_US * LN_COL_BACKOFF))) { 
-        //rx_opcode == LN_port.tx_data[tx_opcode_ptr]) //replaced by tx_pending > 0
-        //We have a packet pending and should still have control of the network. See if this is ours.  
-        Serial.printf("Validating packet echo \n");
-        i = tx_loopback(packet_size);
-        if (i == 0) {//It matched our packet.
-          LN_port.rx_read_ptr = LN_port.rx_read_ptr + packet_size; 
-          rx_opcode = 0x00;
-          return; 
-        }    
-      } 
-      i = 1; //reuse the temp int
-      xsum = LN_port.rx_data[LN_port.rx_read_ptr];
-      //Serial.printf("Packet size %u Checksum calculation: %x \n", packet_size, xsum);
-      while (i < packet_size) {
-        xsum = xsum ^  LN_port.rx_data[LN_port.rx_read_ptr + i];
-          //Serial.printf("%x, %u \n", xsum, LN_port.rx_read_ptr + i);
-        i++;
-      }
-      //Serial.printf(" \n");
-      if (xsum == 0xff) { //Valid packet. Send to rx_decode
-         rx_decode(); //Decode incoming opcode 
-      } else {      
-        Serial.printf("Ignoring invalid packet with opcode %x and checksum %x at %d \n", rx_opcode, xsum, LN_port.rx_read_ptr);
-        LN_port.rx_data[LN_port.rx_read_ptr]= 0x00; //Remove the offending byte from the ring 
-      }
-      rx_opcode = 0x00; //Done processing the opcode. Clear it out. 
-    } 
-  if ((LN_port.rx_read_ptr == LN_port.rx_write_ptr)) { //End of file
-    //Since we have the chance to while there is no data, reset both pointers to 0. The rollover has been inelegant.
-    LN_port.rx_read_ptr = 0;
-    LN_port.rx_write_ptr = 0;
-    eod = true;
-  } else {
-    LN_port.rx_read_ptr++; //Read pointer will increment until an opcode is found.
+      Serial.printf("storing in rx slot %u \n", rx_pending);
+      rx_packets[rx_pending]->state = 1; //Packet is pending data
+      rx_packets[rx_pending]->rx_count = 0; //1st byte in packet. 
+      rx_packets[rx_pending]->xsum = 0;
+      rx_packets[rx_pending]->last_start_time = time_us; //Time this opcode was found
     }
+    if (rx_pending >= 0) {//Packet is being processed.  
+      rx_packets[rx_pending]->state = 2; //Packet being received.
+      //Serial.printf("Processing packet %u. Time remaining (uS): %d \n", rx_pending, 15000 - (time_us - rx_packets[rx_pending]->last_start_time));
+      if ((time_us - rx_packets[rx_pending]->last_start_time) > 15000) { //Packets must be fully received within 15mS of opcode detect
+        Serial.printf("RX Timeout, dropping %u bytes from slot %u \n", rx_packets[rx_pending]->rx_count, rx_pending);
+        rx_packets[rx_pending]->state = 4; //Set state to failed
+        rx_packets[rx_pending]->last_start_time = time_us;
+        rx_pending = -1; //Stop processing this packet.  
+        i++;
+        continue; //Skip the rest of this loop and start the next from while
+      } 
+
+      //Serial.printf("Checking for TX Loopback...");
+      if ((tx_pending >= 0) && (rx_pending >= 0 )) { // && (time_us - tx_last_us) < (LN_BITLENGTH_US * LN_COL_BACKOFF))) {
+        Serial.printf("rx_scan loopback test tx_pending %i, rx_pending %i \n", tx_pending, rx_pending);
+        //We just sent a packet, this could be ours. 
+        time_us = esp_timer_get_time();
+        uint64_t started = tx_packets[tx_pending]->last_start_time;
+        uint64_t elapsed = time_us - tx_packets[tx_pending]->last_start_time;
+        uint64_t limit = LN_BITLENGTH_US * LN_COL_BACKOFF + LN_BITLENGTH_US * 8 * tx_packets[tx_pending]->data_len + TX_DELAY_US;
+        Serial.printf("TX Time: started %u ", started);
+        Serial.printf("elapsed %u ", elapsed);
+        Serial.printf("limit %u \n", limit);
+        if ((time_us - started) <= (limit)) {
+          if (tx_loopback() == 0) { //Check if the data so far matches what we sent. Drop from both queues once complete or collision.  
+            i++;
+            continue;
+          }
+        }
+      }
+      location = rx_packets[rx_pending]->rx_count;
+      //Serial.printf("Copying data %x position %u in packet %u \n", LN_port.rx_read_data[i], rx_packets[rx_pending]->rx_count, rx_pending);
+      rx_packets[rx_pending]->data_ptr[location] = LN_port.rx_read_data[i]; //Copy the byte being read
+      if ((rx_packets[rx_pending]->rx_count) == 1){ //Fix packet size now that both bytes 0 and 1 are present 
+        rx_packets[rx_pending]->packet_size_check(); 
+      }
+      //Serial.printf("Checking current size %u against intended size %u \n", rx_packets[rx_pending]->rx_count + 1, rx_packets[rx_pending]->data_len);
+      rx_packets[rx_pending]->rx_count++;
+      if (!((rx_packets[rx_pending]->rx_count) < rx_packets[rx_pending]->data_len)) { 
+        rx_packets[rx_pending]->state = 3; //Packet has been fully sent to this device.
+        rx_packets[rx_pending]->last_start_time = time_us; //Time it was set to this state.
+        //Serial.printf("RX slot %u completed packet \n", rx_pending);
+        if (!(rx_packets[rx_pending]->Read_Checksum())){//Checksum was invalid. Drop the packet. 
+          Serial.printf("Failed packet %u, RX checksum invalid \n", rx_pending); 
+          rx_packets[rx_pending]->state = 4; //Set state to failed
+          rx_packets[rx_pending]->last_start_time = time_us;
+          rx_pending = -1; //Stop processing this packet. 
+        }
+        rx_pending = -1; 
+        i++;
+        continue; 
+      }  
+      //Serial.printf("Packet %u contains %u bytes \n", rx_pending, rx_packets[rx_pending]->rx_count);
+    }
+    i++;
+    //Serial.printf("Beginning while loop i = %u, rx_read_len = %u \n", i, LN_port.rx_read_len);  
   }
-  return;
-}  
+  LN_port.rx_read_processed = 255; //Mark as fully processed. 
   
-void LN_Class::rx_decode(){  //Opcode was found. Lets use it.
-  //Finally processing the packet. 
-  Serial.printf("Processing received packet \n");
-  char txsum;
+  return; 
+}  
+
+void LN_Class::rx_queue(){ //Loop through the RX queue and process all packets in it. 
   uint8_t i = 0;
-  switch (rx_opcode) {
+  uint8_t complete = 0;
+  time_us = esp_timer_get_time(); 
+
+  while (i < LN_RX_Q){
+    //Serial.printf("RX_Queue. i = %u, LN_RX_Q = %u \n", i, LN_RX_Q);
+    if (rx_packets[rx_next_decode]) { //Packet exists, check it.
+      //Serial.printf("Queue Processing RX packet %u, state is %u \n", rx_next_decode, rx_packets[rx_next_decode]->state);
+      switch (rx_packets[rx_next_decode]->state) {
+        case 1:
+        case 2:
+          if (time_us - rx_packets[rx_next_decode]->last_start_time > 15000) { //Pending or Attempting must be finished within 15mS since their state last changed.
+            Serial.printf("RX_Q Cleaning up incomplete packet %u \n", rx_next_decode);
+            if (rx_next_decode == rx_pending) {
+              rx_pending = -1;
+            }
+            rx_packets[rx_next_decode]->reset_packet();  
+          }          
+          break;
+        case 3: 
+          complete = rx_decode(rx_next_decode); 
+          if (complete == 0) {
+            rx_packets[rx_next_decode]->state == 5; //Completed. Can delete it. 
+          }
+
+        case 5:
+          LN_port.uart_rx_flush(); //Failed packet. 
+        case 4: 
+          Serial.printf("RX_Q Cleaning up complete or failed packet %u \n", rx_next_decode);
+          if (rx_next_decode == rx_pending) {
+              rx_pending = -1;
+          }
+          rx_packets[rx_next_decode]->reset_packet(); 
+      }
+    }
+    rx_next_decode++;
+    if (rx_next_decode >= LN_RX_Q){
+      rx_next_decode = 0; 
+    }
+    i++;
+  }
+  //Serial.printf("RX_QUEUE Done \n");
+  return;
+}
+
+uint8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
+  //Finally processing the packet.
+  //Serial.printf("Processing received packet from RX_Q slot %u \n", rx_pkt);
+  
+  char opcode = rx_packets[rx_pkt]->data_ptr[0];
+  uint8_t i = 0;
+  rx_packets[rx_pkt]->state = 5;
+  switch (opcode) {
     
     //2 byte opcodes:
     case 0x81:  //Master Busy
       break;
     case 0x82: //Global power off
-      Serial.print("Power off requested \n");
-      //DCCEX.send: <0>
+      Serial.print("Power off requested \n"); 
+      //dccex.power(false);
       break;
     case 0x83: //Global power on
       Serial.print("Power on requested \n");
-      //DCCEX.send: <1>
+      //dccex.power(true);
       break;
     case 0x85: //Force idle, broadcast estop
       Serial.print("ESTOP! \n");
@@ -203,6 +248,8 @@ void LN_Class::rx_decode(){  //Opcode was found. Lets use it.
     case 0xA1: //Unknown
       break;
     case 0xB0: //REQ SWITCH function
+      //DCCEX: <H addr state>, eg <H 1 1> for turnout 1 thrown
+      rx_req_sw(rx_pkt);
       break;
     case 0xB1: //Turnout SENSOR state REPORT
       break;  
@@ -222,108 +269,104 @@ void LN_Class::rx_decode(){  //Opcode was found. Lets use it.
     case 0xB9: //LINK slot ARG1 to slot ARG
       break;  
     case 0xBA: //MOVE slot SRC to DEST
-      Serial.printf("Slot move %u to %u \n", LN_port.rx_data[LN_port.rx_read_ptr + 1], LN_port.rx_data[LN_port.rx_read_ptr + 2]); 
-      slot_move(LN_port.rx_data[LN_port.rx_read_ptr + 1], LN_port.rx_data[LN_port.rx_read_ptr + 2]); //Process slot data move
-      slot_read(LN_port.rx_data[LN_port.rx_read_ptr + 2]); //Read the moved/modified data  back to the source
+      Serial.printf("Slot move %u to %u \n", rx_packets[rx_pkt]->data_ptr[1], rx_packets[rx_pkt]->data_ptr[2]); 
+      slot_move(rx_packets[rx_pkt]->data_ptr[1], rx_packets[rx_pkt]->data_ptr[2]); //Process slot data move
+      slot_read(rx_packets[rx_pkt]->data_ptr[2]); //Read the moved/modified data  back to the source
       break; 
     case 0xBB: //Request SLOT DATA/status block
-      Serial.printf("Throttle requesting slot %u data \n", LN_port.rx_data[LN_port.rx_read_ptr + 1]);
-      slot_read(LN_port.rx_data[LN_port.rx_read_ptr + 1]); //Read slot data out to Loconet
-      Serial.printf("Response finished \n");   
+      Serial.printf("Throttle requesting slot %u data \n", rx_packets[rx_pkt]->data_ptr[1]);
+      slot_read(rx_packets[rx_pkt]->data_ptr[1]); //Read slot data out to Loconet  
       break;
     case 0xBC: //REQ state of SWITCH
       break;   
     case 0xBD: //REQ SWITCH WITH acknowledge function (not DT200
       break;
     case 0xBF: //;REQ loco AD
-      //i = loco_select(LN_port.rx_data[LN_port.rx_read_ptr + 2]); 
-      Serial.printf("Requested loco %u found/set in slot %u \n", LN_port.rx_read_ptr + 2, i); 
-      //slot_read(i); //Read the slot back to the source. 
+      Serial.printf("Requested loco %u found/set in slot %u \n", rx_packets[rx_pkt]->data_ptr[0], i); 
+      slot_read(rx_packets[rx_pkt]->data_ptr[1]); //Read the slot back to the source. 
     
       break;                                   
     //6 byte opcodes, none known as of Oct 2023: 
 
     //Variable byte opcodes: 
     case 0xE7: //Slot read data
-    
+      
       break;
     case 0xEF: //Slot write data
-      void slot_write(); //Accept slot write data and send Long Ack
+      slot_write(rx_packets[rx_pkt]->data_ptr[2], rx_pkt); //Accept slot write data and send Long Ack
       break; 
     
     default: 
-    Serial.printf("No match for %x \n", rx_opcode);
-    
+    Serial.printf("No match for %x \n", rx_packets[rx_pkt]->data_ptr[0]);
+    rx_packets[rx_pkt]->state = 4;
   }
-  rx_opcode = 0x00; //Clear it since we already processed it. 
-  return;
+  return 0;
 }
 
-void LN_Class::tx_queue(){ //Try again to send queued packets on each loop cycle 
-  uint8_t queue_size; //Count of how many packets are ready to send
+void LN_Class::tx_queue(){ //Try again to send queued packets on each loop cycle
   uint8_t i = 0;
   uint8_t priority = 0;
-  time_us = esp_timer_get_time(); 
-  if (tx_pending >= 0) {
-    //Serial.printf("TXQueue packet %u is marked %u \n", tx_pending, tx_packets[tx_pending]->state); 
-    if (tx_packets[tx_pending]->state == 2) { //Try to send packet in attempting status
-      if ((time_us - tx_packets[tx_pending]->tx_last_start) > 15000) { //Packet has been attempting for more than 15mS. Mark it failed.
-        Serial.printf("TXQueue packet %u window timeout \n", tx_pending); 
-        tx_packets[tx_pending]->state == 4; //Failed packet
-        tx_packets[tx_pending]->tx_attempts--; 
-        if (tx_packets[tx_pending]->tx_attempts <= 0) {
-          Serial.printf("Unable to transmit packet from TX queue index %u, dropping. \n", tx_pending);
-          tx_packet_del(tx_pending);     
-        } 
-        tx_packets[tx_pending]->priority--; //Count down priority for next attempt. 
-        if (tx_packets[tx_pending]->priority < LN_MIN_PRIORITY) {//Enforce priority floor 
-          tx_packets[tx_pending]->priority = LN_MIN_PRIORITY;
-        }
-        tx_pending = -1; //Stop trying to send this packet. 
-      }
-      Serial.printf("WTF why are we sending a %u \n", tx_packets[tx_pending]->state);
-      tx_send(tx_pending);
-    }
-    if (tx_packets[tx_pending]->state == 3) { //Clean up packets that should have been seen in loopback by now
+  time_us = esp_timer_get_time();
+  if (tx_pending > -1) { //A packet is already active. Send it, then scan the rest of the queue. 
+    //tx_send(tx_pending); 
+    priority = tx_packets[tx_pending]-> priority;
+    tx_next_send = tx_pending;
+  }
+  //Serial.printf("TX_Q priority loop \n");
+  while (priority <= LN_MAX_PRIORITY){ 
+    while (i < LN_TX_Q) {
+      //Serial.printf("TX_Q. priority = %u i = %u, tx_next_send %u, LN_TX_Q = %u \n", priority, i, tx_next_send, LN_TX_Q);
       
-    }
-    return;
-  }
-
-//Todo: Sort packets to put lowest priority byte first, leaving slots 0 and 1 for new packets
-//For now just scan the queue for each priority from 0-20 and send the first valid slot we find. 
-  while (priority <= LN_MAX_PRIORITY){ //
-    while (i < LN_TX_Q){
-      if (tx_packets[i]) { //Exists, check it
-        Serial.printf("Queue scan checking packet %d \n", i);
-        if ((tx_packets[i]->priority == priority) && tx_packets[i]->state != 3) //Priority match and state is not sent
-          Serial.printf("Sending packet from tx_packets[%d] \n", i);
-          tx_send(i);
-          return;  
-        if (tx_packets[i]->tx_attempts <= 0) {
-          Serial.printf("Unable to transmit packet from slot %u, dropping. \n", tx_pending);      
-        } 
-        if ((tx_packets[i]->state == 3) && ((time_us - tx_packets[i]->tx_last_start) > (tx_packets[i]->data_len * LN_BITLENGTH_US + 15000))){ 
-          //Clean up packets that should have been seen in loopback by now
-          Serial.printf("TXQueue packet %u was not verified before window expiry \n", i);  
-          tx_packets[i]->state == 4; //Failed packet
-          tx_packets[i]->tx_attempts--; 
-          tx_packets[i]->priority--; //Count down priority for next attempt. 
-          if (tx_packets[i]->priority < LN_MIN_PRIORITY) {//Enforce priority floor 
-            tx_packets[i]->priority = LN_MIN_PRIORITY;
-          }
-          tx_pending = -1; //Stop trying to send this packet. 
-          if (tx_packets[i]->tx_attempts <= 0) {
-            Serial.printf("Unable to transmit packet from TX queue index %u, dropping. \n", i);
-            tx_packet_del(tx_pending);     
-          } 
-        }           
+      if (tx_packets[tx_next_send]) { //Packet exists, check it.
+        //Serial.printf("TX_Q Processing TX packet %u, state is %u \n", tx_next_send, tx_packets[tx_next_send]->state);
+        switch (tx_packets[tx_next_send]->state) {
+          case 0: //No action needed, empty slot. 
+          break; 
+          case 1: //Pending. 
+            if (((tx_pending < 0) || tx_pending == tx_next_send) && (priority == tx_packets[tx_next_send]-> priority)) { //Clear to try sending it.
+              tx_pending = tx_next_send;  
+              tx_send(tx_pending);   
+            }
+          break; 
+          case 2: //Attempting
+            if (tx_next_send != tx_pending) {  //A packet in this state that doesn't match tx_pending is a problem.
+              tx_packets[tx_next_send]->state = 4;
+            }
+          case 3: //Sent. If it doesn't loop back before window expiry, do something about it. 
+            if (time_us - tx_packets[tx_next_send]->last_start_time > 15000) { //Attempting must be finished within 15mS since their state last changed.
+              tx_packets[tx_next_send]->state = 4;
+              tx_packets[tx_next_send]->tx_attempts--;
+              tx_packets[tx_next_send]->priority--; //Count down priority for next attempt.
+              if (tx_packets[tx_next_send]->priority < LN_MIN_PRIORITY) {//Enforce priority floor
+                tx_packets[tx_next_send]->priority = LN_MIN_PRIORITY;
+              }
+              tx_pending = -1;
+            }
+          break; 
+          case 4: //Failed. 
+            if (tx_packets[tx_next_send]->tx_attempts <= 0) {
+              Serial.printf("TX_Q Unable to transmit packet from TX queue index %u, dropping. \n", tx_next_send);
+              tx_packets[tx_next_send]->reset_packet();     
+            } else {
+              if (((tx_pending < 0) || tx_pending == tx_next_send) && (priority == tx_packets[tx_next_send]-> priority)) { //Clear to try sending it again
+                tx_pending = tx_next_send;  
+                tx_send(tx_next_send);   
+              }
+            }
+            break;  
+          case 5: //Success? Either way we don't need it anymore. 
+            tx_packets[tx_next_send]->reset_packet(); 
+        }
       }
-    i++;  
+      i++;
+      tx_next_send++; 
+      if (tx_next_send >= LN_TX_Q){ 
+        tx_next_send = 0; 
+      }
     }
-    priority++;
+    i = 0;
+    priority++; 
   }
-  //No packets to send. 
   return;
 }
 
@@ -331,13 +374,17 @@ void LN_Class::tx_send(uint8_t txptr){
   //Note: tx_priority from LN_Class needs to be replaced by per-packet priority handling. 
   time_us = esp_timer_get_time();
   uint8_t i = 0;
-  if ((time_us - tx_last_us) < (tx_pkt_len * LN_BITLENGTH_US * 8)) {//There is likely data already being sent. Don't add more.
+  if (!tx_packets[txptr]) { //If the handle is invalid, abort.
+    return; 
+  }
+  
+  if ((time_us - tx_packets[txptr]->last_start_time) < (tx_pkt_len * LN_BITLENGTH_US * 8)) {//There is likely data already being sent. Don't add more.
     Serial.printf("Buffer should still have data, send wait \n");
     return;    
   }
-   Serial.printf("Pending Packet %u has mark %u \n", txptr, tx_packets[txptr]->state);
+   Serial.printf("TX_Send Pending Packet %u has mark %u \n", txptr, tx_packets[txptr]->state);
   if ((tx_packets[txptr]->state == 1) || (tx_packets[txptr]->state == 4)) { //Packet is pending or failed. Mark attempting.
-    tx_packets[txptr]->tx_last_start = time_us;
+    tx_packets[txptr]->last_start_time = time_us;
     tx_packets[txptr]->state = 2; //Attempting
     Serial.printf("Packet %u changed from 1 or 4 to  %u \n", txptr, tx_packets[txptr]->state);
   }
@@ -349,60 +396,65 @@ void LN_Class::tx_send(uint8_t txptr){
    
     i = 0;
     tx_pkt_len = tx_packets[txptr]->data_len; //Track how much data is to be sent for overrun prevention.
-    char writedata[tx_pkt_len]; 
-    Serial.printf("Transmitting: ");
-    while (i < tx_pkt_len){ 
-      LN_port.tx_data[Loconet.LN_port.tx_write_ptr + i] = tx_packets[txptr]->data_ptr[i];
-      Serial.printf("%x ", tx_packets[txptr]->data_ptr[i]);
-     // LN_port.tx_data[tx_write_ptr + i] = tx_packets[txptr]->data_ptr[i]; 
-      i++;
+    if (tx_packets[txptr]->state == 2) { //Only send if it isn't in state attempting. 
+      char writedata[tx_pkt_len]; 
+      Serial.printf("Transmitting: ");
+      while (i < tx_pkt_len){ 
+        writedata[i] = tx_packets[txptr]->data_ptr[i];
+        Serial.printf("%x ", tx_packets[txptr]->data_ptr[i]);
+        i++;
+     }
+      Serial.printf("\n"); 
+      tx_packets[txptr]->last_start_time = time_us;  
+      LN_port.uart_write(writedata, tx_pkt_len);
+      tx_packets[txptr]->state = 3; //sent 
     }
-    //LN_port.tx_write_ptr = tx_write_ptr + i;
-    Serial.printf("\n ");
-    LN_port.tx_write_ptr = Loconet.LN_port.tx_write_ptr + i;  
-    tx_last_us = esp_timer_get_time();  
-    tx_pkt_len = LN_port.uart_write(128); //Loconet has a 128 byte max packet size. Save how many were written in tx_pkt_len
-    //tx_pkt_len= LN_port.uart_raw_write(writedata);
-    tx_packets[txptr]->state = 3; //sent
-    Serial.printf("Sent Packet %u marked %u \n", txptr, tx_packets[txptr]->state);
   } 
   return;
 }
 
-uint8_t LN_Class::tx_loopback(uint8_t packet_size){
+uint8_t LN_Class::tx_loopback(){
   uint8_t delta = 0;
-  uint8_t i;
- //  NEEDS FURTHER REWRITE FOR RX PACKET CLASS
-  Serial.printf("Loopback: \n");  
-  while (((LN_port.rx_read_ptr + i) != LN_port.rx_write_ptr) && (i != packet_size)) {
-    Serial.printf("%x, %x \n", LN_port.rx_data[LN_port.rx_read_ptr] + i, tx_packets[tx_pending]->data_ptr[i]);
-    if (LN_port.rx_data[LN_port.rx_read_ptr + i] != tx_packets[tx_pending]->data_ptr[i]){ //Compare rx data to tx data
+  uint8_t i = 0;
+  Serial.printf("Loopback: ");  
+  while (i <= rx_packets[rx_pending]->rx_count) {
+    Serial.printf("%x: %x ", rx_packets[rx_pending]->data_ptr[i], tx_packets[tx_pending]->data_ptr[i]);
+    if (rx_packets[rx_pending]->data_ptr[i] != tx_packets[tx_pending]->data_ptr[i]){ //Compare rx data to tx data
       delta++;   
     }
-  i++;  
+    i++;  
   }
   Serial.printf("\n"); 
-  if (delta == 0) {//Confirmed send of packet. Remove from queue.
-    Serial.printf("Transmission confirmed \n");
-    tx_packet_del(tx_pending);    
-  } else { //Collision or corrupt packet. 
-    Serial.printf("Collision or corrupt packet detected. \n");
-    transmit_break();
-    LN_port.rx_read_ptr = LN_port.rx_read_ptr + i;
-    tx_packets[tx_pending]->tx_attempts--; 
-    if (tx_packets[tx_pending]->tx_attempts <= 0) {
-      Serial.printf("Unable to transmit packet from slot %u, dropping. \n", tx_pending);
-      tx_packet_del(tx_pending);      
+ 
+  if (delta == 0) {//No differences in the data given
+    if (i == tx_packets[tx_pending]->data_len) { //Packet is complete with 0 differences. Can remove from both queues. 
+      Serial.printf("Transmission %d confirmed in %d \n", tx_pending, rx_pending);
+      tx_packets[tx_pending]->reset_packet(); 
+      rx_packets[rx_pending]->reset_packet();
+      tx_pending = -1;
+      rx_pending = -1;  
     }
+    return delta;
+  } else { //Collision. Transmit break, drop from rx_packet, and decrement tx_attempts to drop if stale.  
+    Serial.printf("Collision detected. \n");
+    transmit_break();
+    tx_packets[tx_pending]->tx_attempts--; 
+    tx_packets[tx_pending]->state = 4; 
+    if (tx_packets[tx_pending]->tx_attempts <= 0) {
+      Serial.printf("Unable to transmit packet from slot %u, dropping. \n", tx_pending);   
+      tx_packets[tx_pending]->reset_packet(); 
+    }
+    tx_pending = -1;
+    rx_packets[rx_pending]->reset_packet(); 
+    rx_pending = -1; 
   }
-  tx_pending = -1;
   return delta;
 }
 
 void LN_Class::transmit_break(){
   //Write 15 bits low for BREAK on collision detection.  
   char txbreak[2] {char(0x00), char(0x01)};
-  LN_port.uart_raw_write(txbreak);
+  LN_port.uart_write(txbreak, 2);
   return;
 }
 bool LN_Class::receive_break(uint8_t break_ptr){ //Possible BREAK input at ptr. 
@@ -414,65 +466,82 @@ bool LN_Class::receive_break(uint8_t break_ptr){ //Possible BREAK input at ptr.
 }
 
 uint8_t LN_Class::rx_packet_getempty(){ //Scan rx_packets and return 1st empty slot
-  uint8_t index = 0;
-  while (index < 32) {//Iterate through possible arrays
-    if (!tx_packets[index]) {//Doesn't exist yet, we can take this slot.
-      Serial.printf("Found uninitialized slot tx_packets[%u]\n", index);
-      return index;
+  uint8_t count = 0; 
+  while (count < LN_RX_Q){  
+    if (!rx_packets[rx_next_new]){ //Isn't initialized yet, fix this
+      rx_packets[rx_next_new] = new LN_Packet();
     }
-    index++;
+    if (rx_packets[rx_next_new]->state == 0) { //Exists and is marked empty, claim it.  
+      break; //break out of the while loop and use this result. 
+    }
+    rx_next_new++; 
+    if (rx_next_new > LN_RX_Q) {
+      rx_next_new = 0;
+    }
   }
-  Serial.printf("WARNING: Could not find space in rx_packets, consider larger queue \n");
-  return index;
+  if (count == LN_RX_Q) { //Checked all slots without a result
+    Serial.printf("WARNING: rx_packets out of space. RX packet %d will be overwritten, consider increasing LN_RX_Q \n", rx_next_new);
+  }
+  rx_packets[rx_next_new]->reset_packet(); //Sets it to defaults again   
+  return rx_next_new;
 }
 
-uint8_t LN_Class::tx_packet_getempty(){ //Scan tx_packets and return 1st empty slot
-  uint8_t index = 2;
-  while (index < 32) {//Iterate through possible arrays
-    if (!tx_packets[index]) {//Doesn't exist yet, we can take this slot.
-      Serial.printf("Found uninitialized slot tx_packets[%u]\n", index);
-      return index;
-    }
-    index++;
-  }
-  Serial.printf("WARNING: Could not find space in tx_packets, consider larger queue \n");
-  return index;
-}
-
-void LN_Class::rx_packet_new(uint8_t index, uint8_t packetlen){ //Create new packet and initialize it
-  if (!rx_packets[index]){ //Isn't initialized yet, fix this
-    rx_packets[index] = new LN_Packet(packetlen);
-  }
-  if (!tx_packets[index]){ //We just initialized this. If it didn't work, warn.
-    Serial.printf("WARNING: Could not initialize packet in rx_packets. \n");
-  }
-  rx_packets[index]->state = 0; //Empty slot
+void LN_Class::rx_packet_del(uint8_t index){ //Delete a packet after it has been processed. 
+  
+  Serial.printf("Deleting rx_packets[%u]\n", index);
+  delete rx_packets[index]; //Invokes the destructor
+  rx_packets[index] = NULL; //This is necessary to prevent repeated deallocations. 
+ 
   return;
 }
 
-void LN_Class::tx_packet_new(uint8_t index, uint8_t packetlen){ //Create new packet and initialize it
-  if (!tx_packets[index]){ //Isn't initialized yet, fix this
-    tx_packets[index] = new LN_Packet(packetlen);
+uint8_t LN_Class::tx_packet_getempty(){ //Scan tx_packets and return 1st empty slot above slot 1
+  uint8_t count = 0;
+  while (count < LN_TX_Q) {//Iterate through possible arrays
+    if (!tx_packets[count]) {//Doesn't exist yet, we can take this slot.
+      //Serial.printf("Found uninitialized slot tx_packets[%u]\n", count);
+      tx_packets[count] = new LN_Packet();
+    }
+    if (tx_packets[count]->state == 0) { //Although it already exists, it is in the empty state. Claim it. 
+      Serial.printf("Reusing slot tx_packets[%u]\n", count);
+        tx_packets[count]->reset_packet();
+        return count; 
+    }
+    count++;
   }
-  if (!tx_packets[index]){ //We just initialized this. If it didn't work, warn.
-    Serial.printf("WARNING: Could not initialize packet in tx_packets. \n");
+  if (count == LN_TX_Q) { //Checked all slots without a result
+    Serial.printf("WARNING: tx_packets out of space. TX packet %d will be overwritten, consider increasing LN_TX_Q \n", count);
   }
-  tx_packets[index]->state = 0; //Empty 
-  tx_packets[index]->priority = LN_MAX_PRIORITY; 
-  tx_packets[index]->tx_attempts = 25; 
-  return;
+  return count;
 }
+
 void LN_Class::tx_packet_del(uint8_t index){ //Delete a packet after confirmation of sending
-  Serial.printf("Deleting tx packet %d \n", index);
-  delete tx_packets[index]->data_ptr; //Deallocate the data packet
+  Serial.printf("Deleting tx_packets[%u] \n", index);
   delete tx_packets[index];
-  Serial.printf("Deleting tx packet %d deleted. \n", index);
+  tx_packets[index] = NULL; //This is necessary to prevent repeated deallocations. 
   return;
 }
+
+void LN_Class::rx_req_sw(uint8_t rx_pkt){
+  uint16_t addr = 0; 
+  uint8_t cmd = 0;
+  addr = (((rx_packets[rx_pkt]->data_ptr[2]) & 0x0F) << 8) | (rx_packets[rx_pkt]->data_ptr[1] & 0x7F);
+  cmd = ((rx_packets[rx_pkt]->data_ptr[2]) & 0xF0);
+  Serial.printf("Req switch addr %u direction %u, output %u \n", addr, (cmd & 0x20) >> 5, (cmd & 0x10) >> 4);
+  return;
+}
+
+void LN_Class::tx_req_sw(){
+
+  return;
+}
+
 LN_Class::LN_Class(){ //Constructor, initializes some values.
   time_us = esp_timer_get_time();
   rx_pending = -1;
   tx_pending = -1;
+  rx_next_new = 0; 
+  rx_next_decode = 0;
   netstate = startup;
   rx_last_us = time_us;
   return;
@@ -481,6 +550,25 @@ LN_Class::LN_Class(){ //Constructor, initializes some values.
 /****************************************
  * Loconet Packet (LN_Packet) functions *
  ****************************************/
+uint8_t LN_Packet::packet_size_check(){ //Check that a packet has a valid size.
+  uint8_t packet_size = 0;
+  uint8_t i = 0;
+
+  //Serial.printf("Input byte %x \n", data_ptr[0]);
+  packet_size= data_ptr[0] & 0x60; //D7 was 1, check D6 and D5 for packet length
+  i = packet_size>>4; //1 + packetsize >> 4 results in correct packet_size by bitshifting the masked bits
+  packet_size = i + 2; //After shifting right 4 bytes, add 2
+
+  if (packet_size >= 6) { //variable length packet, read size from 2nd byte.
+    packet_size = data_ptr[1];
+    if (packet_size > 127) { //Invalid packet, truncate to 2 bytes so it fails checksum and is discarded. 
+      packet_size = 2;  
+    }   
+  }
+  //Serial.printf("Output Packet Size %u, data_len %u \n", packet_size, data_len);
+    data_len = packet_size;
+  return packet_size; 
+}
 
 void LN_Packet::Make_Checksum(){
   char xsum = 0xFF;
@@ -497,15 +585,16 @@ void LN_Packet::Make_Checksum(){
 }
 
 bool LN_Packet::Read_Checksum(){
-  char xsum = 0;
+  char xsum = 0x00;
   uint8_t i = 0;
-  Serial.printf("Read Checksum: ");
+  i = 0;
+  //Serial.printf("Checksum: ");
   while (i < data_len){
     xsum = xsum ^ data_ptr[i];
-    Serial.printf("%x ", xsum);
+    //Serial.printf("%x ", xsum);
     i++;
   }
-  Serial.printf("\n");
+  //Serial.printf("\n");
   
   if (xsum == 0xFF) {
     return true;
@@ -513,25 +602,20 @@ bool LN_Packet::Read_Checksum(){
   return false; 
 }
 
-LN_Packet::LN_Packet (uint8_t datalen){ //Constructor needs length of packet to create the char[] for it;
- uint8_t i = 0;
- priority = 20; 
- state = 0; //Initialize to empty, change to new_packet after populating data
- tx_attempts = 15; //15 attempts to send before failed status
- data_len = datalen; //Store the data length used to initialize. 
- data_ptr = new char[datalen]; //Allocate the data packet
- /*while (i < data_len){
-  data_ptr[i] = 0;
-  i++;
- }*/
- return;
-}
-
-LN_Packet::~LN_Packet(){ //Destructor to make sure data_ptr gets deallocated again
-  delete data_ptr; //Deallocate the data packet
+void LN_Packet::reset_packet() {
+  data_len = 127; 
+  state = 0; 
+  rx_count = 0;
+  priority = 20; 
+  tx_attempts = 15; //15 attempts to send before failed status
   return;
 }
 
+LN_Packet::LN_Packet (){ //Functionality moved to LN_Packet::Reset_Packet()
+ state = 0; //Initialize to empty, change to new_packet after populating data
+ data_len = 0; 
+ return;
+}
 
 /*****************************************
  * Slot Manager (LN_Slot_data) Functions *
@@ -572,14 +656,16 @@ void LN_Class::slot_read(int8_t slotnumber){ //Handle slot reads
   //Loconet response: 
   response_size = 14; //Packet is 14 bytes long, should be 0x0E
   tx_index = tx_packet_getempty();
-  tx_packet_new(tx_index, response_size); 
+  tx_packets[tx_index]->state = 1;
+  tx_packets[tx_index]->data_len = response_size;
   //Serial.printf("Preparing Loconet reply data \n");
   i = 0;
+  /*
   while (i < response_size) {
-   //Serial.printf("%x ", tx_packets[tx_index]->data_ptr[i]);
+   Serial.printf("%x ", tx_packets[tx_index]->data_ptr[i]);
    i++;
   }
-  //Serial.printf("\n");
+  Serial.printf("\n");*/
   tx_packets[tx_index]->data_ptr[0] = 0xE7; //OPC_SL_RD_DATA
   tx_packets[tx_index]->data_ptr[1] = response_size; 
   tx_packets[tx_index]->data_ptr[2] = slotnumber;
@@ -593,7 +679,7 @@ void LN_Class::slot_read(int8_t slotnumber){ //Handle slot reads
   tx_packets[tx_index]->Make_Checksum(); //Populate checksum
   i = 0;
   /*
-  Serial.printf("Response: \n");
+  Serial.printf("Response: ");
   while (i < response_size) {
     Serial.printf("%x ", tx_packets[tx_index]->data_ptr[i]);
     //LN_port.tx_data[LN_port.tx_write_ptr + i] = tx_packets[tx_index]->data_ptr[i];
@@ -606,33 +692,34 @@ void LN_Class::slot_read(int8_t slotnumber){ //Handle slot reads
   tx_send(tx_index);
   return;
 }
-void LN_Class::slot_write(int8_t slotnumber){ //Handle slot writes
-  //uint8_t slot_number = LN_port.rx_data[LN_port.rx_read_ptr + 2]; //slot number
+void LN_Class::slot_write(int8_t slotnumber, uint8_t rx_pkt){ //Handle slot writes
   uint8_t i = 0;
   uint8_t response_size = 4;
   uint8_t tx_index = 0;
   uint8_t ack = 0;
   if (slotnumber < 120) { 
     while (i < 10) {
-      slot_ptr[slotnumber]->slot_data[i] = LN_port.rx_data[LN_port.rx_read_ptr + i + 3]; //Copy values from slot_data
+      slot_ptr[slotnumber]->slot_data[i] = rx_packets[rx_pkt]->data_ptr[i + 3]; //Copy values from slot_data
       i++;
     }
     ack = 0xff; //Find out what the correct ACK code is
   }
   i = 0;  
   tx_index = tx_packet_getempty();
-  tx_packet_new(tx_index, response_size);
+  tx_packets[tx_index]->state = 1;
+  tx_packets[tx_index]->data_len = response_size;
   tx_packets[tx_index]->data_ptr[0] = 0xB4; //Long Acknowledge
-  tx_packets[tx_index]->data_ptr[1] = LN_port.rx_data[LN_port.rx_read_ptr]; //Opcode being given LACK 
+  tx_packets[tx_index]->data_ptr[1] = 0xEF; //Opcode being given LACK 
   tx_packets[tx_index]->data_ptr[2] = ack;// ACK1 byte
   tx_packets[tx_index]->Make_Checksum(); //Populate checksum
   i = 0;
+  /*
   while (i < response_size) {
     Serial.printf("%x ", tx_packets[tx_index]->data_ptr[i]);
-    LN_port.tx_data[LN_port.tx_write_ptr + i] = tx_packets[tx_index]->data_ptr[i];
+    //LN_port.tx_data[LN_port.tx_write_ptr + i] = tx_packets[tx_index]->data_ptr[i];
     i++;
-  }
-  LN_port.tx_data[LN_port.tx_write_ptr] = LN_port.tx_data[LN_port.tx_write_ptr] + i; 
+  }*/
+  //LN_port.tx_data[LN_port.tx_write_ptr] = LN_port.tx_data[LN_port.tx_write_ptr] + i; 
   tx_packets[tx_index]->state = 1; //Mark as pending packet
   tx_send(tx_index);
   return;
@@ -677,7 +764,7 @@ void LN_Class::fastclock_update(){
 
 uint8_t LN_Class::slot_new(uint8_t index) { //Initialize empty slots
   if (!(slot_ptr[index])){
-    Serial.printf("Initializing slot %u \n", index);
+    Serial.printf("Initializing Loconet slot %u \n", index);
     slot_ptr[index] = new LN_Slot_data; 
   }
   if (!(slot_ptr[index])){

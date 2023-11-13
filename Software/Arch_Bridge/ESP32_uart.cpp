@@ -52,38 +52,13 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8
 return;
 }
 
-uint8_t ESP_Uart::uart_write(uint8_t writelen) {//Write the data in the TX ring to the port. 
-  if (uart_num == 0) { //Don't write to uart0, the arduino library manages that
-    return 0;
-  }
-  if (writelen == 0) { //Don't try to write if writelen is 0. 
-    return 0;
-  }
-  if (tx_read_ptr == tx_write_ptr) {//No data to transmit.
-    return 0;
-  }
-  uint8_t bytes_written = 0;
-  char write_data[writelen];//Holder for cutting out the bytes to be written
-  
-  Serial.printf("Transmitting: ");
-  while ((tx_read_ptr != tx_write_ptr) || (bytes_written == writelen)) { //Because the buffer will wrap, so keep writing unil the pointers are in the same spot
-    write_data[bytes_written] = tx_data[tx_read_ptr];
-    Serial.printf(" %x ", write_data[bytes_written]);
-    tx_read_ptr++;
-    bytes_written++;
-  }
-  Serial.printf("\n");
-  uart_write_bytes(uart_num, write_data, bytes_written); //Somehow we ended up being able to write multiple bytes at once after all. 
-  return bytes_written;
-}
-uint8_t ESP_Uart::uart_raw_write(const char* write_data){ //Write the contents of the pointer to the ring buffer
-  uint8_t bytes_written = 0;
+void ESP_Uart::uart_write(const char* write_data, uint8_t write_len){ //Write the contents of the pointer to the output buffer
   uint8_t i = 0;
   if (uart_num == 0) { //Don't write to uart0, the arduino Serial library manages that one
-    return 0;
+    return;
   }
-  uart_write_bytes(uart_num, write_data, bytes_written);
-  return bytes_written;
+  uart_write_bytes(uart_num, write_data, write_len);
+  return;
 }
 
 uint16_t ESP_Uart::read_len(){ //returns how much data there is to be read
@@ -92,46 +67,54 @@ uint16_t ESP_Uart::read_len(){ //returns how much data there is to be read
   }    
     uint8_t ready_len = 0;
     ESP_ERROR_CHECK(uart_get_buffered_data_len(uart_num, (size_t*)&ready_len));
-    //Serial.printf("Readlen was %d, ready_len was %d \n", readlen, ready_len);
+    //Serial.printf("ready_len was %d \n", ready_len);
     return ready_len;
   }
 
-uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of bytes into rx_data
+uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of bytes into rx_read_data and copy to
   if (uart_num == 0) {
     return 0;
   }
-  uint16_t bytes_read = 0;
-  uint8_t ready_len = 0;
-  char rx_read[80];
-  ESP_ERROR_CHECK(uart_get_buffered_data_len(uart_num, (size_t*)&ready_len));
-  //Serial.printf("Readlen was %d, ready_len was %d \n", readlen, ready_len);
-  if (readlen > 80) { //Limit max read size to 80, same as a vt100 terminal
-    readlen = 80;
-  }
-  if (!(ready_len > 0)){ //No data to read at this time. 
+  uint8_t ready_len = read_len();
+  //Serial.printf("uart_read readlen was %d, ready_len was %d \n", readlen, ready_len);
+    if ((readlen > ready_len) || (ready_len == 0)){ //Asked to read more bytes than we have or no data ready. Return 0;  
     return 0;
-  } 
+  }
   if (readlen == 0) {//readlen wasn't specified, take what the buffer has.
     readlen = ready_len;
   }
-  if (readlen > ready_len){ //Asked to read more bytes than we have. Best to wait for more data.
-    return 0;
+  if (rx_read_processed != 255){ //Exiting data hasn't been processed yet. Don't read new data. 
+    return 0;     
   }
-  bytes_read = uart_read_bytes(uart_num, &rx_read, readlen, 100); //Read up to rx_read bytes from uart_num with a 100 rt tick timeout
-  if (bytes_read != readlen){
-    //Serial.printf("Read only %d bytes when told to read %d bytes \n", bytes_read, readlen);
-    return bytes_read;
+  
+  //Serial.printf("Deleting stale rx_read_data at %u \n", rx_read_data);
+  delete rx_read_data; //delete the previous result so we can define it again at a new length
+  //Serial.printf("updating rx_read_len \n");
+  rx_read_len = readlen;
+  //Serial.printf("Making new rx_read_data \n");
+  rx_read_data = new char[rx_read_len]; //Define rx_read_len and make a char[]
+  if (!(rx_read_data)){ //Could not make pointer. 
+    return 0; 
   }
+  //Serial.printf("Receiving bytes into rx_read_data pointer %u \n", rx_read_data);
+  readlen = uart_read_bytes(uart_num, rx_read_data, readlen, 100); //Read up to rx_read bytes from uart_num tto rx_read_data with a 100 rt tick timeout
+  rx_read_processed = 0; //This is new data to process.
+  //Ring buffer: 
   uint8_t i = 0;
-  Serial.printf("Receiving: ");
-  while (i < bytes_read){ 
-    rx_data[rx_write_ptr] = rx_read[i];
-    Serial.printf(" %x ", rx_read[i]);
+  //Serial.printf("Receiving: ");
+  while (i < readlen){ 
+    rx_data[rx_write_ptr] = rx_read_data[i];
+    //Serial.printf(" %x ", rx_read_data[i]);
     i++;
     rx_write_ptr++;
   }
-  Serial.printf("\n");
-  return bytes_read;
+  //Serial.printf("\n");
+  //Warn if there was a size mismatch. Would only happen if something else read data in between the size check and the actual read. 
+  
+  if (rx_read_len != readlen){
+    Serial.printf("Read only %d bytes when told to read %d bytes \n", rx_read_len, readlen);
+  }
+  return readlen;
 }
 
 void ESP_Uart::uart_rx_flush() {//Erase all data in the buffer
@@ -142,20 +125,18 @@ void ESP_Uart::uart_rx_flush() {//Erase all data in the buffer
   return;
 }
 
-void ESP_Uart::rx_shift(uint8_t start, int8_t offset){ //Move rx data at specification location ahead or behind by offset
+void ESP_Uart::rx_flush(){ //Reset the rx buffer to 0
+  //char* 
+  delete rx_read_data; //delete the previous result so we can define it again at a new length
+  rx_read_len = 1;
+  rx_read_data = new char[rx_read_len]; 
+  //Serial.printf("rx_read_data set to %u containing %u \n", rx_read_data, *rx_read_data);
   
-  return; 
-}
-void ESP_Uart::rx_flush(){ //Reset the rx ring buffer to 0,0
-  rx_read_ptr = rx_write_ptr = 0;
-  
+  //Ring buffer
+  rx_read_ptr = rx_write_ptr = 0;  
   return;
 }
 
-void ESP_Uart::tx_shift(uint8_t start, int8_t offset) { //Move tx data at specification location ahead or behind by offset
-
-  return;
-}
 void ESP_Uart::tx_flush() { //Reset the tx ring buffer to 0,0
   tx_read_ptr = tx_write_ptr = 0;
   return;

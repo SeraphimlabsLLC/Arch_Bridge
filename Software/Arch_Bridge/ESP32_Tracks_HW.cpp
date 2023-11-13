@@ -2,6 +2,8 @@
   #include "ESP32_Tracks_HW.h"
 #endif
 
+
+
 //TrackChannel(enable_out_pin, enable_in_pin, uint8_t reverse_pin, brake_pin, adc_channel, adcscale, adc_overload_trip)
 TrackChannel DCCSigs[MAX_TRACKS]; //Define track channel objects with empty values.
 uint8_t max_tracks = 0; //Will count tracks as they are initialized. 
@@ -246,79 +248,6 @@ bool MasterEnable(){ //On Dynamo boards, read MASTER_IN twice MASTER_EN_DEGLITCH
      Master_Enable = master_en; //Function directly updates the Master_Enable global in addition to returning
    }  
   return master_en;
-}
-
-void ESP_rmt_rx_init(){
-  // Configure the RMT channel for RX to audit incoming DCC
-    uint32_t APB_Div = getApbFrequency() / 1000000; //Reported bus frequency in MHz
-    //Serial.printf("APB Frequency %u MHz \n", APB_Div);
-    rmt_config_t rmt_rx_config = {                                           
-        .rmt_mode = RMT_MODE_RX,                
-        .channel = rmt_channel_t(DIR_MONITOR_RMT),                  
-        .gpio_num = gpio_num_t(DIR_MONITOR),                       
-        .clk_div = APB_Div,       
-        .mem_block_num = 4,                   
-        .flags = 0,                             
-        .rx_config = {                          
-            .idle_threshold = (DCC_1_MIN_HALFPERIOD * APB_Div),    //Timeout filter       
-            .filter_ticks_thresh = (DCC_0_MAX_HALFPERIOD * APB_Div), //Glitch filter       
-            .filter_en = false,                  
-        }                                       
-    };
-/* NMRA allows up to 32 bytes per packet, the max length would be 301 bits transmitted and need 38 bytes (3 bits extra). 
- * DCC_EX is limited to only 11 bytes max. Much easier to account for and uses a smaller buffer. 
-  */
-   
-  ESP_ERROR_CHECK(rmt_config(&rmt_rx_config));
-  //Serial.printf("Loading RMT RX Driver \n");
-  // NOTE: ESP_INTR_FLAG_IRAM is *NOT* included in this bitmask
-  //It may be necessary to replace the 0 with a ring buffer size. Use rmt_get_ringbuf_handle(rmt_channel_t channel, RingbufHandle_t *buf_handle) to get access.
-  ESP_ERROR_CHECK(rmt_driver_install(rmt_rx_config.channel, 256, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED)); 
-  rmt_set_mem_block_num((rmt_channel_t) DIR_MONITOR_RMT, 4); 
-  ESP_ERROR_CHECK(rmt_rx_start(rmt_channel_t(DIR_MONITOR_RMT), true)); //Enable RMT RX, true to erase existing RX data
-  Serial.printf("DCC Auditing Initialized using ESP RMT \n"); 
-  return;
-}
-
-void rmt_tx_init(){
-  //Initialize RMT for DCC TX 
-  #ifdef BOARD_TYPE_DYNAMO //for now only do this on Dynamo
-  uint32_t APB_Div = getApbFrequency() / 1000000;
-  rmt_config_t rmt_tx_config;
-  // Configure the RMT channel for TX
-  rmt_tx_config.rmt_mode = RMT_MODE_TX;
-  rmt_tx_config.channel = rmt_channel_t(DIR_OVERRIDE_RMT);
-  rmt_tx_config.clk_div = APB_Div; //Multiplier is now dynamic based on reported APB bus frequency. 
-  rmt_tx_config.gpio_num = gpio_num_t(DIR_OVERRIDE);
-  rmt_tx_config.mem_block_num = 2; // With longest DCC packet 11 inc checksum (future expansion)
-                            // number of bits needed is 22preamble + start +
-                            // 11*9 + extrazero + EOT = 124
-                            // 2 mem block of 64 RMT items should be enough
-  ESP_ERROR_CHECK(rmt_config(&rmt_tx_config));
-  // NOTE: ESP_INTR_FLAG_IRAM is *NOT* included in this bitmask
-  ESP_ERROR_CHECK(rmt_driver_install(rmt_tx_config.channel, 0, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED));    
-  Serial.printf("RMT TX Initialized \n"); 
-  #endif
-  return;
-}
-
-//From DCC-EX ESP32 branch DCCRMT.cpp. 
-void setDCCBit1(rmt_item32_t* item) {
-  item->level0    = 1;
-  item->duration0 = DCC_1_HALFPERIOD;
-  item->level1    = 0;
-  item->duration1 = DCC_1_HALFPERIOD;
-}
-
-void setDCCBit0(rmt_item32_t* item) {
-  item->level0    = 1;
-  item->duration0 = DCC_0_HALFPERIOD;
-  item->level1    = 0;
-  item->duration1 = DCC_0_HALFPERIOD;
-}
-
-void setEOT(rmt_item32_t* item) {
-  item->val = 0;
 }
 
 void ESP_i2c_init(){

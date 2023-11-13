@@ -4,20 +4,46 @@
 
 #ifndef ESP32_DCCEX_H
   #include "ESP32_dccex.h"
-#endif
+#endif 
+/*
 DCCEX_Class dccex;
 
+void DCCEX_Class::loop_process(){
+ //Serial.printf("DCCEX uart_rx cycle: \n");
+  uart_rx(); //Read uart data into the RX ring
+  //Serial.printf("DCCEX rx_scan cycle: \n");
+  rx_scan(); //Scan RX ring for an opcode
+  //Serial.printf("DCCEX rx_queue cycle: \n");
+  rx_queue(); //Process queued RX packets and run rx_decode
+  //Serial.printf("DCCEX tx_queue cycle: \n");
+  tx_queue(); //Try to send any queued packets
+  //Serial.printf("DCCEX loop complete \n");
+  return;
+}
+
 void DCCEX_Class::rx_scan(){ //Scan ring buffer data for an opcode and return its location
-  bool eod = false;
-  uint8_t packet_size = 0;
- if ((dccex_port.rx_read_ptr == dccex_port.rx_write_ptr)) { //End of file
-    eod = true;
+  uint8_t i = 0;
+  uint8_t j = 0;
+  uint8_t packet_size = 2; //Default packet size. It gets changed later. 
+  bool checksum_ok = false;
+  
+  if (dccex.rx_read_processed != 0) { //Data has already been processed. 
+    return; 
   }
-  while (!(eod))  { //Scan until end of file is true
-    //rx_opcode = dccex_port.rx_data[dccex_port.rx_read_ptr];
-    if (dccex_port.rx_data[dccex_port.rx_read_ptr] == '>'){ //Found cmd start
-      Serial.printf("Found < at %x \n", dccex_port.rx_read_ptr); 
-      
+  time_us = esp_timer_get_time();
+  
+  last_rx_process = time_us;
+  //Serial.printf("RX_Scan: %u bytes read %u \n", LN_port.rx_read_len, i);
+  while (i < dccex_port.rx_read_len) {
+    //Serial.printf("RX_Scan While, rxpending %u, rxbyte %x \n", rx_pending, LN_port.rx_read_data[i]);
+    if (rx_pending < 0){ 
+      Serial.printf("No packet pending, i %u, byte %x \n", i, LN_port.rx_read_data[i]);
+    }
+    if ((LN_port.rx_read_data[i] & 0x80) && (LN_port.rx_read_data[i] != 255) && (rx_pending < 0)) { //we found an opcode 
+      Serial.printf("Found opcode %x, ", LN_port.rx_read_data[i]);
+      rx_pending = rx_packet_getempty(); //Find next open slot 
+      rx_packet_new(rx_pending, packet_size); //Make new packet with initial size of 2 bytes
+      Serial.printf("storing in rx slot %u \n", rx_pending);
       while ((dccex_port.rx_data[dccex_port.rx_read_ptr + packet_size] != '>') && (eod == false)){
           if ((dccex_port.rx_read_ptr == dccex_port.rx_write_ptr)) { //End of data without a '>'
             eod = true;
@@ -84,3 +110,4 @@ void ESP_dccex_init(){//Initialize Loconet objects
   return;
   
 }
+*/
