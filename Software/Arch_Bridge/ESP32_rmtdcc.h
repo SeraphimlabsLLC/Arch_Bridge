@@ -1,14 +1,18 @@
 //Contains some code snippets from DCC-EX ESP32 branch
 #pragma once
 #define ESP32_RMTDCC_HW_H
-#pragma message "Included rmtdcc.h"
+//#pragma message "Included rmtdcc.h"
+#include "config.example.h"
 
 #include "Arduino.h"
 #include "driver/gpio.h"
 
-#include "driver/rmt.h"
-#include "soc/rmt_reg.h"
-#include "soc/rmt_struct.h"
+//#include "driver/rmt.h"
+//#include "soc/rmt_reg.h"
+//#include "soc/rmt_struct.h"
+//#include "soc/rmt_periph.h"
+//#include "freertos/ringbuf.h" //
+#include "esp32-hal.h"
 
 //Use config.h if present, otherwise defaults
 #ifndef CONFIG_H
@@ -18,7 +22,10 @@
     #include "config.example.h"
   #endif
 #endif  
-#define BOARD_TYPE_ARCH_BRIDGE//Configure board style
+#include <iostream>
+//using namespace std;
+
+//#define BOARD_TYPE_ARCH_BRIDGE//Configure board style
 
 #ifdef BOARD_TYPE_DYNAMO
   #define DIR_MONITOR 38 //RMT Input pin, 9 on Arch_Bridge 38 on Dynamo
@@ -32,37 +39,58 @@
 #define DCC_RX_Q 16
 #define DCC_TX_Q 8
 
-class dccpacket {
+class DCC_packet {
   public:
+  uint8_t state; //empty = 0, pending = 1, receiving = 2, complete = 3, failed = 4, success = 5} 
+  char packet_data[48]; //Should only need 38 bytes + a few odd bits. 
+  uint8_t data_len; //Length of packet
+
   void Make_Checksum(); //Populate last byte with valid checksum
   bool Read_Checksum(); //Verify checksum, returns true if valid, false if invalid.
   uint8_t packet_size_check(); //Check that a packet has a valid size. 
   void reset_packet(); //Reset packet slot to defaults
-
-  private:
-  char packet_data[48]; //Should only need 38 bytes + a few odd bits. 
-  uint8_t state; //empty = 0, pending = 1, receiving = 2, complete = 3, failed = 4, success = 5} 
-  uint8_t data_len; //Length of packet
-
 };
 
 class Rmtdcc {
   public:
+  uint64_t last_rx_time; //Holder for the timestamp of the last valid packet. 
+  uint8_t signalstate; //0 = no signal, 1 = signal o
+    
   void rmt_rx_init(); 
+  uint8_t rmt_rx(); 
   void rx_scan(); 
+  void loop_process();
 #ifdef BOARD_TYPE_DYNAMO
   void rmt_tx_init(); 
   void tx_send(); 
 
 #endif
   private:
-  rmt_item32_t* rmt_rx_ptr; //Handle for storing RMT RX ring buffer pointer
-  char rx_decoded[4]; //bytes of decoded data. Once a packet start is found, start moving data into a packet. 
-  dccpacket* rx_data[DCC_RX_Q]; //Array of pointers to DCC packet data
+  //RingbufHandle_t rmt_rx_handle; //Handle for storing RMT RX ring buffer pointer
 
+  //Using Arduino RMT library: 
+  rmt_data_t* rx_rmt_data; //RMT data object
+  rmt_data_t* rx_last_bit; //Holds the previously decoded symbol 
+  size_t* rx_data_size; //RMT data object size
+  rmt_obj_t* rx_ch; //RMT connection object
+
+  uint8_t rx_byteout; //Unfinished RX byte
+  uint8_t rx_num_bits; //Number of bits in the unfinished RX byte
+  uint8_t rx_num_bytes; //Number of bytes in the unfinished packet. 
+  uint8_t consecutive_ones; //Number of consecutive 1 bits, used for preamble detection.
+  int8_t rx_pending; //Pending packet index 
+  uint8_t rx_next_new; //Next empty packet handle
+  uint8_t rx_next_decode; //Next packet in decoder queue
+  
+  uint64_t rmt_rx_detect; //Time of last read
+  uint64_t last_preamble; //Time of last preamble detect
+ 
+  DCC_packet* rx_packets[DCC_RX_Q]; //Array of pointers to DCC packet data
+  uint8_t rx_packet_getempty(); //Get the next available rx_packet handle, creating one if necessary.
+/*
   void setDCCBit1(rmt_item32_t* item);
   void setDCCBit0(rmt_item32_t* item);
-  void setEOT(rmt_item32_t* item);
+  void setEOT(rmt_item32_t* item);*/
 #ifdef BOARD_TYPE_DYNAMO
   
   dccpacket* tx_data[DCC_TX_Q]; //Array of pointers to DCC packet data
@@ -79,9 +107,5 @@ class Rmtdcc {
 #define DCC_0_HALFPERIOD 100 //8000
 #define DCC_0_MIN_HALFPERIOD 90 //NMRA S9.1 says 95uS Minimum half-0
 #define DCC_0_MAX_HALFPERIOD 12000 //NMRA S9.1 says 10000uS Maximum half-0, and 12000uS maximum full-0. 
-
-
-void ESP_rmt_rx_init(); //Initialize RMT RX
-void ESP_rmt_tx_init(); //Initialize RMT TX
 
 //Move these to DCC.h? They might be needed for RMT

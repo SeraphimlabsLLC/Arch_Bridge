@@ -26,21 +26,26 @@ extern ESP_Uart tty; //normal serial port
 #ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, define a loconet uart
   #ifndef ESP32_LOCONET_H
     #include "ESP32_Loconet.h"
-    
+  
   #endif
+extern LN_Class Loconet; //Loconet memory object
+  
 #ifndef ESP32_DCCEX_H
   #include "ESP32_dccex.h"
 #endif
-  extern LN_Class Loconet; //Loconet memory object
 //  extern DCCEX_Class dccex_port;
 #endif
 
 extern TrackChannel DCCSigs[];
+extern Rmtdcc dcc; 
 extern uint8_t max_tracks;
 uint64_t time_us = 0; 
 uint64_t last_time_us = 0;
 
 void setup() {
+  //Display ESP32 Interrupt table: 
+//  esp_intr_dump();
+  
   ESP_uart_init(); //Initialize tty
   #ifdef BOARD_TYPE_ARCH_BRIDGE
     ESP_LN_init(); //Initialize Loconet
@@ -60,10 +65,12 @@ void loop() {
   uint64_t LN_Scan = 0;
 //delay(5);
 ESP32_Tracks_Loop(); //Process and update tracks
+dcc.loop_process(); //Process and update DCC packets
 
 #ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, check the loconet
   if ((time_us - LN_Scan) > (60*8)) { //Only scan once every 8 bytes at 60uS/byte.
   Loconet.loop_process(); //Process and update Loconet
+
   LN_Scan = time_us;
   }
 

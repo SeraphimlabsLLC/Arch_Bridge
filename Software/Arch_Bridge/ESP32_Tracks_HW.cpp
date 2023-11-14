@@ -6,6 +6,8 @@
 
 //TrackChannel(enable_out_pin, enable_in_pin, uint8_t reverse_pin, brake_pin, adc_channel, adcscale, adc_overload_trip)
 TrackChannel DCCSigs[MAX_TRACKS]; //Define track channel objects with empty values.
+extern Rmtdcc dcc; //DCC on RMT
+
 uint8_t max_tracks = 0; //Will count tracks as they are initialized. 
 bool Master_Enable = false; 
 uint64_t Master_en_chk_time = 0; //Store when it was checked last. 
@@ -29,6 +31,8 @@ void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
     gpio_reset_pin(gpio_num_t(DIR_OVERRIDE));
     gpio_set_direction(gpio_num_t(DIR_OVERRIDE), GPIO_MODE_OUTPUT);
     gpio_set_pull_mode(gpio_num_t(DIR_OVERRIDE), GPIO_PULLUP_PULLDOWN); 
+
+    dcc.rmt_tx_init(); //Initialize DIR_OVERRIDE for DCC generation
 #endif
 #ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, define these control pins.
   Serial.print("Configuring board for Arch Bridge mode \n");
@@ -51,7 +55,7 @@ void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
   #ifdef TRACK_4
     TRACK_4
   #endif
-  //ESP_rmt_rx_init(); //Initialize DIR_MONITOR for RMT monitoring
+  dcc.rmt_rx_init(); //Initialize DIR_MONITOR for RMT monitoring
   return;
 }
 void ESP32_Tracks_Loop(){ //Check tasks each scan cycle.

@@ -2,10 +2,16 @@
 #pragma once
 #define ESP32_TRACKS_HW_H
 
+#ifndef ESP32_RMTDCC_HW_H
+  #include "ESP32_rmtdcc.h"
+#endif
+
 #include "Arduino.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 #include "driver/adc.h"
+
+
 
 /*Track Configurations
  * Format: Enable Out pin, Enable In pin, rev/sig pin, brake pin, adc pin, adc ticks per amp x1000, adc zero offset x 1000, adc trip ticks x1000
