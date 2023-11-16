@@ -50,7 +50,7 @@ class DCCEX_Class {
   void loop_process(); //Scanning loop to include in loop();
   uint8_t uart_rx(); //Receive data from uart to rx ring
   void rx_scan(); //Scan rx ring for a valid packet
-  void rx_decode(uint8_t packet_size); //Process the opcode that was found
+  void rx_decode(); //Process the opcode that was found
   void tx_send(); //Encode data for sending
   uint8_t tx_loopback(uint8_t packet_size); //RX ring found an opcode we just sent, check if it is ours
 };

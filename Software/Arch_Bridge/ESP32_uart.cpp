@@ -68,15 +68,15 @@ void ESP_Uart::uart_write(const char* write_data, uint8_t write_len){ //Write th
 
 uint16_t ESP_Uart::read_len(){ //returns how much data there is to be read
   uint8_t ready_len = 0;
-  if (ready_len > rx_buff) { //Limit to buffer size
-    ready_len = rx_buff;
-  }
   if (uart_num == 0) {
       ready_len = Serial.available();
   } else {   
     ESP_ERROR_CHECK(uart_get_buffered_data_len(uart_num, (size_t*)&ready_len));
   }
     //Serial.printf("ready_len was %d \n", ready_len);
+  if (ready_len > rx_buff) { //Limit to buffer size
+    ready_len = rx_buff;
+  }
     return ready_len;
 }
 
@@ -101,30 +101,14 @@ uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of by
   if (uart_num == 0) { //Only runs on uart0, using Arduino libraries. 
     if (readlen > 0) {
       readlen = Serial.readBytesUntil('\n', rx_read_data, readlen); //Reads until NULL or readlen chars
+      //Serial.printf("uart_read() got %u bytes \n", readlen);
       rx_read_processed = 0; //This is new data to process.
       uint8_t i = 0; 
-      while (i < readlen) {
-        Serial.printf("%c", rx_read_data[i]);
-        i++;
-    }
-    Serial.printf("\n");
     return readlen;
     } else {
       //Read using ESP Uart library
       //Serial.printf("Receiving bytes into rx_read_data pointer %u \n", rx_read_data);
       readlen = uart_read_bytes(uart_num, rx_read_data, readlen, 100); //Read up to rx_read bytes from uart_num tto rx_read_data with a 100 rt tick timeout
-
-/*      //Ring buffer: 
-      uint8_t i = 0;
-      //Serial.printf("Receiving: ");
-      while (i < readlen){ 
-        rx_data[rx_write_ptr] = rx_read_data[i];
-        //Serial.printf(" %x ", rx_read_data[i]);
-        i++;
-        rx_write_ptr++;
-      } 
-      //Serial.printf("\n"); 
-*/
     }
     //Warn if there was a size mismatch. Would only happen if something else read data in between the size check and the actual read. 
     if (rx_read_len != readlen){
@@ -149,10 +133,6 @@ void ESP_Uart::rx_flush(){ //Reset the rx buffer to 0
   delete rx_read_data; //delete the previous result so we can define it again at a new length
   rx_read_len = 1;
   rx_read_data = new char[rx_read_len]; 
-  //Serial.printf("rx_read_data set to %u containing %u \n", rx_read_data, *rx_read_data);
-  
-  //Ring buffer
-//  rx_read_ptr = rx_write_ptr = 0;  
   return;
 }
 

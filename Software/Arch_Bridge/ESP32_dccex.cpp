@@ -18,10 +18,11 @@ extern TrackChannel DCCSigs[];
 extern Rmtdcc dcc; 
 
 void DCCEX_Class::loop_process(){
-   //Serial.printf("DCCEX uart_rx cycle: \n");
+  //Serial.printf("DCCEX uart_rx cycle: \n");
   uart_rx(); //Read uart data into the RX ring
   //Serial.printf("DCCEX rx_scan cycle: \n");
   rx_scan(); //Scan RX ring for an opcode
+  rx_decode();
   //Serial.printf("DCCEX rx_queue cycle: \n");
   //rx_queue(); //Process queued RX packets and run rx_decode
   //Serial.printf("DCCEX tx_queue cycle: \n");
@@ -34,6 +35,7 @@ uint8_t DCCEX_Class::uart_rx(){ //Read incoming data into a buffer
   uint8_t read_size = 0;
   uint8_t i = 0;
   read_size = dccex_port.uart_read(read_size); //populate rx_read_data and rx_data
+  //Serial.printf("DCCEX uart %u \n", read_size);
   if (read_size > 0){ //Data was actually moved, update the timer.
     rx_last_us = esp_timer_get_time();
   }
@@ -65,7 +67,7 @@ void DCCEX_Class::rx_scan(){ //Scan ring buffer data for an opcode and return it
   return;    
 }
 
-void DCCEX_Class::rx_decode(uint8_t packet_size){
+void DCCEX_Class::rx_decode(){
   //An implementation of https://dcc-ex.com/throttles/tech-reference.html#
   uint8_t i = 0;
   if (rx_state != 2) { //No packet to process
@@ -115,12 +117,14 @@ void DCCEX_Class::rx_decode(uint8_t packet_size){
     default:
     Serial.printf("Invalid Command \n");
     
-  }   
+  } 
+  rx_state = 0;  
   return; 
 }
 
 void DCCEX_Class::dccex_init(){
-  
+  rx_state = 0;
+  data_len = 0;
 }
 
 void dccex_init(){ //Reflector into DCCEX_Class
