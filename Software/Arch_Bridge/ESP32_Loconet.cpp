@@ -1,50 +1,39 @@
 /*   IMPORTANT:
  *  Some of the message formats used in this code are Copyright Digitrax, Inc.
  */
-#define DEBUG
-#ifndef ESP32_UART_H
-  #include "ESP32_uart.h"
-#endif
 #ifndef ESP32_LOCONET_H
   #include "ESP32_Loconet.h"
+#endif
+ 
+#ifndef ESP32_UART_H
+  #include "ESP32_uart.h"
 #endif
 #ifndef ESP32_DCCEX_H
   #include "ESP32_dccex.h"
 #endif
 
-//Constants that shouldn't be changed.
-#define LN_BITLENGTH_US 60 
-#define LN_COL_BACKOFF 20
-#if LN_PRIORITY == MASTER 
-  #define LN_MAX_PRIORITY 20
-  #define LN_MIN_PRIORITY 0 
-#endif
-#if LN_PRIORITY == SENSOR
-  #define LN_MAX_PRIORITY 6
-  #define LN_MIN_PRIORITY 2 
-#endif  
-#if LN_PRIORITY == THROTTLE
-  #define LN_MAX_PRIORITY 20
-  #define LN_MIN_PRIORITY 6
-#endif 
-
 ESP_Uart LN_port; //Loconet uart object
 LN_Class Loconet; //Loconet processing object
-
 //extern DCCEX_Class dccex_port;
-extern uint64_t time_us; 
+extern uint64_t time_us;
 
-void ESP_LN_init(){//Initialize Loconet objects
+void LN_init(){//Initialize Loconet objects
   LN_UART //Initialize uart 
   return;
 }
 
+void LN_loop(){//reflector into LN_Class::loop_Process()
+  Loconet.loop_process(); //Process and update Loconet
+  return; 
+}
+
+
 void LN_Class::loop_process(){
-  /*
-  time_us = esp_timer_get_time();
-  if ((time_us - last_time_us) < 2) { //Give it 2uS between scans. 
-    return;
-  }*/
+  time_us = TIME_US;
+  if (!((time_us - LN_loop_timer) > (LN_LOOP_DELAY_US))) { //Only scan at the interval specified in ESP32_Loconet.h
+    return; 
+  }
+  LN_loop_timer = time_us; //Update last loop time
   uint8_t i = 0;
   if ((netstate == startup) || (netstate == disconnected)){
     //Wait for 250mS restart timer before accepting data. 
@@ -75,7 +64,8 @@ uint8_t LN_Class::uart_rx(){
   uint8_t i = 0;
   read_size = LN_port.uart_read(read_size); //populate rx_read_data and rx_data
   if (read_size > 0){ //Data was actually moved, update the timer.
-    rx_last_us = esp_timer_get_time();
+    time_us = TIME_US;
+    rx_last_us = time_us;
     Serial.printf("uart_rx has bytes: ");
     while (i< read_size) {
       Serial.printf("%x ", LN_port.rx_read_data[i]);
@@ -89,11 +79,11 @@ uint8_t LN_Class::uart_rx(){
 void LN_Class::rx_scan(){ //Scan received data for a valid frame
   uint8_t i = 0;  
   uint8_t location; 
+  time_us = TIME_US; //update time_us
   if (LN_port.rx_read_processed != 0) { //Data has already been processed. 
     return; 
   }
-  time_us = esp_timer_get_time();
-  last_rx_process = time_us;
+  last_rx_process = time_us; 
   //Serial.printf("RX_Scan: %u bytes read %u \n", LN_port.rx_read_len, i);
   while (i < LN_port.rx_read_len) {
     //Serial.printf("RX_Scan While, rxpending %u, rxbyte %x \n", rx_pending, LN_port.rx_read_data[i]);
@@ -126,7 +116,7 @@ void LN_Class::rx_scan(){ //Scan received data for a valid frame
       if ((tx_pending >= 0) && (rx_pending >= 0 )) { // && (time_us - tx_last_us) < (LN_BITLENGTH_US * LN_COL_BACKOFF))) {
         Serial.printf("rx_scan loopback test tx_pending %i, rx_pending %i \n", tx_pending, rx_pending);
         //We just sent a packet, this could be ours. 
-        time_us = esp_timer_get_time();
+        time_us = TIME_US;
         uint64_t started = tx_packets[tx_pending]->last_start_time;
         uint64_t elapsed = time_us - tx_packets[tx_pending]->last_start_time;
         uint64_t limit = LN_BITLENGTH_US * LN_COL_BACKOFF + LN_BITLENGTH_US * 8 * tx_packets[tx_pending]->data_len + TX_DELAY_US;
@@ -175,7 +165,7 @@ void LN_Class::rx_scan(){ //Scan received data for a valid frame
 void LN_Class::rx_queue(){ //Loop through the RX queue and process all packets in it. 
   uint8_t i = 0;
   uint8_t complete = 0;
-  time_us = esp_timer_get_time(); 
+  time_us = TIME_US;
 
   while (i < LN_RX_Q){
     //Serial.printf("RX_Queue. i = %u, LN_RX_Q = %u \n", i, LN_RX_Q);
@@ -186,10 +176,10 @@ void LN_Class::rx_queue(){ //Loop through the RX queue and process all packets i
         case 2:
           if (time_us - rx_packets[rx_next_decode]->last_start_time > 15000) { //Pending or Attempting must be finished within 15mS since their state last changed.
             Serial.printf("RX_Q Cleaning up incomplete packet %u \n", rx_next_decode);
+            rx_packets[rx_next_decode]->reset_packet();
             if (rx_next_decode == rx_pending) {
               rx_pending = -1;
-            }
-            rx_packets[rx_next_decode]->reset_packet();  
+            } 
           }          
           break;
         case 3: 
@@ -202,10 +192,10 @@ void LN_Class::rx_queue(){ //Loop through the RX queue and process all packets i
           LN_port.uart_rx_flush(); //Failed packet. 
         case 4: 
           Serial.printf("RX_Q Cleaning up complete or failed packet %u \n", rx_next_decode);
+          rx_packets[rx_next_decode]->reset_packet(); 
           if (rx_next_decode == rx_pending) {
               rx_pending = -1;
           }
-          rx_packets[rx_next_decode]->reset_packet(); 
       }
     }
     rx_next_decode++;
@@ -306,7 +296,7 @@ uint8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
 void LN_Class::tx_queue(){ //Try again to send queued packets on each loop cycle
   uint8_t i = 0;
   uint8_t priority = 0;
-  time_us = esp_timer_get_time();
+  time_us = TIME_US;
   if (tx_pending > -1) { //A packet is already active. Send it, then scan the rest of the queue. 
     //tx_send(tx_pending); 
     priority = tx_packets[tx_pending]-> priority;
@@ -347,6 +337,9 @@ void LN_Class::tx_queue(){ //Try again to send queued packets on each loop cycle
             if (tx_packets[tx_next_send]->tx_attempts <= 0) {
               Serial.printf("TX_Q Unable to transmit packet from TX queue index %u, dropping. \n", tx_next_send);
               tx_packets[tx_next_send]->reset_packet();     
+              if (tx_next_send == tx_pending) {
+                tx_pending = -1;
+              }
             } else {
               if (((tx_pending < 0) || tx_pending == tx_next_send) && (priority == tx_packets[tx_next_send]-> priority)) { //Clear to try sending it again
                 tx_pending = tx_next_send;  
@@ -356,6 +349,9 @@ void LN_Class::tx_queue(){ //Try again to send queued packets on each loop cycle
             break;  
           case 5: //Success? Either way we don't need it anymore. 
             tx_packets[tx_next_send]->reset_packet(); 
+            if (tx_next_send == tx_pending) { //This should never be needed, but just in case. 
+                tx_pending = -1;
+            }
         }
       }
       i++;
@@ -372,7 +368,7 @@ void LN_Class::tx_queue(){ //Try again to send queued packets on each loop cycle
 
 void LN_Class::tx_send(uint8_t txptr){
   //Note: tx_priority from LN_Class needs to be replaced by per-packet priority handling. 
-  time_us = esp_timer_get_time();
+  time_us = TIME_US;
   uint8_t i = 0;
   if (!tx_packets[txptr]) { //If the handle is invalid, abort.
     return; 
@@ -460,7 +456,7 @@ void LN_Class::transmit_break(){
 bool LN_Class::receive_break(uint8_t break_ptr){ //Possible BREAK input at ptr. 
   bool rx_break = false;
   if (rx_break == true) {
-    LN_port.rx_read_ptr = LN_port.rx_read_ptr =0; //Because this is a ring buffer, if you make both pointers the same all data will be overwritten instead of read.  
+  //TODO: Flush RX_Q
   }
   return rx_break;
 }
@@ -482,7 +478,10 @@ uint8_t LN_Class::rx_packet_getempty(){ //Scan rx_packets and return 1st empty s
   if (count == LN_RX_Q) { //Checked all slots without a result
     Serial.printf("WARNING: rx_packets out of space. RX packet %d will be overwritten, consider increasing LN_RX_Q \n", rx_next_new);
   }
-  rx_packets[rx_next_new]->reset_packet(); //Sets it to defaults again   
+  rx_packets[rx_next_new]->reset_packet(); //Sets it to defaults again 
+  if (rx_next_new == rx_pending){ //Should not execute, but prevents crashes if this situation happens. 
+    rx_pending = -1;  
+  }
   return rx_next_new;
 }
 
@@ -505,6 +504,9 @@ uint8_t LN_Class::tx_packet_getempty(){ //Scan tx_packets and return 1st empty s
     if (tx_packets[count]->state == 0) { //Although it already exists, it is in the empty state. Claim it. 
       Serial.printf("Reusing slot tx_packets[%u]\n", count);
         tx_packets[count]->reset_packet();
+        if (count == tx_pending) { //Shouldn't happen but just in case. 
+          tx_pending = -1;
+        }
         return count; 
     }
     count++;
@@ -537,7 +539,7 @@ void LN_Class::tx_req_sw(){
 }
 
 LN_Class::LN_Class(){ //Constructor, initializes some values.
-  time_us = esp_timer_get_time();
+  time_us = TIME_US;
   rx_pending = -1;
   tx_pending = -1;
   rx_next_new = 0; 
@@ -754,7 +756,7 @@ void LN_Class::fastclock_update(){
   uint8_t days; 
   uint8_t hours; 
   uint8_t minutes;
-  time_us = esp_timer_get_time(); 
+  time_us = TIME_US;
   run_time = (time_us - fastclock_start) * slot_ptr[123]->slot_data[0]; //Elapsed time * clock multiplier
 
   //Todo: Human readable time conversion from run_time in uS + what it was set to last. 
@@ -763,6 +765,7 @@ void LN_Class::fastclock_update(){
 }
 
 uint8_t LN_Class::slot_new(uint8_t index) { //Initialize empty slots
+  time_us = TIME_US;
   if (!(slot_ptr[index])){
     Serial.printf("Initializing Loconet slot %u \n", index);
     slot_ptr[index] = new LN_Slot_data; 
@@ -778,7 +781,7 @@ uint8_t LN_Class::slot_new(uint8_t index) { //Initialize empty slots
       slot_ptr[123]->slot_data[4] = 256 - CLK_HOURS;
       slot_ptr[123]->slot_data[6] = 0; //Days since fast clock init
       slot_ptr[123]->slot_data[7] = 32; //Bit D6 = 1 for valid clock data
-      slot_ptr[123]->last_refresh = esp_timer_get_time(); //Store when it was set last.   
+      slot_ptr[123]->last_refresh = time_us; //Store when it was set last.   
    }
   return index;
 }
@@ -795,7 +798,8 @@ LN_Slot_data::LN_Slot_data(){ //Constructor
     slot_data[i] = 0; 
     i++;
   }
-  last_refresh = esp_timer_get_time();
+  time_us = TIME_US;
+  last_refresh = time_us;
   
   return;
 }

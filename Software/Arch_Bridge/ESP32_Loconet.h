@@ -3,6 +3,16 @@
   #define ESP32_LOCONET_H
 #endif
 
+//Use config.h if present, otherwise defaults
+#ifndef CONFIG_H
+  #if __has_include ("config.h")
+    #include "config.h"
+  #endif
+  #ifndef CONFIG_H
+    #include "config.example.h"
+  #endif
+#endif  
+
 #ifndef ESP32_UART_H
   #include "ESP32_uart.h"
 #endif
@@ -13,19 +23,48 @@
 #include "Arduino.h"
 #include "esp_timer.h" //Required for timer functions to work.
 
-//Loconet UART settings, from ESP32_uart.h: (uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
-#define LN_UART Loconet.LN_port.uart_init(1, 2, 17, 18, 16666, 255, 255);
-#define LN_PRIORITY MASTER //MASTER has priority delay 0. SENSOR has priority delay of 6 down to 2. THROTTLE has priority delay of 20 down to 6. 
+//Loconet UART settings, from ESP32_uart.h: (uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
+#define LN_UART Loconet.LN_port.uart_init(1, 17, 18, 16666, 255, 0); //Fixed TX buffer not needed
 
-//Fast Clock settings:
-#define CLK_RATE 4; //Clock multiplier
-#define CLK_HOURS 12; //Initial clock hours
-#define CLK_MINUTES 0; //Initial clock minutes
+#define LN_LOOP_DELAY_US 480 //60uS * 8 bits
+
+//Constants that shouldn't be changed.
+#define LN_BITLENGTH_US 60 
+#define LN_COL_BACKOFF 20
+
+//TODO: Change this to use an enum or class and assign min priority by opcode
+#define LN_MASTER 1
+#define LN_SENSOR 2
+#define LN_THROTTLE 4
+
+//Constants that shouldn't be changed.
+#define LN_BITLENGTH_US 60 
+#define LN_COL_BACKOFF 20
+
+//typedef enum LN_Priority_min {Master = 0, Sensor = 2, Throttle = 6;
+//#if LN_PRIORITY == LN_MASTER 
+  #define LN_MAX_PRIORITY 20
+  #define LN_MIN_PRIORITY 0
+//#endif
+/*
+#if LN_PRIORITY == LN_SENSOR
+  #define LN_MAX_PRIORITY 6 
+  #define LN_MIN_PRIORITY 2
+#endif  
+#if LN_PRIORITY == LN_THROTTLE
+  #define LN_MAX_PRIORITY 20
+  #define LN_MIN_PRIORITY 6
+#endif 
+*/
 
 //Queue settings: 
 #define LN_RX_Q 8
 #define LN_TX_Q 32
 #define TX_DELAY_US 12000; //Adjust loopback window aperture
+
+//Processing reflectors, use these to avoid having to include the entire class in main.
+void LN_init(); //Initialize Loconet interface
+void LN_loop(); //Loconet process loop
 
 //Enums: 
 enum LN_netstate {startup = 0, disconnected = 1, inactive = 2, active = 3};
@@ -68,6 +107,7 @@ class LN_Slot_data{ //Each slot will be created and have a pointer stored in LN_
 };
 class LN_Class {
   public:
+  uint64_t LN_loop_timer; //Time since last loop_process
   ESP_Uart LN_port; //Class inside a class
   LN_netstate netstate; //Network operating condition
 //  char rx_opcode; //Last opcode received
@@ -126,8 +166,5 @@ class LN_Class {
   void slot_read(int8_t slotnumber); //Handle slot reads
   void slot_write(int8_t slotnumber, uint8_t rx_pkt); //Handle slot writes
   void slot_move(int8_t slotnumber, int8_t newslotnumber); //Handle slot moves
-  
 
 };
-
-void ESP_LN_init();

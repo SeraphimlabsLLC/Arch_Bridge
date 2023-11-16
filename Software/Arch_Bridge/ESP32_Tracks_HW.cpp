@@ -1,7 +1,11 @@
 #ifndef ESP32_TRACKS_HW_H
   #include "ESP32_Tracks_HW.h"
 #endif
+#ifndef ESP32_RMTDCC_HW_H
+  #include "ESP32_rmtdcc.h"
+#endif
 
+const uint8_t config_track = CONFIG;
 
 
 //TrackChannel(enable_out_pin, enable_in_pin, uint8_t reverse_pin, brake_pin, adc_channel, adcscale, adc_overload_trip)
@@ -17,8 +21,8 @@ extern uint64_t time_us; //Reuse time_us from main
 
 uint32_t rmt_rxdata_ptr; //RMT RX Ring Buffer locator
 
-void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
-  #ifdef BOARD_TYPE_DYNAMO //If this is a Dynamo type booster, define these control pins.
+void Tracks_Init(){ //Populates track class with values including ADC
+#if BOARD_TYPE ==DYNAMO //If this is a Dynamo type booster, define these control pins.
   Serial.print("Configuring board for Dynamo booster mode \n");
     gpio_reset_pin(gpio_num_t(MASTER_EN)); //Input from Optocouplers and XOR verifying that at least one opto is on
     gpio_set_direction(gpio_num_t(MASTER_EN), GPIO_MODE_INPUT);
@@ -31,17 +35,15 @@ void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
     gpio_reset_pin(gpio_num_t(DIR_OVERRIDE));
     gpio_set_direction(gpio_num_t(DIR_OVERRIDE), GPIO_MODE_OUTPUT);
     gpio_set_pull_mode(gpio_num_t(DIR_OVERRIDE), GPIO_PULLUP_PULLDOWN); 
-
     dcc.rmt_tx_init(); //Initialize DIR_OVERRIDE for DCC generation
 #endif
-#ifdef BOARD_TYPE_ARCH_BRIDGE //If this is an arch bridge, define these control pins.
+#if BOARD_TYPE == ARCH_BRIDGE //If this is an arch bridge, define these control pins.
   Serial.print("Configuring board for Arch Bridge mode \n");
 
   gpio_reset_pin(gpio_num_t(MASTER_EN)); //Serves as an Output Enable on Dynamo
   gpio_set_direction(gpio_num_t(MASTER_EN), GPIO_MODE_OUTPUT);
   gpio_set_pull_mode(gpio_num_t(MASTER_EN), GPIO_PULLUP_PULLDOWN);    
   gpio_set_level(gpio_num_t(MASTER_EN), 1); //Turn OE on 
-
 #endif
   adc1_config_width(ADC_WIDTH_12Bit);//config adc1 width
   
@@ -55,10 +57,10 @@ void ESP32_Tracks_Setup(){ //Populates track class with values including ADC
   #ifdef TRACK_4
     TRACK_4
   #endif
-  dcc.rmt_rx_init(); //Initialize DIR_MONITOR for RMT monitoring
+  
   return;
 }
-void ESP32_Tracks_Loop(){ //Check tasks each scan cycle.
+void Tracks_Loop(){ //Check tasks each scan cycle.
   uint8_t i = 0;
   //uint32_t milliamps = 0;
   MasterEnable(); //Update Master status. Dynamo this is external input, ArchBridge is always true.
@@ -252,22 +254,4 @@ bool MasterEnable(){ //On Dynamo boards, read MASTER_IN twice MASTER_EN_DEGLITCH
      Master_Enable = master_en; //Function directly updates the Master_Enable global in addition to returning
    }  
   return master_en;
-}
-
-void ESP_i2c_init(){
-  i2c_config_t i2c_conf_slave;
-    i2c_conf_slave.sda_io_num = gpio_num_t(I2C_SDA_PIN);
-    i2c_conf_slave.sda_pullup_en = GPIO_PULLUP_ENABLE;
-    i2c_conf_slave.scl_io_num = gpio_num_t(I2C_SCL_PIN);
-    i2c_conf_slave.scl_pullup_en = GPIO_PULLUP_ENABLE;
-    i2c_conf_slave.mode = I2C_MODE_SLAVE;
-    i2c_conf_slave.slave.addr_10bit_en = 0;
-    i2c_conf_slave.slave.slave_addr = I2C_SLAVE_ADDR;  // slave address of your project
-    i2c_conf_slave.slave.maximum_speed = I2C_CLOCK; // expected maximum clock speed
-    i2c_conf_slave.clk_flags = 0;   // optional; you can use I2C_SCLK_SRC_FLAG_* flags to choose I2C source clock here
-  /*esp_err_t err = i2c_param_config(i2c_slave_number(I2C_SLAVE_PORT), &i2c_conf_slave);
-  if (err != ESP_OK) {
-    return err;
-  }*/
-return;
 }

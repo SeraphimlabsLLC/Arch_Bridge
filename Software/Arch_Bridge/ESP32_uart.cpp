@@ -12,28 +12,33 @@ void ESP_uart_init(){ //Set up uarts
 }
 
 //TTY config
-void ESP_Uart::uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff){ 
+void ESP_Uart::uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff){ 
   //store for later 
   uart_num = uartnum; 
-  uart_mode = uartmode; 
   tx_pin = gpio_num_t(txpin);
   rx_pin = gpio_num_t(rxpin);
   tx_buff = txbuff;
   rx_buff = rxbuff;
-  tx_write_ptr = tx_read_ptr = 0; //Initialize tx ring buffer pointers
-  rx_write_ptr = rx_read_ptr = 0; //Inialize rx ring buffer pointers
-  const uart_port_t uart_num = uartnum; 
+ 
+  if (rx_buff > 0) { //Configure RX buffer
+    if (rx_read_data) {
+      delete rx_read_data; //Delete any existing read buffer
+    }
+    rx_read_data = new char[rx_buff]; //Define rx_buff as char[rx_buff]
+  }
+
+  if (tx_buff > 0) { //Configure TX buffer
+    if (tx_write_data) {
+      delete tx_write_data; //Delete any existing write buffer
+    }
+    tx_write_data = new char[tx_buff]; //Define rx_buff as char[rx_buff]
+  }
+  
   if (uart_num == 0) { //Use Arduino serial library for now. This will eventually need to be replaced. 
-    Serial.begin (115200);
-    Serial.printf("Configuring Arduino Serial on UART %d, baud rate %d \n", uart_num, baudrate);
+    Serial.begin (baudrate);
+    Serial.printf("Configuring Arduino Serial on UART %d, baud rate %d \n", uartnum, baudrate);
     return;
   } else { //Is not uart0 
-    if (uart_mode == 1) { //DCC-EX transmitter
-    Serial.printf("Configuring DCC-EX on UART %d, baud rate %d \n", uart_num, baudrate);
-  }
-  if (uart_mode == 2) { //Loconet transmitter
-    Serial.printf("Configuring Loconet on UART %d, baud rate %d \n", uart_num, baudrate);
-  }
     uart_config_t uart_config = {
       .baud_rate = baudrate,
       .data_bits = UART_DATA_8_BITS,
@@ -43,10 +48,10 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8
       //.rx_flow_ctrl_thresh = 122, //not used with flowctrl_disable
       //.source_clk = UART_SCLK_DEFAULT,  
     };
-    ESP_ERROR_CHECK(uart_driver_install(uart_num, tx_buff, rx_buff, 0, NULL, 0));
-    ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
-    ESP_ERROR_CHECK(uart_set_pin(uart_num, tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
-    ESP_ERROR_CHECK(uart_flush(uart_num));
+    ESP_ERROR_CHECK(uart_driver_install(uart_port_t(uartnum), tx_buff, rx_buff, 0, NULL, 0));
+    ESP_ERROR_CHECK(uart_param_config(uart_port_t(uartnum), &uart_config));
+    ESP_ERROR_CHECK(uart_set_pin(uart_port_t(uartnum), tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    ESP_ERROR_CHECK(uart_flush(uart_port_t(uartnum)));
     //ESP_ERROR_CHECK(uart_set_tx_empty_threshold(0)) //Enables interrupt on TX empty. Can use this to turn on gpio=1
   }
 return;
@@ -62,22 +67,22 @@ void ESP_Uart::uart_write(const char* write_data, uint8_t write_len){ //Write th
 }
 
 uint16_t ESP_Uart::read_len(){ //returns how much data there is to be read
+  uint8_t ready_len = 0;
+  if (ready_len > rx_buff) { //Limit to buffer size
+    ready_len = rx_buff;
+  }
   if (uart_num == 0) {
-    return 0;
-  }    
-    uint8_t ready_len = 0;
+      ready_len = Serial.available();
+  } else {   
     ESP_ERROR_CHECK(uart_get_buffered_data_len(uart_num, (size_t*)&ready_len));
+  }
     //Serial.printf("ready_len was %d \n", ready_len);
     return ready_len;
-  }
+}
 
 uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of bytes into rx_read_data and copy to
-  if (uart_num == 0) {
-    return 0;
-  }
   uint8_t ready_len = read_len();
-  //Serial.printf("uart_read readlen was %d, ready_len was %d \n", readlen, ready_len);
-    if ((readlen > ready_len) || (ready_len == 0)){ //Asked to read more bytes than we have or no data ready. Return 0;  
+  if ((readlen > ready_len) || (ready_len == 0)){ //Asked to read more bytes than we have or no data ready. Return 0;  
     return 0;
   }
   if (readlen == 0) {//readlen wasn't specified, take what the buffer has.
@@ -86,37 +91,51 @@ uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of by
   if (rx_read_processed != 255){ //Exiting data hasn't been processed yet. Don't read new data. 
     return 0;     
   }
-  
-  //Serial.printf("Deleting stale rx_read_data at %u \n", rx_read_data);
-  delete rx_read_data; //delete the previous result so we can define it again at a new length
-  //Serial.printf("updating rx_read_len \n");
+
   rx_read_len = readlen;
-  //Serial.printf("Making new rx_read_data \n");
-  rx_read_data = new char[rx_read_len]; //Define rx_read_len and make a char[]
+
   if (!(rx_read_data)){ //Could not make pointer. 
     return 0; 
   }
-  //Serial.printf("Receiving bytes into rx_read_data pointer %u \n", rx_read_data);
-  readlen = uart_read_bytes(uart_num, rx_read_data, readlen, 100); //Read up to rx_read bytes from uart_num tto rx_read_data with a 100 rt tick timeout
-  rx_read_processed = 0; //This is new data to process.
-  //Ring buffer: 
-  uint8_t i = 0;
-  //Serial.printf("Receiving: ");
-  while (i < readlen){ 
-    rx_data[rx_write_ptr] = rx_read_data[i];
-    //Serial.printf(" %x ", rx_read_data[i]);
-    i++;
-    rx_write_ptr++;
-  }
-  //Serial.printf("\n");
-  //Warn if there was a size mismatch. Would only happen if something else read data in between the size check and the actual read. 
-  
-  if (rx_read_len != readlen){
-    Serial.printf("Read only %d bytes when told to read %d bytes \n", rx_read_len, readlen);
-  }
-  return readlen;
+
+  if (uart_num == 0) { //Only runs on uart0, using Arduino libraries. 
+    if (readlen > 0) {
+      readlen = Serial.readBytesUntil('\n', rx_read_data, readlen); //Reads until NULL or readlen chars
+      rx_read_processed = 0; //This is new data to process.
+      uint8_t i = 0; 
+      while (i < readlen) {
+        Serial.printf("%c", rx_read_data[i]);
+        i++;
+    }
+    Serial.printf("\n");
+    return readlen;
+    } else {
+      //Read using ESP Uart library
+      //Serial.printf("Receiving bytes into rx_read_data pointer %u \n", rx_read_data);
+      readlen = uart_read_bytes(uart_num, rx_read_data, readlen, 100); //Read up to rx_read bytes from uart_num tto rx_read_data with a 100 rt tick timeout
+
+/*      //Ring buffer: 
+      uint8_t i = 0;
+      //Serial.printf("Receiving: ");
+      while (i < readlen){ 
+        rx_data[rx_write_ptr] = rx_read_data[i];
+        //Serial.printf(" %x ", rx_read_data[i]);
+        i++;
+        rx_write_ptr++;
+      } 
+      //Serial.printf("\n"); 
+*/
+    }
+    //Warn if there was a size mismatch. Would only happen if something else read data in between the size check and the actual read. 
+    if (rx_read_len != readlen){
+      Serial.printf("Read only %d bytes when told to read %d bytes \n", rx_read_len, readlen);
+    }
+    rx_read_processed = 0; //This is new data to process.
+    return readlen;
+  } 
 }
 
+//TODO: Rewrite these 4 functions to work with the new system
 void ESP_Uart::uart_rx_flush() {//Erase all data in the buffer
   if (uart_num == 0) {
     return;
@@ -133,11 +152,11 @@ void ESP_Uart::rx_flush(){ //Reset the rx buffer to 0
   //Serial.printf("rx_read_data set to %u containing %u \n", rx_read_data, *rx_read_data);
   
   //Ring buffer
-  rx_read_ptr = rx_write_ptr = 0;  
+//  rx_read_ptr = rx_write_ptr = 0;  
   return;
 }
 
-void ESP_Uart::tx_flush() { //Reset the tx ring buffer to 0,0
-  tx_read_ptr = tx_write_ptr = 0;
+void ESP_Uart::tx_flush() { //Reset the tx ring buffer
+//  tx_read_ptr = tx_write_ptr = 0;
   return;
 }

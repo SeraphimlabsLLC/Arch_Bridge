@@ -6,6 +6,16 @@
   #include "ESP32_rmtdcc.h"
 #endif
 
+//Use config.h if present, otherwise defaults
+#ifndef CONFIG_H
+  #if __has_include ("config.h")
+    #include "config.h"
+  #endif
+  #ifndef CONFIG_H
+    #include "config.example.h"
+  #endif
+#endif  
+
 #include "Arduino.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
@@ -27,6 +37,10 @@
  */
 #define BOARD_TYPE_ARCH_BRIDGE//Configure board style
 
+
+void Tracks_Init();
+void Tracks_Loop();
+bool MasterEnable();
  
 #ifdef BOARD_TYPE_DYNAMO
  // #pragma message "Building as Dynamo"
@@ -92,10 +106,3 @@ class TrackChannel {
     gpio_num_t brake_pin;
     adc1_channel_t adc_channel;
 };
-
-void ESP_serial_init();
-void ESP32_Tracks_Setup();
-void ESP32_Tracks_Loop();
-bool MasterEnable();
-
-//void ESP_i2c_init();

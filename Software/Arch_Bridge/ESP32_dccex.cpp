@@ -1,113 +1,134 @@
+#ifndef ESP32_DCCEX_H
+  #include "ESP32_dccex.h"
+#endif 
+
 #ifndef ESP32_UART_H
   #include "ESP32_uart.h"
 #endif
 
-#ifndef ESP32_DCCEX_H
-  #include "ESP32_dccex.h"
-#endif 
-/*
+#ifndef ESP32_TRACKS_HW_H
+  #include "ESP32_Tracks_HW.h"
+#endif
+
+uint8_t config_dccex = CONFIG;
+
 DCCEX_Class dccex;
+extern uint64_t time_us; 
+extern TrackChannel DCCSigs[];
+extern Rmtdcc dcc; 
 
 void DCCEX_Class::loop_process(){
- //Serial.printf("DCCEX uart_rx cycle: \n");
+   //Serial.printf("DCCEX uart_rx cycle: \n");
   uart_rx(); //Read uart data into the RX ring
   //Serial.printf("DCCEX rx_scan cycle: \n");
   rx_scan(); //Scan RX ring for an opcode
   //Serial.printf("DCCEX rx_queue cycle: \n");
-  rx_queue(); //Process queued RX packets and run rx_decode
+  //rx_queue(); //Process queued RX packets and run rx_decode
   //Serial.printf("DCCEX tx_queue cycle: \n");
-  tx_queue(); //Try to send any queued packets
+  //tx_queue(); //Try to send any queued packets
   //Serial.printf("DCCEX loop complete \n");
   return;
 }
 
-void DCCEX_Class::rx_scan(){ //Scan ring buffer data for an opcode and return its location
+uint8_t DCCEX_Class::uart_rx(){ //Read incoming data into a buffer
+  uint8_t read_size = 0;
   uint8_t i = 0;
-  uint8_t j = 0;
-  uint8_t packet_size = 2; //Default packet size. It gets changed later. 
-  bool checksum_ok = false;
-  
-  if (dccex.rx_read_processed != 0) { //Data has already been processed. 
-    return; 
+  read_size = dccex_port.uart_read(read_size); //populate rx_read_data and rx_data
+  if (read_size > 0){ //Data was actually moved, update the timer.
+    rx_last_us = esp_timer_get_time();
   }
-  time_us = esp_timer_get_time();
-  
-  last_rx_process = time_us;
-  //Serial.printf("RX_Scan: %u bytes read %u \n", LN_port.rx_read_len, i);
+  return read_size;
+}
+
+void DCCEX_Class::rx_scan(){ //Scan ring buffer data for an opcode and return its location
+  uint16_t i = 0; 
+
   while (i < dccex_port.rx_read_len) {
-    //Serial.printf("RX_Scan While, rxpending %u, rxbyte %x \n", rx_pending, LN_port.rx_read_data[i]);
-    if (rx_pending < 0){ 
-      Serial.printf("No packet pending, i %u, byte %x \n", i, LN_port.rx_read_data[i]);
+    Serial.printf("Char: %c \n");
+    if ((dccex_port.rx_read_data[i] == '<') && (rx_state == 0)) { // 0x3e
+      Serial.printf("Starting CMD: %c \n", dccex_port.rx_read_data[i]);
+      rx_state = 1; //pending
+      data_len = 0; 
     }
-    if ((LN_port.rx_read_data[i] & 0x80) && (LN_port.rx_read_data[i] != 255) && (rx_pending < 0)) { //we found an opcode 
-      Serial.printf("Found opcode %x, ", LN_port.rx_read_data[i]);
-      rx_pending = rx_packet_getempty(); //Find next open slot 
-      rx_packet_new(rx_pending, packet_size); //Make new packet with initial size of 2 bytes
-      Serial.printf("storing in rx slot %u \n", rx_pending);
-      while ((dccex_port.rx_data[dccex_port.rx_read_ptr + packet_size] != '>') && (eod == false)){
-          if ((dccex_port.rx_read_ptr == dccex_port.rx_write_ptr)) { //End of data without a '>'
-            eod = true;
-          } else {
-            packet_size++;
-          }
-          Serial.printf ("Found < or eod /n");
+    
+    if (rx_state == 1) { //Record data until finding >
+      data_pkt[data_len] = dccex_port.rx_read_data[i];
+      data_len++;
+
+      if (dccex_port.rx_read_data[i] == '>') { //stop recording data. Reset for next packet.
+        rx_state = 2; //RX complete, ready to process 
+        Serial.printf("Stopping CMD: %c \n", dccex_port.rx_read_data[i]); 
       }
-      if (eod == false) {//A < was found before eod, we have a good packet.
-        rx_decode(packet_size);
-      }
-      
     }
-  if ((dccex_port.rx_read_ptr == dccex_port.rx_write_ptr)) { //End of data
-    eod = true;
-  } else {
-    dccex_port.rx_read_ptr++; //Read pointer will increment until a start char is found.
-    }
+    i++; 
   }
   return;    
 }
 
 void DCCEX_Class::rx_decode(uint8_t packet_size){
-  char rx_opcode;
-  dccex_port.rx_read_ptr++; //Advance the pointer by 1 to read the acutal opcode
-  rx_opcode = dccex_port.rx_data[dccex_port.rx_read_ptr];
-
-  switch (rx_opcode) { //An implementation of https://dcc-ex.com/throttles/tech-reference.html#
-
-    case 'l': //Loco throttle commands
-    Serial.printf("Throttle command detected \n");
-
-    break;
-    case 'H': //Turnout and sensor commands
-    Serial.printf("Turnout command detected \n");
-
-    break;
-    case 'p': //Power states
-    Serial.printf("Power command detected \n");
-
-    break;
-    case 'r': //Reads from prog track
-    Serial.printf("Programming command detected \n");
-
-    break;
-    default: 
-    Serial.printf("No match for %x \n", rx_opcode);
-    
+  //An implementation of https://dcc-ex.com/throttles/tech-reference.html#
+  uint8_t i = 0;
+  if (rx_state != 2) { //No packet to process
+    return; 
   }
+  switch (data_pkt[1]) {
+    case 0:  //power off
+    Serial.printf("Changing to OFF \n");
+      DCCSigs[0].ModeChange(0);
+      DCCSigs[1].ModeChange(0);
+
+    break;
+    case '1':
+    Serial.printf("Changing to DCC EXT, ON_FWD \n");
+      DCCSigs[0].ModeChange(1);
+      DCCSigs[1].ModeChange(1);   
+      DCCSigs[0].StateChange(2);//Set to DCC_ON
+      DCCSigs[1].StateChange(2);//Set to DCC_ON
+
+    break;
+    case '2':
+      Serial.printf("Changing to DCC EXT, ON_FWD \n");
+      DCCSigs[0].ModeChange(3);
+      DCCSigs[1].ModeChange(3);   
+      DCCSigs[0].StateChange(2);//Set to ON_FWD
+      DCCSigs[1].StateChange(2);//Set to ON_FWD  
+      break; 
+
+    case '3': 
+      Serial.printf("Changing to DCC EXT, ON_REV \n");
+      DCCSigs[0].ModeChange(3);
+      DCCSigs[1].ModeChange(3);   
+      DCCSigs[0].StateChange(3);//Set to ON_REV
+      DCCSigs[1].StateChange(3);//Set to ON_REV  
+      break; 
+
+    case 'D': 
+      Serial.printf("Debug: \n"); 
+      i = gpio_get_level(DCCSigs[0].enable_in_pin);
+      Serial.printf("Enable in: %u \n", i);
+      i = gpio_get_level(DCCSigs[0].reverse_pin);
+      Serial.printf("Reverse: %u \n", i);
+      i = gpio_get_level(DCCSigs[0].brake_pin);
+      Serial.printf("Brake in: %u \n", i);
+      i = 0;
+
+    default:
+    Serial.printf("Invalid Command \n");
+    
+  }   
+  return; 
+}
+
+void DCCEX_Class::dccex_init(){
   
-
-  return;
 }
 
-
-void DCCEX_Class::tx_send(){
-  dccex_port.uart_write(128); //L
-  return;
+void dccex_init(){ //Reflector into DCCEX_Class
+  dccex.dccex_init(); 
+  return; 
 }
 
-
-void ESP_dccex_init(){//Initialize Loconet objects
-  DCCEX_UART //Initialize uart
-  return;
-  
+void dccex_loop(){ //Reflector into DCCEX_Class
+  dccex.loop_process();
+  return; 
 }
-*/
