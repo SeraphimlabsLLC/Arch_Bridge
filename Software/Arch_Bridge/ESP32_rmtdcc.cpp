@@ -6,20 +6,12 @@
  * DCC_EX is limited to only 11 bytes max. Much easier to account for and uses a smaller buffer. 
   */
 
-/*      
-       // get the ring buffer handle
-      rmt_get_ringbuf_handle(rx_inputs[c].channel, &rb);
-      
-      // get items, if there are any
-      items = (rmt_item32_t*) xRingbufferReceive(rb, &rx_size, 10);
- */ 
 Rmtdcc dcc; //Define track channel objects with empty values.
 extern uint64_t time_us;
-uint8_t config_rmt = CONFIG;
 
 void Rmtdcc::loop_process() { //Workflow loop
   rmt_rx();
-//  rx_scan(); 
+  rmt_scan(); 
 
   return;
 }
@@ -145,6 +137,11 @@ uint8_t Rmtdcc::rx_bit_processor(bool input){
   return 1;
 }
 
+void Rmtdcc::rmt_scan() {
+
+  return;
+}
+
 /*
 void IRAM_ATTR rmt_isr_handler(void* arg){
   //read RMT interrupt status.
@@ -168,11 +165,6 @@ void IRAM_ATTR rmt_isr_handler(void* arg){
   RMT.int_clr.val = intr_st;
 }
 */ 
-void Rmtdcc::rx_scan() {
-
-  return;
-}
-
 
 void Rmtdcc::rmt_rx_init(){ 
   rx_ch = NULL; 
@@ -261,7 +253,6 @@ uint8_t Rmtdcc::rx_packet_getempty(){ //Scan rx_packets and return 1st empty slo
   rx_packets[rx_next_new]->reset_packet(); //Sets it to defaults again   
   return rx_next_new;
 }
-
 
 #if BOARD_TYPE == DYNAMO //for now only do this on Dynamo
     //Initialize RMT for DCC TX 

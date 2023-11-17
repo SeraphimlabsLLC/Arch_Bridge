@@ -7,7 +7,9 @@ ESP_Uart tty; //normal serial port
 extern uint64_t time_us; //Shared time global
 
 void ESP_uart_init(){ //Set up uarts
- TTY_CONFIG 
+ #ifdef TTY_CONFIG
+   TTY_CONFIG 
+ #endif
  return;
 }
 
@@ -19,24 +21,31 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t
   rx_pin = gpio_num_t(rxpin);
   tx_buff = txbuff;
   rx_buff = rxbuff;
- 
-  if (rx_buff > 0) { //Configure RX buffer
-    if (rx_read_data) {
-      delete rx_read_data; //Delete any existing read buffer
-    }
-    rx_read_data = new char[rx_buff]; //Define rx_buff as char[rx_buff]
-  }
 
-  if (tx_buff > 0) { //Configure TX buffer
-    if (tx_write_data) {
-      delete tx_write_data; //Delete any existing write buffer
-    }
-    tx_write_data = new char[tx_buff]; //Define rx_buff as char[rx_buff]
+  //Configure RX buffer 
+  if (rx_buff < 4) { //Minimum of 4 bytes. 
+    rx_buff = 4; 
   }
+  if (rx_read_data) {
+    delete rx_read_data; //Delete any existing read buffer
+  }
+  rx_read_data = new char[rx_buff]; //Define rx_read_data as char[rx_buff]
+  //Serial.printf("Uart %u rx_read_data %u \n", uart_num, rx_read_data);
+
+  //Configure TX buffer
+  if (tx_buff < 4) { 
+    tx_buff = 4;
+  }
+  if (tx_write_data) {
+    delete tx_write_data; //Delete any existing write buffer
+  }
+  tx_write_data = new char[tx_buff]; //Define tx_write_data as char[tx_buff]
+  //Serial.printf("Uart %u tx_write_data %u \n", uart_num, tx_write_data);
   
   if (uart_num == 0) { //Use Arduino serial library for now. This will eventually need to be replaced. 
     Serial.begin (baudrate);
-    Serial.printf("Configuring Arduino Serial on UART %d, baud rate %d \n", uartnum, baudrate);
+    Serial.printf(BOARD_ID);
+    //Serial.printf("Configuring Arduino Serial on UART %d, baud rate %d \n", uartnum, baudrate);
     return;
   } else { //Is not uart0 
     uart_config_t uart_config = {
@@ -67,7 +76,7 @@ void ESP_Uart::uart_write(const char* write_data, uint8_t write_len){ //Write th
 }
 
 uint16_t ESP_Uart::read_len(){ //returns how much data there is to be read
-  uint8_t ready_len = 0;
+  uint16_t ready_len = 0;
   if (uart_num == 0) {
       ready_len = Serial.available();
   } else {   
@@ -81,17 +90,17 @@ uint16_t ESP_Uart::read_len(){ //returns how much data there is to be read
 }
 
 uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of bytes into rx_read_data and copy to
-  uint8_t ready_len = read_len();
-  if ((readlen > ready_len) || (ready_len == 0)){ //Asked to read more bytes than we have or no data ready. Return 0;  
-    return 0;
-  }
+  uint16_t ready_len = 0;
+  ready_len = read_len();
   if (readlen == 0) {//readlen wasn't specified, take what the buffer has.
     readlen = ready_len;
+  }
+  if ((readlen > ready_len) || (ready_len == 0)){ //Asked to read more bytes than we have or no data ready. Return 0;  
+    return 0;
   }
   if (rx_read_processed != 255){ //Exiting data hasn't been processed yet. Don't read new data. 
     return 0;     
   }
-
   rx_read_len = readlen;
 
   if (!(rx_read_data)){ //Could not make pointer. 
@@ -101,7 +110,7 @@ uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of by
   if (uart_num == 0) { //Only runs on uart0, using Arduino libraries. 
     if (readlen > 0) {
       readlen = Serial.readBytesUntil('\n', rx_read_data, readlen); //Reads until NULL or readlen chars
-      //Serial.printf("uart_read() got %u bytes \n", readlen);
+      Serial.printf("uart_read() got %u bytes \n", readlen);
       rx_read_processed = 0; //This is new data to process.
       uint8_t i = 0; 
     return readlen;
@@ -129,14 +138,15 @@ void ESP_Uart::uart_rx_flush() {//Erase all data in the buffer
 }
 
 void ESP_Uart::rx_flush(){ //Reset the rx buffer to 0
-  //char* 
   delete rx_read_data; //delete the previous result so we can define it again at a new length
   rx_read_len = 1;
-  rx_read_data = new char[rx_read_len]; 
+  rx_read_data = new char[rx_buff]; 
   return;
 }
 
-void ESP_Uart::tx_flush() { //Reset the tx ring buffer
-//  tx_read_ptr = tx_write_ptr = 0;
+void ESP_Uart::tx_flush() { //Reset the tx buffer
+  delete tx_write_data; //delete the previous result so we can define it again at a new length
+  tx_write_len = 1;
+  tx_write_data = new char[tx_buff]; 
   return;
 }

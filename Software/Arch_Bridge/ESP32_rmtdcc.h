@@ -22,13 +22,11 @@
     #include "config.example.h"
   #endif
 #endif  
-//const uint8_t config_rmt = CONFIG;
 
 #if BOARD_TYPE == DYNAMO
   #define DIR_MONITOR 38 //RMT Input pin, 9 on Arch_Bridge 38 on Dynamo
   #define DIR_OVERRIDE 21 //GPIO21, use for RMT Output
 #endif
-
 
 #if BOARD_TYPE == ARCH_BRIDGE
   #define DIR_MONITOR 9 //RMT Input pin, 9 on Arch_Bridge 38 on Dynamo
@@ -66,7 +64,7 @@ class Rmtdcc {
   
   void rmt_rx_init(); 
   uint8_t rmt_rx(); 
-  void rx_scan(); 
+  void rmt_scan(); 
   void loop_process();
 #if BOARD_TYPE == DYNAMO
   void rmt_tx_init(); 

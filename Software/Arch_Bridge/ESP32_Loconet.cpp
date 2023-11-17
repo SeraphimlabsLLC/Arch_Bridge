@@ -36,11 +36,12 @@ void LN_Class::loop_process(){
   LN_loop_timer = time_us; //Update last loop time
   uint8_t i = 0;
   if ((netstate == startup) || (netstate == disconnected)){
-    //Wait for 250mS restart timer before accepting data. 
+    //During startup interval, read the uart to keep it clear but don't process it. 
+     uart_rx();
+     LN_port.rx_read_processed = 255; //Mark as fully processed so it gets discarded.
     if ((time_us - Loconet.rx_last_us) > 250000) { 
-      LN_port.uart_rx_flush();
       LN_port.rx_flush();
-      LN_port.rx_flush();
+      LN_port.tx_flush();
       Serial.printf("Loconet start \n");
       netstate = active;
     }

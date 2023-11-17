@@ -14,10 +14,13 @@
     #include "config.example.h"
   #endif
 #endif  
-const uint8_t config_uart = CONFIG;
 
 class ESP_Uart {
   public:
+  uint8_t uart_num; 
+  uint16_t tx_buff; //tx buffer size
+  uint16_t rx_buff; //rx buffer size
+  uint32_t baud_rate;
   char* rx_read_data; //Pointer to the data just read
   uint16_t rx_read_len; //Size of rx_read_data
   uint8_t rx_read_processed; //read status, 0 when new, 255 when fully processed.
@@ -34,12 +37,10 @@ class ESP_Uart {
   void tx_flush(); //Reset the tx buffer
 
   private: 
-  uint8_t uart_num; 
   gpio_num_t tx_pin;
   gpio_num_t rx_pin;
-  uint32_t baud_rate;
-  uint16_t tx_buff; //tx buffer size
-  uint16_t rx_buff; //rx buffer size
+
+
 };
 
 void ESP_uart_init();

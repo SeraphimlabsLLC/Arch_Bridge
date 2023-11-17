@@ -5,9 +5,6 @@
   #include "ESP32_rmtdcc.h"
 #endif
 
-const uint8_t config_track = CONFIG;
-
-
 //TrackChannel(enable_out_pin, enable_in_pin, uint8_t reverse_pin, brake_pin, adc_channel, adcscale, adc_overload_trip)
 TrackChannel DCCSigs[MAX_TRACKS]; //Define track channel objects with empty values.
 extern Rmtdcc dcc; //DCC on RMT
@@ -103,7 +100,7 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
     gpio_set_level(gpio_num_t(enable_out_pin), 0); //Enable Out stays off until a mode is selected. 
     //Configure Enable In if present
     if (enable_in_pin != 0) { //Only configure enable_in_pin if it is nonzero
-      Serial.printf ("Configuring Enable In pin to %u \n", uint8_t (enable_in_pin));
+      //Serial.printf ("Configuring Enable In pin to %u \n", uint8_t (enable_in_pin));
       gpio_reset_pin(enable_in_pin);
       gpio_set_direction(enable_in_pin, GPIO_MODE_INPUT);
     }

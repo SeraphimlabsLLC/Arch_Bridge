@@ -30,11 +30,6 @@ void dccex_loop(); //DCCEX_Class::dccex_loop();
 #define RELAY_FROM_LOCONET true //Commands to DCC-EX get sent from Loconet
 #define RELAY_TO_LOCONET true //Commands from DCC-EX get sent to Loconet
 */
-class DCCEX_Packet{ //DCCEX Packet class
-  uint8_t state; //packet state
-  char data_[80];   
-};
-
 
 class DCCEX_Class {
   public:

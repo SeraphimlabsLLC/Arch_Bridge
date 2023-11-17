@@ -24,9 +24,9 @@
 #include "esp_timer.h" //Required for timer functions to work.
 
 //Loconet UART settings, from ESP32_uart.h: (uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
-#define LN_UART Loconet.LN_port.uart_init(1, 17, 18, 16666, 255, 0); //Fixed TX buffer not needed
+#define LN_UART Loconet.LN_port.uart_init(1, 17, 18, 16666, 255, 255);
 
-#define LN_LOOP_DELAY_US 480 //60uS * 8 bits
+#define LN_LOOP_DELAY_US 0 //60uS * 8 bits
 
 //Constants that shouldn't be changed.
 #define LN_BITLENGTH_US 60 

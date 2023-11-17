@@ -10,9 +10,8 @@
   #include "ESP32_Tracks_HW.h"
 #endif
 
-uint8_t config_dccex = CONFIG;
-
 DCCEX_Class dccex;
+extern ESP_Uart tty; //normal serial port
 extern uint64_t time_us; 
 extern TrackChannel DCCSigs[];
 extern Rmtdcc dcc; 
@@ -22,7 +21,9 @@ void DCCEX_Class::loop_process(){
   uart_rx(); //Read uart data into the RX ring
   //Serial.printf("DCCEX rx_scan cycle: \n");
   rx_scan(); //Scan RX ring for an opcode
-  rx_decode();
+  if (rx_state == 2) {
+    rx_decode();
+  }
   //Serial.printf("DCCEX rx_queue cycle: \n");
   //rx_queue(); //Process queued RX packets and run rx_decode
   //Serial.printf("DCCEX tx_queue cycle: \n");
@@ -34,10 +35,16 @@ void DCCEX_Class::loop_process(){
 uint8_t DCCEX_Class::uart_rx(){ //Read incoming data into a buffer
   uint8_t read_size = 0;
   uint8_t i = 0;
-  read_size = dccex_port.uart_read(read_size); //populate rx_read_data and rx_data
-  //Serial.printf("DCCEX uart %u \n", read_size);
-  if (read_size > 0){ //Data was actually moved, update the timer.
-    rx_last_us = esp_timer_get_time();
+   tty.rx_read_processed = dccex_port.rx_read_processed; //Sync tty rx_read_processed with ours.  
+   read_size = tty.uart_read(0); //populate rx_read_data and rx_read_len
+   dccex_port.rx_read_data = tty.rx_read_data; //Pointer to the data just read
+   dccex_port.rx_read_len = tty.rx_read_len; //Size of rx_read_data
+   tty.rx_read_len = 0; //Take over the data
+   
+  if (dccex_port.rx_read_len > 0){ //Data was actually moved, update the timer.
+    Serial.printf("DCCEX uart_rx read %u bytes from tty \n", dccex_port.rx_read_len);
+    dccex_port.rx_read_processed = tty.rx_read_processed; //Sync tty rx_read_processed with ours.  
+    rx_last_us = TIME_US;
   }
   return read_size;
 }
@@ -46,24 +53,27 @@ void DCCEX_Class::rx_scan(){ //Scan ring buffer data for an opcode and return it
   uint16_t i = 0; 
 
   while (i < dccex_port.rx_read_len) {
-    Serial.printf("Char: %c \n");
+    //Serial.printf("Char: %c \n");
     if ((dccex_port.rx_read_data[i] == '<') && (rx_state == 0)) { // 0x3e
-      Serial.printf("Starting CMD: %c \n", dccex_port.rx_read_data[i]);
+      //Serial.printf("START: ");
       rx_state = 1; //pending
       data_len = 0; 
     }
     
     if (rx_state == 1) { //Record data until finding >
       data_pkt[data_len] = dccex_port.rx_read_data[i];
+      Serial.printf("%c", dccex_port.rx_read_data[i] );
       data_len++;
 
       if (dccex_port.rx_read_data[i] == '>') { //stop recording data. Reset for next packet.
-        rx_state = 2; //RX complete, ready to process 
-        Serial.printf("Stopping CMD: %c \n", dccex_port.rx_read_data[i]); 
+        rx_state = 2; //RX complete, ready to process  
+        //Serial.printf(" COMPLETE ");
+        Serial.printf("\n"); 
       }
     }
     i++; 
   }
+  dccex_port.rx_read_processed = 255; //Mark uart buffer complete so it reads again.
   return;    
 }
 
@@ -106,14 +116,8 @@ void DCCEX_Class::rx_decode(){
 
     case 'D': 
       Serial.printf("Debug: \n"); 
-      i = gpio_get_level(DCCSigs[0].enable_in_pin);
-      Serial.printf("Enable in: %u \n", i);
-      i = gpio_get_level(DCCSigs[0].reverse_pin);
-      Serial.printf("Reverse: %u \n", i);
-      i = gpio_get_level(DCCSigs[0].brake_pin);
-      Serial.printf("Brake in: %u \n", i);
-      i = 0;
-
+      ddiag(); 
+      break;
     default:
     Serial.printf("Invalid Command \n");
     
@@ -122,9 +126,27 @@ void DCCEX_Class::rx_decode(){
   return; 
 }
 
+void DCCEX_Class::ddiag() { //Diagnostic mode features
+  uint8 i = 0; 
+      i = gpio_get_level(DCCSigs[0].enable_in_pin);
+      Serial.printf("Enable in: %u \n", i);
+      i = gpio_get_level(DCCSigs[0].reverse_pin);
+      Serial.printf("Reverse: %u \n", i);
+      i = gpio_get_level(DCCSigs[0].brake_pin);
+      Serial.printf("Brake in: %u \n", i);
+      i = 0;
+  return; 
+}
+
 void DCCEX_Class::dccex_init(){
   rx_state = 0;
   data_len = 0;
+  dccex_port.rx_read_processed = 255; //Mark buffer processed so it can be read again. 
+  #ifdef DCCEX_UART //Use our own uart
+    DCCEX_UART
+    Serial.printf("DCCEX running on DCCEX_UART, uart %u, dccex_port.rx_read_data %u, dccex_port.tx_write_data %u \n",  dccex_port.uart_num, dccex_port.rx_read_data, dccex_port.tx_write_data);
+  #endif   
+  return;
 }
 
 void dccex_init(){ //Reflector into DCCEX_Class
