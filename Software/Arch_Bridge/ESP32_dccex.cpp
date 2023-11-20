@@ -127,7 +127,7 @@ void DCCEX_Class::rx_decode(){
 }
 
 void DCCEX_Class::ddiag() { //Diagnostic mode features
-  uint8 i = 0; 
+  uint8_t i = 0; 
       i = gpio_get_level(DCCSigs[0].enable_in_pin);
       Serial.printf("Enable in: %u \n", i);
       i = gpio_get_level(DCCSigs[0].reverse_pin);

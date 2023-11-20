@@ -113,19 +113,19 @@ uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of by
       Serial.printf("uart_read() got %u bytes \n", readlen);
       rx_read_processed = 0; //This is new data to process.
       uint8_t i = 0; 
-    return readlen;
-    } else {
-      //Read using ESP Uart library
-      //Serial.printf("Receiving bytes into rx_read_data pointer %u \n", rx_read_data);
-      readlen = uart_read_bytes(uart_num, rx_read_data, readlen, 100); //Read up to rx_read bytes from uart_num tto rx_read_data with a 100 rt tick timeout
     }
-    //Warn if there was a size mismatch. Would only happen if something else read data in between the size check and the actual read. 
-    if (rx_read_len != readlen){
-      Serial.printf("Read only %d bytes when told to read %d bytes \n", rx_read_len, readlen);
-    }
-    rx_read_processed = 0; //This is new data to process.
     return readlen;
-  } 
+  } else {
+    //Read using ESP Uart library
+    //Serial.printf("Receiving bytes into rx_read_data pointer %u \n", rx_read_data);
+    readlen = uart_read_bytes(uart_num, rx_read_data, readlen, 100); //Read up to rx_read bytes from uart_num tto rx_read_data with a 100 rt tick timeout
+  }
+  //Warn if there was a size mismatch. Would only happen if something else read data in between the size check and the actual read. 
+  if (rx_read_len != readlen){
+    Serial.printf("Read only %d bytes when told to read %d bytes \n", rx_read_len, readlen);
+  }
+  rx_read_processed = 0; //This is new data to process.
+  return readlen;
 }
 
 //TODO: Rewrite these 4 functions to work with the new system

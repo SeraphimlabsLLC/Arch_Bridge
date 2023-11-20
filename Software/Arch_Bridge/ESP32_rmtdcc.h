@@ -5,11 +5,11 @@
 #include "Arduino.h"
 #include "driver/gpio.h"
 
-//#include "driver/rmt.h"
-//#include "soc/rmt_reg.h"
-//#include "soc/rmt_struct.h"
-//#include "soc/rmt_periph.h"
-//#include "freertos/ringbuf.h" //
+#include "driver/rmt.h"
+#include "soc/rmt_reg.h"
+#include "soc/rmt_struct.h"
+#include "soc/rmt_periph.h"
+#include "freertos/ringbuf.h" 
 #include "esp32-hal.h" //Aduino RMT
 
 
@@ -49,6 +49,7 @@ class DCC_packet {
   uint8_t state; //empty = 0, pending = 1, receiving = 2, complete = 3, failed = 4, success = 5} 
   char packet_data[48]; //Should only need 38 bytes + a few odd bits. 
   uint8_t data_len; //Length of packet
+  uint64_t packet_time;
 
   void Make_Checksum(); //Populate last byte with valid checksum
   bool Read_Checksum(); //Verify checksum, returns true if valid, false if invalid.
@@ -60,33 +61,26 @@ class Rmtdcc {
   public:
   uint64_t last_rx_time; //Holder for the timestamp of the last valid packet. 
   uint8_t signalstate; //0 = no signal, 1 = signal o
-
   
   void rmt_rx_init(); 
-  uint8_t rmt_rx(); 
-  void rmt_scan(); 
-  void loop_process();
+  uint8_t rmt_rx(); //Read RMT RX data and convert into bit stream to feed to rx_scan
+  uint8_t rx_bit_processor(bool input); //Process bits into packets, meant for RMT input but can use others such as pin reads or timers
+  void rx_queue(); //Processes stored packets.
+  void rx_decode(uint8_t rx_pkt); //Decode packet contents
+  void loop_process(); //Main processing loop
 #if BOARD_TYPE == DYNAMO
   void rmt_tx_init(); 
   void tx_send(); 
 #endif
   private:
-  //RingbufHandle_t rmt_rx_handle; //Handle for storing RMT RX ring buffer pointer
 
-  //Using Arduino RMT library:
- 
-  rmt_obj_t* rx_ch; 
-  rmt_data_t* rx_rmt_data; //RMT data object
-  rmt_data_t* rx_last_bit; //Holds the previously decoded symbol 
-  size_t rx_data_size; //RMT data object size
+ //Using ESP-IDF v 4.46 
 
- //Using ESP-IDF Library
- /*
-  rmt_channel_handle_t rx_ch; //RMT connection object
-  rmt_symbol_word_t  rx_rmt_data; //RMT data object
-  rmt_symbol_word_t  rx_last_bit; //Holds the previously decoded symbol 
-  size_t rx_data_size; //RMT data object size
-*/
+//  rmt_channel_handle_t rx_ch; //RMT connection object
+  RingbufHandle_t rmt_rx_handle; //RMT ring buffer handle 
+  rmt_item32_t* rx_rmt_data; //RMT data object
+  rmt_item32_t rx_last_bit; //Holds the previously decoded symbol 
+  size_t* rx_data_size; //RMT data object size
   
   uint8_t rx_byteout; //Unfinished RX byte
   uint8_t rx_num_bits; //Number of bits in the unfinished RX byte
@@ -100,7 +94,6 @@ class Rmtdcc {
   uint64_t last_preamble; //Time of last preamble detect
  
   DCC_packet* rx_packets[DCC_RX_Q]; //Array of pointers to DCC packet data
-  uint8_t rx_bit_processor(bool input); //Count incoming bits into DCC packets
   uint8_t rx_packet_getempty(); //Get the next available rx_packet handle, creating one if necessary.
 /*
   void setDCCBit1(rmt_item32_t* item);

@@ -11,7 +11,7 @@ extern uint64_t time_us;
 
 void Rmtdcc::loop_process() { //Workflow loop
   rmt_rx();
-  rmt_scan(); 
+  //rmt_scan(); 
 
   return;
 }
@@ -20,25 +20,27 @@ uint8_t Rmtdcc::rmt_rx() {
   uint8_t bytes_read = 0;
   uint8_t num_bytes = 0;
   uint8_t i = 0;
-  //uint32_t APB_Div = getApbFrequency() / 1000000; //Reported bus frequency in MHz
-  //uint8_t rx_size = 0;
+  uint32_t APB_Div = getApbFrequency() / 1000000; //Reported bus frequency in MHz
+  uint8_t rx_size = 0;
 
 /*
+ //Arduino RMT interface
  if (rmtReceiveCompleted(rx_ch)) { //RMT has data for reading
   //'bool rmtReadAsync(rmt_obj_t*, rmt_data_t*, size_t, void*, bool, uint32_t)'
    rmtReadAsync(rx_ch, rx_rmt_data, rx_data_size, NULL , false, 12); //Populates rx_data with rmt data and rx_data_size with the size of data
    rx_data_size = 1; 
+   rmt_data_t* databit = NULL;
  }*/
-  
-/*  volatile rmt_item32_t* item;
+
+/* //Test Read  
+  volatile rmt_item32_t* item;
   item = RMTMEM.chan[DIR_MONITOR_RMT].data32;
   std::cout << "item d0: " << (item->duration0 / APB_Div) << " L0: " << item->level0  << " d1: " << (item->duration1 / APB_Div)  << " :L1: " << item->level1  << std::endl;
+*/
+//   rx_rmt_data = (rmt_item32_t*) xRingbufferReceive(rmt_rx_handle, rx_data_size, 10); //Returns items in rmt_rx_handle with size rmt_rx_size within 10 RTOS ticks
+   //Serial.printf("RMT contained %u items \n", rx_size); 
 
-  rmt_item32_t* dcc_items = NULL;
-   dcc_items = (rmt_item32_t*) xRingbufferReceive(rmt_rx_handle, &rx_size, 10); //Returns items in rmt_rx_handle with size rmt_rx_size within 10 RTOS ticks
-   Serial.printf("RMT contained %u items \n", rx_size); */
-
-  rmt_data_t* databit = NULL;
+  rmt_item32_t databit;
   int dur_delta = 0;
   int8_t bitzero = -1;
   int8_t bitone = -1;
@@ -48,34 +50,36 @@ uint8_t Rmtdcc::rmt_rx() {
    if (!&rx_rmt_data[i]) { //Avoids crash if no data returned. 
     return 0; 
    }
-   databit = &rx_rmt_data[i];
+   databit = rx_rmt_data[i];
+   
    //Straightforward decoding when the RMT is in-phase with it and 1 symbol = 1 bit. 
-   if ((databit->duration0 > DCC_1_MIN_HALFPERIOD) && (databit->duration0 < DCC_1_MAX_HALFPERIOD)) {
+   if ((databit.duration0 > DCC_1_MIN_HALFPERIOD) && (databit.duration0 < DCC_1_MAX_HALFPERIOD)) {
       bitzero = 1; 
    }
-   if ((databit->duration0 > DCC_0_MIN_HALFPERIOD) && (databit->duration0 < DCC_0_MAX_HALFPERIOD)) {
+   if ((databit.duration0 > DCC_0_MIN_HALFPERIOD) && (databit.duration0 < DCC_0_MAX_HALFPERIOD)) {
       bitzero = 0; 
    }
-   if ((databit->duration1 > DCC_1_MIN_HALFPERIOD) && (databit->duration1 < DCC_1_MAX_HALFPERIOD)) {
+   if ((databit.duration1 > DCC_1_MIN_HALFPERIOD) && (databit.duration1 < DCC_1_MAX_HALFPERIOD)) {
       bitone = 1; 
    }
-   if ((databit->duration1 > DCC_0_MIN_HALFPERIOD) && (databit->duration1 < DCC_0_MAX_HALFPERIOD)) {
+   if ((databit.duration1 > DCC_0_MIN_HALFPERIOD) && (databit.duration1 < DCC_0_MAX_HALFPERIOD)) {
       bitone = 0; 
-   }
-   dur_delta = databit->duration0 - databit->duration1;
+   } 
+   dur_delta = databit.duration0 - databit.duration1;
    
    if ((bitzero != bitone) && (bitzero > -1) && (bitone > -1)) { //Halves don't match, but both have valid times. Use rx_last_bit duration1 as bitone.  
-     if (!rx_last_bit) { //Haven't seen any bits prior. Go to the next bit.
+/*     //Find some other way to validate
+       if (!(rx_last_bit)) { //Haven't seen any bits prior. Go to the next bit.
       continue; 
-     }
+     } */
      
-     if ((rx_last_bit->duration1 > DCC_1_MIN_HALFPERIOD) && (rx_last_bit->duration1 < DCC_1_MAX_HALFPERIOD)) {
+     if ((rx_last_bit.duration1 > DCC_1_MIN_HALFPERIOD) && (rx_last_bit.duration1 < DCC_1_MAX_HALFPERIOD)) {
        bitone = 1; 
      }
-     if ((rx_last_bit->duration1 > DCC_0_MIN_HALFPERIOD) && (rx_last_bit->duration1 < DCC_0_MAX_HALFPERIOD)) {
+     if ((rx_last_bit.duration1 > DCC_0_MIN_HALFPERIOD) && (rx_last_bit.duration1 < DCC_0_MAX_HALFPERIOD)) {
        bitone = 0; 
      } 
-     dur_delta = databit->duration0 - rx_last_bit->duration1; 
+     dur_delta = databit.duration0 - rx_last_bit.duration1; 
    }
    if ((bitzero + bitone == 0) || ((bitzero + bitone == 2) && ((dur_delta > -6) && (dur_delta < 6)))){ 
     //Both bits 0 or both bits 1 && both halves of 1 within 6uS
@@ -84,17 +88,18 @@ uint8_t Rmtdcc::rmt_rx() {
      rx_byteout = 0; 
      rx_num_bits = 0; 
    }
-   rx_last_bit = &rx_rmt_data[i]; //Store the symbol we just decoded for the next cycle in case of a phase straddle
+
+   rx_last_bit = rx_rmt_data[i]; //Store the symbol we just decoded for the next cycle in case of a phase straddle
    i++;
   }
-    
+  
   //vRingbufferReturnItem(rmt_rx_handle, (void*) dcc_items); //Free up space in the rmt_rx ring 
   //rmt_memory_rw_rst(rmt_channel_t (DIR_MONITOR_RMT));
   return num_bytes;
 }
      
      
-uint8_t Rmtdcc::rx_bit_processor(bool input){
+uint8_t Rmtdcc::rx_bit_processor(bool input){ //Scan bit stream into packets
   //Preamble detect
   if (input == 1) {
     consecutive_ones++; 
@@ -121,13 +126,19 @@ uint8_t Rmtdcc::rx_bit_processor(bool input){
   if (rx_num_bits < 8) { //Valid data in bits 0-7, bit 8 indicates next byte (0) or end of data (1)
     rx_byteout = rx_byteout << 1; //Shift right to make room. 
     rx_byteout = rx_byteout | input; //OR the new bit onto the byte, since the bit shift added a zero at the end.
+    
   } else { //rx_num_bits >= 8, copy the finished byte into the packet and check if the packet is complete. 
     rx_packets[rx_pending]->data_len = rx_num_bytes;         
     rx_packets[rx_pending]->packet_data[rx_packets[rx_pending]->data_len] = rx_byteout;
+    rx_packets[rx_pending]->packet_time = TIME_US; //Update time this packet last received a bit
     Serial.printf("RMTDCC: Byte %x complete, %u in packet %u \n", rx_byteout, rx_num_bytes, rx_pending); 
     if (input == 1) { //Bit 8 is 1, mark packet complete. Checksum it and reset rx_pending. 
-      rx_packets[rx_pending]->state = 3; //packet rx complete
-      rx_packets[rx_pending]->Read_Checksum(); 
+      if (rx_packets[rx_pending]->Read_Checksum()) { //Read checksum, true if valid false if bad.
+        rx_packets[rx_pending]->state = 3; //packet rx complete
+        last_rx_time = TIME_US;
+      } else { //Checksum was invalid, discard packet. 
+        rx_packets[rx_pending]->state = 4; //packet rx failed, mark for deletion.
+      }
       rx_pending = -1;
     }
     rx_num_bytes++; //Increment byte counter
@@ -136,8 +147,42 @@ uint8_t Rmtdcc::rx_bit_processor(bool input){
   rx_num_bits++; 
   return 1;
 }
+void Rmtdcc::rx_queue() { //Process queue of packets checking expirations, processing complete, and clearing failed/done
+  uint8_t i = 0; 
+  while (i < DCC_RX_Q) {
+    if (!rx_packets[i]) { //No packet defined, skip this slot. 
+      continue;
+    }
+    if (rx_packets[i]->state == 0) { //Empty slot
+      continue; 
+    }
+    if ((rx_packets[i]->state == 1) || (rx_packets[i]->state == 2)) { //Pending packet or receiving packet, check last update timetime
+      time_us = TIME_US;
+      if ((time_us - rx_packets[i]->packet_time) > 38000) { //32 bytes * 9 bits per * 106uS. Should cover most situations. 
+        rx_packets[i]->state = 4; //Mark as failed packet so it gets pruned. 
+      }
+    }
+    if (rx_packets[i]->state == 3) { //Complete packet, process it. 
+      rx_decode(i); //Decode the packet. 
+    }   
+    
+    if ((rx_packets[i]->state == 4) || (rx_packets[DCC_RX_Q]->state == 5)) { //Packet failed or processed, remove.
+      rx_packets[i]->state = 0;
+      rx_packets[i]->data_len == 0;
+      rx_packets[i]->packet_time == 0;
+    }
+  }
 
-void Rmtdcc::rmt_scan() {
+  return;
+}
+
+void Rmtdcc::rx_decode(uint8_t rx_pkt) {
+    if (!rx_packets[rx_pkt]) { //Was called on an invalid index. Leave.    
+    return; 
+  }
+  if (rx_packets[rx_pkt]->state != 3) { //Was called on a packet that isn't complete. Leave it.  
+    return; 
+  }
 
   return;
 }
@@ -167,9 +212,9 @@ void IRAM_ATTR rmt_isr_handler(void* arg){
 */ 
 
 void Rmtdcc::rmt_rx_init(){ 
-  rx_ch = NULL; 
+  //rx_ch = NULL; 
   bool rmt_recv = false;
-  Serial.printf("DCC RMT Initialized \n");
+  Serial.printf("DCC RMT NOT Initialized \n");
 
 /* Arduino Library 
 //bool rmtInit(int pin, rmt_ch_dir_t channel_direction, rmt_reserve_memsize_t memsize, uint32_t frequency_Hz);
@@ -183,53 +228,39 @@ rmt_recv = rmtInit(DIR_MONITOR, RMT_RX_MODE, RMT_MEM_192);
 }*/
 
   // Configure the RMT channel for RX to audit incoming DCC
+  //Using IDF 4.4.6 interface. Arduino doesn't seem to support 5.1 as of November 2023.
   uint32_t APB_Div = getApbFrequency() / 1000000; //Reported bus frequency in MHz
-  /*
-  //Serial.printf("APB Frequency %u MHz \n", APB_Div);
-  rmt_rx_channel_config rmt_rx_config = {                                           
-    .clk_src = RMT_CLK_SRC_DEFAULT,   // select source clock
-    .resolution_hz = 1 * 1000 * 1000, // 1 MHz tick resolution, i.e., 1 tick = 1 µs
-    .mem_block_symbols = 256,         // memory block size, 64 symbols * 4 blocks = 1024 Bytes
-    .gpio_num = gpio_num_t(DIR_MONITOR),                    // GPIO number
-    .flags.invert_in = false,         // do not invert input signal
-    .flags.with_dma = false,          // do not need DMA backend    
-  };
-  */
-  /*        
+  rmt_config_t rmt_rx_config = {                                           
+    .rmt_mode = RMT_MODE_RX,                
     .channel = rmt_channel_t(DIR_MONITOR_RMT),                  
     .gpio_num = gpio_num_t(DIR_MONITOR),                       
     .clk_div = APB_Div,       
-    .mem_block_num = 4, //Each block is 64 symbols at 32 bytes each                 
-    .flags = 0,  
-    //rmt_ll_rx_enable_pingpong(rmt_dev_t *dev, uint32_t channel, true)                           
-    .rx_config = {                          
+    .mem_block_num = 4,                   
+    .flags = 0,                             
+    .rx_config = {                                              
       .idle_threshold = 255, //((DCC_0_MAX_HALFPERIOD + 2) * APB_Div), //Glitch filter has max allowed of 255 ticks   
       .filter_ticks_thresh = ((DCC_1_MIN_HALFPERIOD - 2) * APB_Div), //Idle timeout        
       .filter_en = true,                  
     }                                       
-  };*/
-  /*
-  ESP_ERROR_CHECK(rmt_new_rx_channel(&rx_rx_config, &rx_ch));
-  */
+  };
 /*If possible configure:
 * RMT_MEM_RX_WRAP_EN_CHm so it reads in a loop. 
 * RMT_CHm_RX_LIM_REG set the number of RX entries before threshold interrupt
 * RMT_CHm_RX_THR_EVENT_INT_RAW(m = 4-7)  so that it interrupts on RX_LIM_REG instead of full
  */
- /*
+
   ESP_ERROR_CHECK(rmt_config(&rmt_rx_config));
-  //ESP_ERROR_CHECK();
-  //ESP_ERROR_CHECK();
-  //ESP_ERROR_CHECK();
   //ESP_ERROR_CHECK();
   ESP_ERROR_CHECK(rmt_set_memory_owner(rmt_channel_t(DIR_MONITOR_RMT), rmt_mem_owner_t (1))); //Set RMT RX memory owner
   ESP_ERROR_CHECK(rmt_driver_install(rmt_rx_config.channel, 1024, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED));  
 //  ESP_ERROR_CHECK(rmt_isr_register(rmt_isr_handler, NULL, 0, NULL));
 //  ESP_ERROR_CHECK(rmt_rx_start(rmt_channel_t(DIR_MONITOR_RMT), true)); //Enable RMT RX, true to erase existing RX data
   ESP_ERROR_CHECK(rmt_get_ringbuf_handle(rmt_channel_t(DIR_MONITOR_RMT), &rmt_rx_handle)); //Ring buffer handle
-  */
-//  Serial.printf("DCC Auditing Initialized using ESP RMT, handle %d \n", rmt_rx_handle); 
-  
+
+//If necessary to change GPIO assignments
+//esp_err_t rmt_set_gpio(rmt_channel_t channel, rmt_mode_t mode, gpio_num_t gpio_num, bool invert_signal)
+ 
+  Serial.printf("DCC Auditing Initialized using ESP RMT, handle %d \n", rmt_rx_handle); 
   return;
 }
 

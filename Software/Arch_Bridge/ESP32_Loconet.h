@@ -58,7 +58,7 @@
 */
 
 //Queue settings: 
-#define LN_RX_Q 8
+#define LN_RX_Q 16
 #define LN_TX_Q 32
 #define TX_DELAY_US 12000; //Adjust loopback window aperture
 
@@ -68,6 +68,7 @@ void LN_loop(); //Loconet process loop
 
 //Enums: 
 enum LN_netstate {startup = 0, disconnected = 1, inactive = 2, active = 3};
+
 class LN_Packet{ //Track packet states. The packet data itself goes in a char[] and this only stores the ptr
   public: 
   uint8_t priority; //0 = highest, 20 = lowest. Throttles have min 20, Sensors have min 6, Master has min 0
@@ -87,18 +88,18 @@ class LN_Packet{ //Track packet states. The packet data itself goes in a char[] 
 
 class LN_Slot_data{ //Each slot will be created and have a pointer stored in LN_Class slotnum
   public: 
-  enum slot_data_label {stat, adr, spd, dirf, trk, ss2, adr2, snd, id1, id2}; //Data labels. They're all char, so they can be stored in an array. 
-  char slot_data[10]; //Use enum above to access 
-/*  char stat; //Slot status. Bitmask for details. 
-  char adr; //Locomotive low addr byte
-  char spd; //Speed. 0x00 stop normally, 0x01 stop emergency, 0x02-0x7f speed range
-  char dirf; //direction, direction lights, and F1-F4
-  char trk; //System/Track status. This byte only exists for packet formatting, pull this data from master_enable.
-  char ss2; //slot status 2
-  char adr2; //Locomotive high addr byte
-  char snd; //sound, F5-8
-  char id1; //unused
-  char id2; //unused */
+  char slot_data[10]; //Slot data num, stat, adr, spd, dirf, trk, data ss2, adr2, snd, id1, id2
+  /* slot_data[10] usage. Slot number  is the index of the LN_Slot_data instance
+  0 char stat; //Slot status. Bitmask for details. 
+  1 char adr; //Locomotive low addr byte
+  2 char spd; //Speed. 0x00 stop normally, 0x01 stop emergency, 0x02-0x7f speed range
+  3 char dirf; //direction, direction lights, and F1-F4
+  4 char trk; //Not used- copy from LN_TRK instead
+  5 char ss2; //slot status 2
+  6 char adr2; //Locomotive high addr byte
+  7 char snd; //sound, F5-8
+  8 char id1; //unused
+  9 char id2; //unused */
   uint64_t last_refresh;
 
   LN_Slot_data(); //Constructor
@@ -116,9 +117,7 @@ class LN_Class {
   uint64_t last_rx_process; //time of last read scan
   uint64_t last_tx_us; //timestamp of last tx attempt
   uint8_t tx_pkt_len; //length of last tx packet
-
   void loop_process(); //Process time based data
-  uint64_t fastclock_start; //Note the timestamp at which the fast clock was initialized
   
   LN_Class(); //Constructor
 
@@ -135,20 +134,22 @@ class LN_Class {
   int8_t tx_pending; //Index of which packet is actively sending. Set to -1 if none. 
 
   LN_Slot_data* slot_ptr[127]; //Stores pointers for accessing slot data.
+  char LN_TRK; //Byte for track status flags, shared between all slots
+  uint64_t fastclock_ping; 
+  
   uint8_t uart_rx(); //Receive data from uart to rx ring
   void rx_scan(); //Scan rx ring for a valid packet
   void rx_queue(); //Process RX queue into rx_decode
   uint8_t rx_decode(uint8_t rx_pkt); //Process the opcode that was found. Return 0 when complete. 
-
 
   void tx_queue(); //Process TX queue into tx_send
   void tx_send(uint8_t txptr); //Try to send data and update tracking info
   uint8_t tx_loopback(); //Check if the current rx_packet matches the tx_packet. If it does, drop both from their queues. 
   
   uint8_t rx_packet_getempty(); //Get the next available rx_packet handle, creating one if necessary.
+  void show_rx_packet(uint8_t index); //Print contents of a packet. 
   void rx_packet_del(uint8_t index); //Delete a packet
-
-  uint8_t tx_packet_getempty(); //Get the next available rx_packet handle, creating one if necessary.
+  uint8_t tx_packet_getempty(); //Get the next available rx_packet handle, creating one if necessary
   void tx_packet_del(uint8_t index); //Delete a packet
 
   void transmit_break();
