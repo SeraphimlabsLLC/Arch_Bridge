@@ -24,7 +24,7 @@ extern DCCEX_Class dccex;
   #include "ESP32_timer.h"
 #endif
 
-#if BOARD_TYPE == ARCH_BRIDGE //If this is an arch bridge, define a loconet uart
+#if BOARD_TYPE == ARCH_BRIDGE //If this is an arch bridge, include loconet functions
   #ifndef ESP32_LOCONET_H
     #include "ESP32_Loconet.h"
     extern LN_Class Loconet; //Loconet memory object
@@ -34,24 +34,26 @@ extern DCCEX_Class dccex;
 //extern TrackChannel DCCSigs[];
 //extern Rmtdcc dcc; 
 
-
 void setup() {
   ESP_uart_init(); //Initialize tty
   dccex_init(); //Initialize DCCEX parser
   Tracks_Init();  //Initialize GPIO and RMT hardware, calls the relevant rmt inits
   #if BOARD_TYPE == ARCH_BRIDGE
     LN_init(); //Initialize Loconet
+    Fastclock_setup(FCLK_START); //Check fastclock settings and start it      
   #endif
 Serial.print("Setup Complete \n");  
 }
 
 void loop() {  
-//dccex_loop(); //Process serial input for DCCEX commands
+dccex_loop(); //Process serial input for DCCEX commands
 Tracks_Loop(); //Process and update tracks
 //rmt_loop(); //Process and update DCC packets
 
 #if BOARD_TYPE == ARCH_BRIDGE //If this is an arch bridge, check the loconet
+  
   LN_loop(); //Process Loconet loop
+  
 #endif 
 Heartbeat(HEARTBEAT_S);
 }

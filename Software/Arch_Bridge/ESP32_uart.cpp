@@ -45,7 +45,6 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t
   if (uart_num == 0) { //Use Arduino serial library for now. This will eventually need to be replaced. 
     Serial.begin (baudrate);
     Serial.printf(BOARD_ID);
-    //Serial.printf("Configuring Arduino Serial on UART %d, baud rate %d \n", uartnum, baudrate);
     return;
   } else { //Is not uart0 
     uart_config_t uart_config = {
@@ -110,7 +109,6 @@ uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of by
   if (uart_num == 0) { //Only runs on uart0, using Arduino libraries. 
     if (readlen > 0) {
       readlen = Serial.readBytesUntil('\n', rx_read_data, readlen); //Reads until NULL or readlen chars
-      Serial.printf("uart_read() got %u bytes \n", readlen);
       rx_read_processed = 0; //This is new data to process.
       uint8_t i = 0; 
     }

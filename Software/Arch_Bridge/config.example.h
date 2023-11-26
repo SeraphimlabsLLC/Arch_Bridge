@@ -21,8 +21,9 @@
 // Alternative: esp_timer_get_time();
 
 //Fast Clock settings:
-#define FCLK_RATE 4 //Clock multiplier
+#define FCLK_START true
+#define FCLK_RATE 10 //Clock multiplier
 #define FCLK_DAYS 0 //Initial clock days
-#define FCLK_HOURS 12 //Initial clock hours
+#define FCLK_HOURS 5 //Initial clock hours
 #define FCLK_MINUTES 0 //Initial clock minutes
 #define FCLK_SECONDS 0 //Initial clock seconds

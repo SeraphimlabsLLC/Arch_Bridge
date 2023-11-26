@@ -60,7 +60,7 @@
 //Queue settings: 
 #define LN_RX_Q 16
 #define LN_TX_Q 32
-#define TX_DELAY_US 12000; //Adjust loopback window aperture
+#define TX_SENT_EXPIRE 64000 //Time to keep sent packets waiting for loopback
 
 //Processing reflectors, use these to avoid having to include the entire class in main.
 void LN_init(); //Initialize Loconet interface
@@ -72,7 +72,7 @@ enum LN_netstate {startup = 0, disconnected = 1, inactive = 2, active = 3};
 class LN_Packet{ //Track packet states. The packet data itself goes in a char[] and this only stores the ptr
   public: 
   uint8_t priority; //0 = highest, 20 = lowest. Throttles have min 20, Sensors have min 6, Master has min 0
-  uint8_t state; //empty = 0, pending = 1, attempting = 2, sent = 3, failed = 4, success = 5} 
+  volatile uint8_t state; //empty = 0, pending = 1, attempting = 2, sent = 3, failed = 4, success = 5} 
   int8_t tx_attempts; //Starts at 25 and decrements, tx failure at 0.
   uint64_t last_start_time; //Time in uS of tx or rx window start. Must be fully sent or received within 15mS.
   uint8_t data_len; //Length of packet
@@ -118,6 +118,14 @@ class LN_Class {
   uint64_t last_tx_us; //timestamp of last tx attempt
   uint8_t tx_pkt_len; //length of last tx packet
   void loop_process(); //Process time based data
+
+      //Opcode handlers: 
+  void rx_req_sw(uint8_t rx_pkt); // 0xB0 request switch
+  void tx_req_sw(); 
+  
+  void slot_read(int8_t slotnumber); //Handle slot reads
+  void slot_write(int8_t slotnumber, uint8_t rx_pkt); //Handle slot writes
+  void slot_move(int8_t slotnumber, int8_t newslotnumber); //Handle slot moves
   
   LN_Class(); //Constructor
 
@@ -127,11 +135,12 @@ class LN_Class {
   LN_Packet* rx_packets[LN_RX_Q]; //Pointers to RX packets
   uint8_t rx_next_new; 
   uint8_t rx_next_decode;
-  int8_t rx_pending; //Index of which packet slot is receiving. Set to -1 if none.
+  volatile int8_t rx_pending; //Index of which packet slot is receiving. Set to -1 if none.
   LN_Packet* tx_packets[LN_TX_Q]; //Pointers to TX packets
   uint8_t tx_next_new;
   uint8_t tx_next_send; 
-  int8_t tx_pending; //Index of which packet is actively sending. Set to -1 if none. 
+  volatile int8_t tx_pending; //Index of which packet is actively sending. Set to -1 if none. 
+  
 
   LN_Slot_data* slot_ptr[127]; //Stores pointers for accessing slot data.
   char LN_TRK; //Byte for track status flags, shared between all slots
@@ -160,12 +169,6 @@ class LN_Class {
   uint8_t slot_new(uint8_t index); //Check if a slot is empty and initialize it. 
   uint8_t slot_del(uint8_t index); //Remove a slot from memory
   
-    //Opcode handlers: 
-  void rx_req_sw(uint8_t rx_pkt); // 0xB0 request switch
-  void tx_req_sw(); 
-  
-  void slot_read(int8_t slotnumber); //Handle slot reads
-  void slot_write(int8_t slotnumber, uint8_t rx_pkt); //Handle slot writes
-  void slot_move(int8_t slotnumber, int8_t newslotnumber); //Handle slot moves
+
 
 };

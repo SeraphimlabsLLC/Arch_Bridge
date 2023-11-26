@@ -10,6 +10,13 @@
   #include "ESP32_Tracks_HW.h"
 #endif
 
+#if BOARD_TYPE == ARCH_BRIDGE //If this is an arch bridge, include loconet functions
+  #ifndef ESP32_LOCONET_H
+    #include "ESP32_Loconet.h"
+    extern LN_Class Loconet; //Loconet memory object
+  #endif
+#endif
+
 DCCEX_Class dccex;
 extern ESP_Uart tty; //normal serial port
 extern uint64_t time_us; 
@@ -128,6 +135,8 @@ void DCCEX_Class::rx_decode(){
 
 void DCCEX_Class::ddiag() { //Diagnostic mode features
   uint8_t i = 0; 
+  switch (data_pkt[2]) {
+    case 'T':
       i = gpio_get_level(DCCSigs[0].enable_in_pin);
       Serial.printf("Enable in: %u \n", i);
       i = gpio_get_level(DCCSigs[0].reverse_pin);
@@ -135,6 +144,18 @@ void DCCEX_Class::ddiag() { //Diagnostic mode features
       i = gpio_get_level(DCCSigs[0].brake_pin);
       Serial.printf("Brake in: %u \n", i);
       i = 0;
+      break;
+#if BOARD_TYPE == ARCH_BRIDGE //define ARCH_BRIDGE specific tests
+    case 'L':
+      Loconet.slot_read(123); //Broadcast fast clock
+      break;
+#endif
+     
+    default:
+    Serial.printf("Unknown diag mode %c \n", data_pkt[2]);     
+  }
+  
+
   return; 
 }
 

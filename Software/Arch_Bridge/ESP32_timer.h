@@ -15,6 +15,11 @@
 //  #include "esp_timer.h" //Is it really needed? Arduino millis() and micros() are present. 
 
 void Heartbeat(uint64_t seconds); //Checks for and displays console heartbeat
+void measure_time_start();
+void measure_time_stop(); 
+
+#if BOARD_TYPE == ARCH_BRIDGE //If this is an arch bridge, include fastclock features
+void Fastclock_setup(bool enabled); //Initialize fastclock from outside class
 
 class Fastclock_class {
   public:
@@ -36,3 +41,5 @@ class Fastclock_class {
   uint8_t set_hours; //hours at last set
   uint16_t set_days; //days at last set
 };
+
+#endif
