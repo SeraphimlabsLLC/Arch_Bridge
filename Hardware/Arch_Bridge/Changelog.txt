@@ -1,0 +1,17 @@
+
+Rev 06:
+Decreased F2 250mA fuse, making it same as F1.
+R9 is now 33 ohm 2w, voltage drops below 7v triggering limiting/disconnect before F2 blows.
+Previous design would have blown fuse above 12v before railsync devices disconnected. 
+
+Relabel TTY to CONSOLE. 
+Changed pinout to match Crystal board: +5v, TX, RX, GND. 
+Added status LED on TX. 
+
+Relabel I2C to COM2. 
+Changed pinout: +5v, TX, RX, GND.
+Added status LED on TX. 
+Connected OE to processor OE output. 
+
+PCB revisions to incorporate these changes. 
+

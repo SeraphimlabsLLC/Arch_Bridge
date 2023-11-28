@@ -19,7 +19,7 @@
 #ifndef ESP32_DCCEX_H
   #include "ESP32_dccex.h"
 #endif  
-extern DCCEX_Class dccex;
+
 #ifndef ESP32_TIMER_H
   #include "ESP32_timer.h"
 #endif
@@ -27,7 +27,6 @@ extern DCCEX_Class dccex;
 #if BOARD_TYPE == ARCH_BRIDGE //If this is an arch bridge, include loconet functions
   #ifndef ESP32_LOCONET_H
     #include "ESP32_Loconet.h"
-    extern LN_Class Loconet; //Loconet memory object
   #endif
 #endif
 
