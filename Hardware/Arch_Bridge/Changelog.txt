@@ -13,5 +13,5 @@ Changed pinout: +5v, TX, RX, GND.
 Added status LED on TX. 
 Connected OE to processor OE output. 
 
-PCB revisions to incorporate these changes. 
+PCB revision to incorporate these changes. 
 

@@ -50,4 +50,6 @@ class DCCEX_Class {
   uint8_t tx_loopback(uint8_t packet_size); //RX ring found an opcode we just sent, check if it is ours
 
   void ddiag(); //Process diagnostic commands
+  void Fastclock_set();
+  void Fastclock_get(); 
 };

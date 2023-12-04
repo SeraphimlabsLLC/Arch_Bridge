@@ -72,7 +72,7 @@ enum LN_netstate {startup = 0, disconnected = 1, inactive = 2, active = 3};
 class LN_Packet{ //Track packet states. The packet data itself goes in a char[] and this only stores the ptr
   public: 
   uint8_t priority; //0 = highest, 20 = lowest. Throttles have min 20, Sensors have min 6, Master has min 0
-  volatile uint8_t state; //empty = 0, pending = 1, attempting = 2, sent = 3, failed = 4, success = 5} 
+  volatile uint8_t state; //empty = 0, pending = 1, attempting = 2, sent/received = 3, failed = 4, success = 5} 
   int8_t tx_attempts; //Starts at 25 and decrements, tx failure at 0.
   uint64_t last_start_time; //Time in uS of tx or rx window start. Must be fully sent or received within 15mS.
   uint8_t data_len; //Length of packet

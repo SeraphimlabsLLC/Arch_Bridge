@@ -21,6 +21,7 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t
   rx_pin = gpio_num_t(rxpin);
   tx_buff = txbuff;
   rx_buff = rxbuff;
+  tx_done = true; 
 
   //Configure RX buffer 
   if (rx_buff < 4) { //Minimum of 4 bytes. 
@@ -74,6 +75,18 @@ void ESP_Uart::uart_write(const char* write_data, uint8_t write_len){ //Write th
   return;
 }
 
+uint16_t ESP_Uart::uart_tx_len(){ //Fetch how much data is currently in the TX buffer
+  uint16_t tx_remain = 0;
+
+  return tx_remain;  
+}
+
+void ESP_Uart::uart_tx_int_txdone(bool enabled){ //Fetch how much data is currently in the TX buffer
+  //turn ISR on or off based on enabled;
+
+  return;  
+}
+
 uint16_t ESP_Uart::read_len(){ //returns how much data there is to be read
   uint16_t ready_len = 0;
   if (uart_num == 0) {
@@ -112,6 +125,7 @@ uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of by
       rx_read_processed = 0; //This is new data to process.
       uint8_t i = 0; 
     }
+    rx_read_len = readlen; 
     return readlen;
   } else {
     //Read using ESP Uart library
@@ -123,6 +137,7 @@ uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of by
     Serial.printf("Read only %d bytes when told to read %d bytes \n", rx_read_len, readlen);
   }
   rx_read_processed = 0; //This is new data to process.
+  rx_read_len = readlen; 
   return readlen;
 }
 

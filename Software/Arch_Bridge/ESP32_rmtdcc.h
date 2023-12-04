@@ -38,7 +38,8 @@
 
 #define DCC_RX_Q 16
 #define DCC_TX_Q 8
-#define DIR_MONITOR_RMT 4 //On ESP32-S3, RMT channels 0-3 are TX only and 4-7 are RX only
+  //On ESP32-S3, RMT channels 0-3 are TX only and 4-7 are RX only
+#define DIR_MONITOR_RMT 4 //Will soon be hard coded. 
 #define DIR_OVERRIDE_RMT 0
 
 
@@ -59,6 +60,7 @@ class DCC_packet {
 
 class Rmtdcc {
   public:
+  uint64_t last_rmt_read; 
   uint64_t last_rx_time; //Holder for the timestamp of the last valid packet. 
   uint8_t signalstate; //0 = no signal, 1 = signal o
   
@@ -68,7 +70,8 @@ class Rmtdcc {
   void rx_queue(); //Processes stored packets.
   void rx_decode(uint8_t rx_pkt); //Decode packet contents
   void loop_process(); //Main processing loop
-#if BOARD_TYPE == DYNAMO
+#if DCC_GENERATE == true 
+//  rmt_item32_t idle_packet[33]; //Generate and store an idle packet for fast access
   void rmt_tx_init(); 
   void tx_send(); 
 #endif
@@ -99,9 +102,9 @@ class Rmtdcc {
   void setDCCBit1(rmt_item32_t* item);
   void setDCCBit0(rmt_item32_t* item);
   void setEOT(rmt_item32_t* item);*/
-#if BOARD_TYPE == DYNAMO
-  
+#if DCC_GENERATE == true 
   DCC_packet* tx_data[DCC_TX_Q]; //Array of pointers to DCC packet data
+
 #endif
 }; 
 

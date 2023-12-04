@@ -15,12 +15,18 @@
     #include "ESP32_Loconet.h"
     extern LN_Class Loconet; //Loconet memory object
   #endif
+  #ifndef ESP32_TIMER_H
+    #include "ESP32_timer.h" //For fastclock access
+    extern Fastclock_class Fastclock; 
+#endif
+  
 #endif
 
 DCCEX_Class dccex;
 extern ESP_Uart tty; //normal serial port
 extern uint64_t time_us; 
 extern TrackChannel DCCSigs[];
+extern uint8_t max_tracks;
 extern Rmtdcc dcc; 
 
 void DCCEX_Class::loop_process(){
@@ -125,6 +131,19 @@ void DCCEX_Class::rx_decode(){
       Serial.printf("Debug: \n"); 
       ddiag(); 
       break;
+
+    case 'J':
+    #if BOARD_TYPE == ARCH_BRIDGE //define ARCH_BRIDGE specific tests
+      if (data_pkt[2] == 'C') { //Fast Clock functions 
+        Serial.printf("Fast Clock Command: \n");
+        Loconet.slot_read(123); //Broadcast fast clock
+        break;          
+      }
+    #endif
+      
+    break; 
+
+      
     default:
     Serial.printf("Invalid Command \n");
     
@@ -157,6 +176,21 @@ void DCCEX_Class::ddiag() { //Diagnostic mode features
   
 
   return; 
+}
+
+void DCCEX_Class::Fastclock_get() {
+#if BOARD_TYPE == ARCH_BRIDGE
+
+
+#endif
+  return;
+}
+
+void DCCEX_Class::Fastclock_set() {
+#if BOARD_TYPE == ARCH_BRIDGE
+
+#endif
+  return;
 }
 
 void DCCEX_Class::dccex_init(){

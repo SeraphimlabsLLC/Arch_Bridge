@@ -10,29 +10,30 @@ TrackChannel DCCSigs[MAX_TRACKS]; //Define track channel objects with empty valu
 extern Rmtdcc dcc; //DCC on RMT
 
 uint8_t max_tracks = 0; //Will count tracks as they are initialized. 
-bool Master_Enable = false; 
-uint64_t Master_en_chk_time = 0; //Store when it was checked last. 
-bool Master_en_deglitch = false; //Interim value
+volatile bool Master_Enable = false; 
+volatile uint64_t Master_en_chk_time = 0; //Store when it was checked last. 
+volatile bool Master_en_deglitch = false; //Interim value
 bool rmt_dcc_ok = true; //RMT reports a valid DCC signal. 
 extern uint64_t time_us; //Reuse time_us from main
 
 uint32_t rmt_rxdata_ptr; //RMT RX Ring Buffer locator
 
 void Tracks_Init(){ //Populates track class with values including ADC
-#if BOARD_TYPE ==DYNAMO //If this is a Dynamo type booster, define these control pins.
+  
+  
+#if BOARD_TYPE == DYNAMO //If this is a Dynamo type booster, define these control pins.
   Serial.print("Configuring board for Dynamo booster mode \n");
     gpio_reset_pin(gpio_num_t(MASTER_EN)); //Input from Optocouplers and XOR verifying that at least one opto is on
     gpio_set_direction(gpio_num_t(MASTER_EN), GPIO_MODE_INPUT);
     gpio_set_pull_mode(gpio_num_t(MASTER_EN), GPIO_FLOATING);  
+    attachInterrupt(MASTER_EN, Master_en_ISR, CHANGE);
 
-    gpio_reset_pin(gpio_num_t(DIR_MONITOR));
-    gpio_set_direction(gpio_num_t(DIR_MONITOR), GPIO_MODE_INPUT);
-    gpio_set_pull_mode(gpio_num_t(DIR_MONITOR), GPIO_FLOATING);  
+//Moved DIR_MONITOR to RMT code
 
     gpio_reset_pin(gpio_num_t(DIR_OVERRIDE));
     gpio_set_direction(gpio_num_t(DIR_OVERRIDE), GPIO_MODE_OUTPUT);
     gpio_set_pull_mode(gpio_num_t(DIR_OVERRIDE), GPIO_PULLUP_PULLDOWN); 
-    dcc.rmt_tx_init(); //Initialize DIR_OVERRIDE for DCC generation
+
 #endif
 #if BOARD_TYPE == ARCH_BRIDGE //If this is an arch bridge, define these control pins.
   Serial.print("Configuring board for Arch Bridge mode \n");
@@ -42,6 +43,11 @@ void Tracks_Init(){ //Populates track class with values including ADC
   gpio_set_pull_mode(gpio_num_t(MASTER_EN), GPIO_PULLUP_PULLDOWN);    
   gpio_set_level(gpio_num_t(MASTER_EN), 1); //Turn OE on 
 #endif
+  dcc.rmt_rx_init();
+#if DCC_GENERATE == true 
+  dcc.rmt_tx_init(); //Initialize DIR_OVERRIDE for DCC generation
+#endif
+  
   adc1_config_width(ADC_WIDTH_12Bit);//config adc1 width
   
   TRACK_1 //each track definition subsitites the complete function call to DCCSigs::SetupHW 
@@ -75,7 +81,6 @@ void Tracks_Loop(){ //Check tasks each scan cycle.
 
   return;
 }
-
 
 void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint32_t adcscale, int32_t adcoffset, uint32_t adc_ol_trip) { 
     max_tracks++; //Add 1 to max tracks
@@ -233,22 +238,43 @@ bool MasterEnable(){ //On Dynamo boards, read MASTER_IN twice MASTER_EN_DEGLITCH
   
   bool master_en = 1; //default value for master_en.
 #ifdef BOARD_TYPE_DYNAMO
-    time_us = esp_timer_get_time();
-    if ((time_us - Master_en_chk_time) > MASTER_EN_DEGLITCH){
-      master_en = gpio_get_level(gpio_num_t(MASTER_EN));  
-      if (master_en != Master_en_deglitch) { //State changed, update and rescan
-        Master_en_deglitch = master_en; 
-        master_en = Master_Enable; //Pass through the unchanged value to the return.  
-      } 
-      //Implied if master_en == Master_en_deglitch it will change Master_Enable too. 
-      Master_en_chk_time = time_us; //Update last scan time. 
-    }     
+  time_us = TIME_US;
+  bool master_en = 1;
+  master_en = gpio_get_level(gpio_num_t(MASTER_EN));  
+  if (master_en != Master_en_deglitch) { 
+    Master_en_deglitch = master_en;
+    Master_en_chk_time = time_us;
+  }
+  if ((Master_Enable != Master_en_deglitch) && ((time_us - Master_en_chk_time) > MASTER_EN_DEGLITCH)){ 
+    //master_en has been in the same state for the deglitch time. 
+    Serial.printf("Master Enable on gpio %u state changed, new state %u \n", MASTER_EN, master_en);
+    Master_Enable = master_en; 
+  }  
 #endif
-  master_en = master_en && rmt_dcc_ok; //Master Enable will still shut off if the RMT DCC decoder isn't getting valid packets. 
+//  master_en = master_en && rmt_dcc_ok; //Master Enable will still shut off if the RMT DCC decoder isn't getting valid packets. 
 // BOARD_TYPE_ARCHBRIDGE has no master_en input, this will always return 1. 
-   if (master_en != Master_Enable) { //Master Enable state has changed.
-     Serial.printf("Master Enable on gpio %u state changed, new state %u \n", MASTER_EN, master_en);
-     Master_Enable = master_en; //Function directly updates the Master_Enable global in addition to returning
-   }  
   return master_en;
 }
+
+#if BOARD_TYPE == DYNAMO
+void IRAM_ATTR Master_en_ISR() {
+  /*
+volatile bool Master_Enable = false; 
+volatile uint64_t Master_en_chk_time = 0; //Store when it was checked last. 
+volatile bool Master_en_deglitch = false; //Interim value
+   */
+  time_us = TIME_US;
+  bool master_en = 1;
+  master_en = gpio_get_level(gpio_num_t(MASTER_EN));  
+  if (master_en != Master_en_deglitch) { 
+    Master_en_deglitch = master_en;
+    Master_en_chk_time = time_us;
+  }
+  if ((Master_Enable != Master_en_deglitch) && ((time_us - Master_en_chk_time) > MASTER_EN_DEGLITCH)){ 
+    //master_en has been in the same state for the deglitch time. 
+    Master_Enable = master_en; 
+  }
+     
+  return;
+}
+#endif

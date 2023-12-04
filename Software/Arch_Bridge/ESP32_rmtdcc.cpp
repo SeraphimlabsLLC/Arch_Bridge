@@ -19,9 +19,10 @@ uint8_t Rmtdcc::rmt_rx() {
   rmt_rx_detect = time_us;
   uint8_t bytes_read = 0;
   uint8_t num_bytes = 0;
-  uint8_t i = 0;
+  uint16_t i = 0;
   uint32_t APB_Div = getApbFrequency() / 1000000; //Reported bus frequency in MHz
   uint8_t rx_size = 0;
+  uint32_t word_read = 0;
 
 /*
  //Arduino RMT interface
@@ -32,13 +33,35 @@ uint8_t Rmtdcc::rmt_rx() {
    rmt_data_t* databit = NULL;
  }*/
 
-/* //Test Read  
-  volatile rmt_item32_t* item;
-  item = RMTMEM.chan[DIR_MONITOR_RMT].data32;
-  std::cout << "item d0: " << (item->duration0 / APB_Div) << " L0: " << item->level0  << " d1: " << (item->duration1 / APB_Div)  << " :L1: " << item->level1  << std::endl;
-*/
-//   rx_rmt_data = (rmt_item32_t*) xRingbufferReceive(rmt_rx_handle, rx_data_size, 10); //Returns items in rmt_rx_handle with size rmt_rx_size within 10 RTOS ticks
-   //Serial.printf("RMT contained %u items \n", rx_size); 
+ //Test Read  
+ uint32_t rmt_rx_readptr = REG_GET_FIELD(RMT_CH4STATUS_REG, RMT_APB_MEM_RADDR_CH4);//REG_READ(RMT_CH4STATUS_REG)) & 0x1FF;
+ uint32_t rmt_rx_writeptr = REG_GET_FIELD(RMT_CH4STATUS_REG, RMT_MEM_WADDR_EX_CH4);//REG_READ(RMT_CH4STATUS_REG)) &
+ if (rmt_rx_writeptr > (192 + 16)) {
+  rmt_rx_stop(rmt_channel_t(DIR_MONITOR_RMT));
+
+  rmt_rx_start(rmt_channel_t(DIR_MONITOR_RMT), true); 
+ }
+ Serial.printf("RMT_RX read pointer = %u, write pointer = %u \n",rmt_rx_readptr, rmt_rx_writeptr);
+ 
+//  volatile rmt_item32_t* item;
+//  item = RMTMEM.chan[DIR_MONITOR_RMT].data32;
+//  std::cout << "item d0: " << (item->duration0 / APB_Div) << " L0: " << item->level0  << " d1: " << (item->duration1 / APB_Div)  << " :L1: " << item->level1  << std::endl;
+//Serial.printf("item duration: %u, item level0: %u, item duration1: %u, item level1: %u \n", (item->duration0 / APB_Div), item->level0, (item->duration1 / APB_Div), item->level1);  
+
+   time_us = TIME_US;
+   if ((time_us - last_rmt_read) < (DCC_0_HALFPERIOD * 8)) {
+    return 0; 
+   }
+   
+   if (rx_data_size > 0) {
+     Serial.printf("rmt_rx_data contained %u items \n", rx_data_size); 
+   }
+
+   //Direct RMT RX read
+   uint32_t rxtest = REG_READ(RMT_CH4DATA_REG); 
+   if (rxtest > 0) {
+     Serial.printf("RMT_RX contained value %u \n", rxtest); 
+   }
 
   rmt_item32_t databit;
   int dur_delta = 0;
@@ -212,9 +235,10 @@ void IRAM_ATTR rmt_isr_handler(void* arg){
 */ 
 
 void Rmtdcc::rmt_rx_init(){ 
+
   //rx_ch = NULL; 
   bool rmt_recv = false;
-  Serial.printf("DCC RMT NOT Initialized \n");
+  //Serial.printf("RMT_RX Initialized \n");
 
 /* Arduino Library 
 //bool rmtInit(int pin, rmt_ch_dir_t channel_direction, rmt_reserve_memsize_t memsize, uint32_t frequency_Hz);
@@ -235,14 +259,21 @@ rmt_recv = rmtInit(DIR_MONITOR, RMT_RX_MODE, RMT_MEM_192);
     .channel = rmt_channel_t(DIR_MONITOR_RMT),                  
     .gpio_num = gpio_num_t(DIR_MONITOR),                       
     .clk_div = APB_Div,       
-    .mem_block_num = 4,                   
+    .mem_block_num = 1,                   
     .flags = 0,                             
     .rx_config = {                                              
-      .idle_threshold = 255, //((DCC_0_MAX_HALFPERIOD + 2) * APB_Div), //Glitch filter has max allowed of 255 ticks   
-      .filter_ticks_thresh = ((DCC_1_MIN_HALFPERIOD - 2) * APB_Div), //Idle timeout        
+      .idle_threshold = ((DCC_0_MAX_HALFPERIOD + 2) * APB_Div), //RMT Idle timeout  
+      .filter_ticks_thresh = 255, //Glitch filter has max allowed of 255 ticks  
       .filter_en = true,                  
     }                                       
   };
+  
+  Serial.printf("Configuring DIR_MONITOR input on %u \n", DIR_MONITOR);
+    gpio_reset_pin(gpio_num_t(DIR_MONITOR));
+    gpio_set_direction(gpio_num_t(DIR_MONITOR), GPIO_MODE_INPUT);
+    gpio_set_pull_mode(gpio_num_t(DIR_MONITOR), GPIO_FLOATING);  
+
+  
 /*If possible configure:
 * RMT_MEM_RX_WRAP_EN_CHm so it reads in a loop. 
 * RMT_CHm_RX_LIM_REG set the number of RX entries before threshold interrupt
@@ -250,17 +281,25 @@ rmt_recv = rmtInit(DIR_MONITOR, RMT_RX_MODE, RMT_MEM_192);
  */
 
   ESP_ERROR_CHECK(rmt_config(&rmt_rx_config));
-  //ESP_ERROR_CHECK();
-  ESP_ERROR_CHECK(rmt_set_memory_owner(rmt_channel_t(DIR_MONITOR_RMT), rmt_mem_owner_t (1))); //Set RMT RX memory owner
-  ESP_ERROR_CHECK(rmt_driver_install(rmt_rx_config.channel, 1024, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED));  
+//  ESP_ERROR_CHECK(rmt_set_memory_owner(rmt_channel_t(DIR_MONITOR_RMT), rmt_mem_owner_t (1))); //Set RMT RX memory owner
+  REG_WRITE(RMT_CH4_RX_LIM_REG, 3); //Trigger RX Threshold ISR at 3 symbols
+  
+  REG_SET_BIT(RMT_CH4CONF0_REG, 24); //Enable manual register changes
+  REG_SET_BIT(RMT_CH4CONF1_REG, 13); //Enable RX Wrap
+    Serial.printf("RMT_CH4 RX Wrap = %u \n", REG_GET_BIT(RMT_CH4CONF1_REG, 13));
+//  REG_CLEAR_BIT(RMT_MEM_RX_WRAP_EN_CH4, 0);  
 //  ESP_ERROR_CHECK(rmt_isr_register(rmt_isr_handler, NULL, 0, NULL));
-//  ESP_ERROR_CHECK(rmt_rx_start(rmt_channel_t(DIR_MONITOR_RMT), true)); //Enable RMT RX, true to erase existing RX data
+  ESP_ERROR_CHECK(rmt_driver_install(rmt_rx_config.channel, 1024, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED));  
   ESP_ERROR_CHECK(rmt_get_ringbuf_handle(rmt_channel_t(DIR_MONITOR_RMT), &rmt_rx_handle)); //Ring buffer handle
+  ESP_ERROR_CHECK(rmt_rx_start(rmt_channel_t(DIR_MONITOR_RMT), true)); //Enable RMT RX, true to erase existing RX data
+  Serial.printf("RMT_APB_FIFO_MASK = %u \n", REG_GET_FIELD(RMT_SYS_CONF_REG, RMT_APB_FIFO_MASK));
+  //Serial.printf("RMT_CH4STATUS_REG = %u \n",REG_READ(RMT_CH4STATUS_REG));
+  
 
 //If necessary to change GPIO assignments
 //esp_err_t rmt_set_gpio(rmt_channel_t channel, rmt_mode_t mode, gpio_num_t gpio_num, bool invert_signal)
  
-  Serial.printf("DCC Auditing Initialized using ESP RMT, handle %d \n", rmt_rx_handle); 
+  Serial.printf("RMT_RX DCC Auditing Initialized using buffer handle %d \n", rmt_rx_handle); 
   return;
 }
 
@@ -285,29 +324,27 @@ uint8_t Rmtdcc::rx_packet_getempty(){ //Scan rx_packets and return 1st empty slo
   return rx_next_new;
 }
 
-#if BOARD_TYPE == DYNAMO //for now only do this on Dynamo
+#if DCC_GENERATE == true 
     //Initialize RMT for DCC TX 
 void Rmtdcc::rmt_tx_init(){
   uint32_t APB_Div = getApbFrequency() / 1000000;
-/*  rmt_config_t rmt_tx_config;
+  rmt_config_t rmt_tx_config;
   // Configure the RMT channel for TX
   rmt_tx_config.rmt_mode = RMT_MODE_TX;
   rmt_tx_config.channel = rmt_channel_t(DIR_OVERRIDE_RMT);
   rmt_tx_config.clk_div = APB_Div; //Multiplier is now dynamic based on reported APB bus frequency. 
   rmt_tx_config.gpio_num = gpio_num_t(DIR_OVERRIDE);
-  rmt_tx_config.mem_block_num = 2; // With longest DCC packet 11 inc checksum (future expansion)
+  rmt_tx_config.mem_block_num = 4; // With longest DCC packet 11 inc checksum (future expansion)
                             // number of bits needed is 22preamble + start +
                             // 11*9 + extrazero + EOT = 124
                             // 2 mem block of 64 RMT items should be enough
   ESP_ERROR_CHECK(rmt_config(&rmt_tx_config));
   // NOTE: ESP_INTR_FLAG_IRAM is *NOT* included in this bitmask
   ESP_ERROR_CHECK(rmt_driver_install(rmt_tx_config.channel, 0, ESP_INTR_FLAG_LOWMED|ESP_INTR_FLAG_SHARED));    
- */
-  
-  Serial.printf("RMT TX Initialized \n"); 
+
+  Serial.printf("RMT_TX DCC Test Signal Initialized\n"); 
   return;
 }
-
 /*
 //From DCC-EX ESP32 branch DCCRMT.cpp. 
 void Rmtdcc::setDCCBit1(rmt_item32_t* item) {

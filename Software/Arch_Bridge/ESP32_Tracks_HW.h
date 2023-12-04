@@ -21,8 +21,6 @@
 #include "driver/i2c.h"
 #include "driver/adc.h"
 
-
-
 /*Track Configurations
  * Format: Enable Out pin, Enable In pin, rev/sig pin, brake pin, adc pin, adc ticks per amp x1000, adc zero offset x 1000, adc trip ticks x1000
  * adc ticks per amp is calculated to match the hardware. 
@@ -35,14 +33,12 @@
  * Format: 
  * On ESP32-S3, RMT channels 0-3 are TX only and 4-7 are RX only
  */
-#define BOARD_TYPE_ARCH_BRIDGE//Configure board style
-
-
 void Tracks_Init();
 void Tracks_Loop();
 bool MasterEnable();
+
  
-#ifdef BOARD_TYPE_DYNAMO
+#if BOARD_TYPE == DYNAMO
  // #pragma message "Building as Dynamo"
   #define MAX_TRACKS 4
   #define TRACK_1 DCCSigs[0].SetupHW(9, 0, 6, 13, 1, 81900, -60000, 3500000);
@@ -51,11 +47,12 @@ bool MasterEnable();
   #define TRACK_4 DCCSigs[3].SetupHW(12, 0, 9, 48, 5, 81900, -60000, 3500000);
   #define MASTER_EN 15 //GPIO15
   #define MASTER_EN_DEGLITCH 4 //uSec required between readings. Must have 2 of the same value to change state.
+  #define DIR_MONITOR 38 //GPIO38, Dir Monitor 
   #define ADC_MIN_OFFSET 60 //ADC is inaccurate at low values.
-
+  void IRAM_ATTR Master_en_ISR(); //Pin change interrupt on MASTER_EN 
 #endif
 
-#ifdef BOARD_TYPE_ARCH_BRIDGE
+#if BOARD_TYPE == ARCH_BRIDGE
  // #pragma message "Building as Arch Bridge"
   #define MAX_TRACKS 2
   #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 16938409, -65000, 3541000);

@@ -27,11 +27,14 @@ class ESP_Uart {
   char* tx_write_data; //Pointer for data to be written
   uint16_t tx_write_len; //Size of tx_write_data
   uint8_t tx_write_processed; //write status, 0 when new, 255 when fully processed.
+  volatile bool tx_done; //Set to false when putting data in the tx fifo, ISR will set to true again when done. 
 
   void uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
   uint16_t uart_read(uint8_t readlen); //read the specified number of bytes into rx_read_data
   uint16_t read_len(); //returns how much data there is to be read 
   void uart_write(const char* write_data, uint8_t write_len); //Write to uart up to write_len bytes from write_data
+  uint16_t uart_tx_len(); //Fetch how much data is currently in the TX buffer
+  void uart_tx_int_txdone(bool enabled); //Turn TX Done ISR on and off
   void uart_rx_flush(); //Erase the RX buffer contents
   void rx_flush(); //Reset the rx buffer
   void tx_flush(); //Reset the tx buffer

@@ -12,7 +12,9 @@
 
 #include "Arduino.h"
 
-//  #include "esp_timer.h" //Is it really needed? Arduino millis() and micros() are present. 
+//#include "esp_timer.h" //Is it really needed? Arduino millis() and micros() are present. 
+
+uint64_t esp_us(); //Equivalent to micros(); 
 
 void Heartbeat(uint64_t seconds); //Checks for and displays console heartbeat
 void measure_time_start();
@@ -35,11 +37,9 @@ class Fastclock_class {
   void clock_get(); //Read fastclck time
 
   private:
-  uint64_t set_at_us; //time_us the fastclock was last set at
-  uint8_t set_seconds; //seconds at last set
-  uint8_t set_minutes; //minutes at last set
-  uint8_t set_hours; //hours at last set
-  uint16_t set_days; //days at last set
+  uint64_t set_us; //Time clock was set to at start in uS
+  uint64_t set_at_us; //time_us to start counting from
+
 };
 
 #endif

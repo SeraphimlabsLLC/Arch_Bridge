@@ -15,6 +15,10 @@
 #define TTY_CONFIG tty.uart_init(0, 43, 44, 115200, 4, 256); 
 //#define DCCEX_UART dccex.dccex_port.uart_init(0, 43, 44, 115200, 4, 256); 
 
+//Command bridging filters
+#define LN_TO_DCCEX true
+#define DCCEX_TO_LN true
+
 #define LN_MODE Master //MASTER has priority delay 0. SENSOR has priority delay of 6 down to 2. THROTTLE has priority delay of 20 down to 6. 
 
 #define TIME_US micros() 
