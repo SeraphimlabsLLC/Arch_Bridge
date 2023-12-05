@@ -52,7 +52,6 @@ void Fastclock_setup(bool enabled){ //Initialize fastclock from outside class
 }
 
 void Fastclock_class::clock_init() { //Call clock_set with the values from the config file
-  
   clock_set(FCLK_RATE, FCLK_DAYS, FCLK_HOURS, FCLK_MINUTES, FCLK_SECONDS, 0);
   clock_get();
   active = true;
@@ -70,27 +69,25 @@ void Fastclock_class::clock_set(uint8_t s_rate, uint8_t s_days, uint8_t s_hours,
 }
 
 void Fastclock_class::clock_get() {
-   uint64_t time_delta;
+   uint64_t time_delta = 0;
   if (active != true) {
     clock_init(); //Initialize if not yet set. 
   }
-  
+  #if FCLK_ENABLE == true //Fastclock only ticks when enabled in config. If not, it will load config values and not change unless intentionally set. 
   time_us = TIME_US;
   time_delta = (time_us - set_at_us) * set_rate + set_us; //(Time passed) * set_rate + set_us
+  #endif 
   
-  //Serial.printf ("Days time_delta %u \n", time_delta); 
   days = time_delta / US_PER_DAY; //time_delta / uS per day
   time_delta = time_delta - ( uint64_t(days) * US_PER_DAY); //Subtract days from time_delta
   
-  //Serial.printf ("Hours time_delta %u \n", time_delta); 
   hours = time_delta / US_PER_HOUR; //time_delta / uS per hour
   time_delta = time_delta - ( uint64_t(hours) * US_PER_HOUR); //Subtract hours from time_delta
   
-  //Serial.printf ("Minutes time_delta %u \n", time_delta); 
   minutes = time_delta / US_PER_MINUTE; //time_delta / uS per minute
   time_delta = time_delta - ( uint64_t(minutes) * US_PER_MINUTE); //Subtract minutes from time_delta 
-  
-  //Serial.printf ("Seconds time_delta %u \n", time_delta); 
+  frac_minutes_uS = time_delta; 
+   
   seconds = time_delta / US_PER_SECOND; //uS per second
   time_delta = time_delta - ( uint64_t(seconds) * US_PER_SECOND); //Subtract seconds from time_delta
   

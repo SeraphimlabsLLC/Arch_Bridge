@@ -145,10 +145,8 @@ class LN_Class {
   uint8_t tx_next_send; 
   volatile int8_t tx_pending; //Index of which packet is actively sending. Set to -1 if none. 
 
-  //Slot constants
   const uint8_t slot_hours = 104; 
   const uint8_t slot_minutes = 67; //DCS100 mode. Use 68 for others.   
-
   LN_Slot_data* slot_ptr[127]; //Stores pointers for accessing slot data.
   char LN_TRK; //Byte for track status flags, shared between all slots
   
@@ -171,6 +169,7 @@ class LN_Class {
   bool receive_break(uint8_t break_ptr);
 
   void fastclock_update(); //Calculate updated fast clock
+  void slot_queue(); //Scan slots and purge inactive
   uint8_t slot_del(uint8_t index); //Remove a slot from memory
   void send_long_ack(uint8_t opcode, uint8_t response);
 

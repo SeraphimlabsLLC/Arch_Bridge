@@ -36,11 +36,11 @@ void LN_loop(){//reflector into LN_Class::loop_Process()
 
 void LN_Class::loop_process(){
   time_us = TIME_US;
-  if (!((time_us - LN_loop_timer) > (LN_LOOP_DELAY_US))) { //Only scan at the interval specified in ESP32_Loconet.h
-    return; 
-  }
-  LN_loop_timer = time_us; //Update last loop time
-  uint8_t i = 0;
+//  if (!((time_us - LN_loop_timer) > (LN_LOOP_DELAY_US))) { //Only scan at the interval specified in ESP32_Loconet.h
+//    return; 
+//  }
+//  LN_loop_timer = time_us; //Update last loop time
+//  uint8_t i = 0;
   if ((netstate == startup) || (netstate == disconnected)){
     //During startup interval, read the uart to keep it clear but don't process it. 
      uart_rx();
@@ -52,18 +52,7 @@ void LN_Class::loop_process(){
       netstate = active;
     }
     return;
-  }
-
-    if (Fastclock.active == true) {
-      if (!(slot_ptr[123])){ //Initialize fastclock slot if it doesn't exist yet. 
-        slot_new(123);
-      }
-      if ((time_us - slot_ptr[123]->last_refresh) > slot_ptr[123]->next_refresh) { //Broadcast time 
-        slot_read(123); //Broadcast Fast clock
-        //fastclock_ping = time_us; 
-      } 
-    }
-  
+  }  
   //Network should be ok to interact with: 
   //Serial.printf("Loconet uart_rx cycle: \n");
   uart_rx(); //Read uart data into the RX ring
@@ -74,6 +63,20 @@ void LN_Class::loop_process(){
   rx_queue(); //Process queued RX packets and run rx_decode
   measure_time_stop();
   //Serial.printf("Loconet tx_queue cycle: \n");
+
+#if FCLK_ENABLE == true //Only include the poller if the fastclock should be enabled. If false, the clock won't broadcast. 
+  if (Fastclock.active == true) {
+    if (!(slot_ptr[123])){ //Initialize fastclock slot if it doesn't exist yet. 
+      slot_new(123);
+    }
+    if ((time_us - slot_ptr[123]->last_refresh) > slot_ptr[123]->next_refresh) { //Broadcast time 
+      slot_read(123); //Broadcast Fast clock
+    } 
+  }
+#endif 
+
+  slot_queue(); //Clean up stale slots
+ 
   tx_queue(); //Try to send any queued packets
   //Serial.printf("Loconet loop complete \n");
   return;
@@ -798,9 +801,10 @@ void LN_Class::slot_read(int8_t slotnumber){ //Handle slot reads
       slot_ptr[123]->slot_data[8] = 0x7F; //ID1, 0x7F = PC
       slot_ptr[123]->slot_data[9] = 0x7F; //ID2, 0x7x = PC
   }
-  if (slotnumber == 124) { //Programmer not supported.
-    Serial.printf("Loconet Programmer not supported. \n"); 
+  if (slotnumber == 124) { //Programmer not supported. 
+    //Serial.printf("Loconet Programmer not supported. \n"); 
     send_long_ack(0x7F, 0x7F); 
+    return; 
   }
   //Loconet response: 
   response_size = 14; //Packet is 14 bytes long, should be 0x0E
@@ -853,7 +857,7 @@ void LN_Class::slot_write(int8_t slotnumber, uint8_t rx_pkt){ //Handle slot writ
       slot_ptr[slotnumber]->slot_data[i] = rx_packets[rx_pkt]->data_ptr[i + 3]; //Copy values from slot_data
       i++;
     }
-    ack = 0xff; //Find out what the correct ACK code is
+    ack = 0x7f; //Find out what the correct ACK code is
   }
   if (slotnumber == 123) { //Set fast clock
     slot_ptr[slotnumber]->slot_data[0] = 0x7B; //Slot number 123
@@ -861,7 +865,7 @@ void LN_Class::slot_write(int8_t slotnumber, uint8_t rx_pkt){ //Handle slot writ
     slot_ptr[slotnumber]->slot_data[2] = rx_packets[rx_pkt]->data_ptr[4]; //Fractional minutes. 
     slot_ptr[slotnumber]->slot_data[3] = rx_packets[rx_pkt]->data_ptr[5]; //Fractional minutes
     slot_ptr[slotnumber]->slot_data[4] = rx_packets[rx_pkt]->data_ptr[6]; //Minutes
-    //slot_ptr[slotnumber]->slot_data[4] = rx_packets[rx_pkt]->data_ptr[7]; //needs to set to LN_TRK
+    //rx_packets[rx_pkt]->data_ptr[7]; //needs to set to LN_TRK
     slot_ptr[slotnumber]->slot_data[5] = rx_packets[rx_pkt]->data_ptr[8]; //Hours
     slot_ptr[slotnumber]->slot_data[6] = rx_packets[rx_pkt]->data_ptr[9]; //Days
     slot_ptr[slotnumber]->slot_data[7] = rx_packets[rx_pkt]->data_ptr[10]; //CLK_CTRL, valid data this is 32. 
@@ -873,7 +877,6 @@ void LN_Class::slot_write(int8_t slotnumber, uint8_t rx_pkt){ //Handle slot writ
     Fastclock.clock_set(slot_ptr[slotnumber]->slot_data[1], slot_ptr[slotnumber]->slot_data[6], slot_ptr[slotnumber]->slot_data[5] - slot_hours, slot_ptr[slotnumber]->slot_data[4] - slot_minutes, 0, 0);
     slot_ptr[slotnumber]->next_refresh = 100000000; //default clock ping every 100 seconds
   }
- 
   send_long_ack(0xEF, ack); 
 
 // tx_packets[tx_index]->state = 1; //Mark as pending packet
@@ -900,8 +903,10 @@ int8_t LN_Class::slot_move(int8_t slot_src, int8_t slot_dest){ //Handle slot mov
   
   if (slot_src == slot_dest) { //NULL MOVE, a throttle is claiming this slot for use
     //Set status to IN_USE and read back the result.  
-    slot_ptr[slot_src]->slot_data[1] | 0x20; //D5 to 11, IN_USE
-    return slot_src;
+    slot_ptr[slot_dest]->slot_data[1] | 0x20; //D5 to 11, IN_USE
+    slot_ptr[slot_dest]->next_refresh = 200000000; //200 seconds
+    slot_ptr[slot_dest]->last_refresh = TIME_US;
+    return slot_dest;
   }
 
   return slot_dest;
@@ -913,16 +918,16 @@ uint8_t LN_Class::slot_new(uint8_t index) { //Initialize empty slots
     slot_ptr[index] = new LN_Slot_data; 
     slot_ptr[index] -> slot_data[0] = 0; //Slot status set to free.
     slot_ptr[index]->last_refresh = TIME_US;
-    slot_ptr[index]->next_refresh = 100000000; //Expect refresh within 100 seconds 
+    slot_ptr[index]->next_refresh = 200000000; //Expect refresh within 200 seconds 
   }
   if (!(slot_ptr[index])){
     Serial.printf("Failure allocating slot %u \n", index);
     return 1; 
   }  
   //Implement special slot initialization
-  if (index == 123) { //Fast Clock, set refresh last and interval to 0 so the initial refresh happens. 
+  if (index == 123) { //Fast Clock, set last_refresh to 0 so the initial load happens right away. 
     slot_ptr[123]->last_refresh = 0;  
-    slot_ptr[123]->next_refresh = 0; 
+    slot_ptr[123]->next_refresh = 80000000; //Fastclock pings around every 80 seconds. 
   }
   return index;
 }
@@ -932,6 +937,21 @@ uint8_t LN_Class::slot_del(uint8_t index) {
   return 0; 
 }
 
+void LN_Class::slot_queue() { //Scan slots and purge inactive
+  int i; 
+  time_us = TIME_US; 
+  for (i = 1; i < 120; i++) {
+    if (!(slot_ptr[i])){ //Undefined slot. Skip it. 
+      continue; 
+    }
+    if ((time_us - slot_ptr[i]->last_refresh > slot_ptr[i]->next_refresh) && (slot_ptr[i]->slot_data[0] & 0x30)) { //Time expired. See if it can be purged. 
+      slot_ptr[i]->slot_data[0] = slot_ptr[i]->slot_data[0] & 0xEF; //Unset SL_Active, leaving the slot in Idle or Free state. 0xDF to unset SL_Busy
+                  
+    }
+    
+  }
+  return;   
+}
 
 LN_Slot_data::LN_Slot_data(){ //Constructor
   uint8_t i = 0;

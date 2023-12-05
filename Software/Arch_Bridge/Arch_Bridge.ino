@@ -39,7 +39,7 @@ void setup() {
   Tracks_Init();  //Initialize GPIO and RMT hardware, calls the relevant rmt inits
   #if BOARD_TYPE == ARCH_BRIDGE
     LN_init(); //Initialize Loconet
-    Fastclock_setup(FCLK_START); //Check fastclock settings and start it      
+    Fastclock_setup(FCLK_ACTIVE); //Check fastclock settings and start it      
   #endif
 Serial.print("Setup Complete \n");  
 }

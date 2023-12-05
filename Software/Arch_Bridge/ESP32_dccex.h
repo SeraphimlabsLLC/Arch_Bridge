@@ -31,6 +31,7 @@ void dccex_loop(); //DCCEX_Class::dccex_loop();
 #define RELAY_TO_LOCONET true //Commands from DCC-EX get sent to Loconet
 */
 
+
 class DCCEX_Class {
   public:
   ESP_Uart dccex_port; //Class inside a class
@@ -43,11 +44,10 @@ class DCCEX_Class {
 
   void dccex_init(); //in-class initializer
   void loop_process(); //Scanning loop to include in loop();
-  uint8_t uart_rx(); //Receive data from uart to rx ring
-  void rx_scan(); //Scan rx ring for a valid packet
   void rx_decode(); //Process the opcode that was found
-  void tx_send(); //Encode data for sending
-  uint8_t tx_loopback(uint8_t packet_size); //RX ring found an opcode we just sent, check if it is ours
+  void ext_send(char* txdata, uint8_t txsize, uint8_t src); //Encode data for sending. src is to indicate where this data came from. 
+  //src 1 = internal. 2 = loconet. 3 = Railsync. 
+  //uint8_t tx_loopback(uint8_t packet_size); //RX ring found an opcode we just sent, check if it is ours
 
   void ddiag(); //Process diagnostic commands
   void Fastclock_set();
@@ -56,4 +56,8 @@ class DCCEX_Class {
   private:
   uint64_t fastclock_ping;
   uint32_t fastclock_next; 
+
+  uint8_t uart_rx(); //Receive data from uart to rx ring
+  void rx_scan(); //Scan rx ring for a valid packet
+  void tx_send(char* txdata, uint8_t txsize); //Send data
 };

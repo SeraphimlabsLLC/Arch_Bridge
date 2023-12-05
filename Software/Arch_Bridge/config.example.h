@@ -6,7 +6,7 @@
 #define DYNAMO 1
 #define ARCH_BRIDGE 2
 #define BOARD_TYPE ARCH_BRIDGE
-#define HEARTBEAT_S 10 //Seconds between console heartbeats
+#define HEARTBEAT_S 60 //Seconds between console heartbeats
 
 /*TTY settings:
 * uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
@@ -17,7 +17,8 @@
 
 //Command bridging filters
 #define LN_TO_DCCEX true
-#define DCCEX_TO_LN true
+#define RS_TO_DCCEX false //Only enable if DCC-EX is not the CS. 
+#define DCCEX_TO_LN true 
 
 #define LN_MODE Master //MASTER has priority delay 0. SENSOR has priority delay of 6 down to 2. THROTTLE has priority delay of 20 down to 6. 
 
@@ -25,7 +26,8 @@
 // Alternative: esp_timer_get_time();
 
 //Fast Clock settings:
-#define FCLK_START true
+#define FCLK_ENABLE true //False stops the clock from being activated at all. 
+#define FCLK_ACTIVE false //True if fastclock should be active at startup. If false it can still be activated by a Loconet device. 
 #define FCLK_RATE 10 //Clock multiplier
 #define FCLK_DAYS 0 //Initial clock days
 #define FCLK_HOURS 5 //Initial clock hours

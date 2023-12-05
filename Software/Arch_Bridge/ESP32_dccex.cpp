@@ -187,13 +187,11 @@ void DCCEX_Class::ddiag() { //Diagnostic mode features
     Serial.printf("Unknown diag mode %c \n", data_pkt[2]);     
   }
   
-
   return; 
 }
 
 void DCCEX_Class::Fastclock_get() {
 #if BOARD_TYPE == ARCH_BRIDGE
-
 
 #endif
   return;
@@ -204,6 +202,21 @@ void DCCEX_Class::Fastclock_set() {
 
 #endif
   return;
+}
+void DCCEX_Class::tx_send(char* txdata, uint8_t txsize){
+  dccex_port.uart_write(txdata, txsize);
+  return; 
+}
+
+void DCCEX_Class::ext_send(char* txdata, uint8_t txsize, uint8_t src){
+  if ((src == 2) && (LN_TO_DCCEX == false)) { //Loconet source. 
+    return;     
+  }
+  if ((src == 3) && (RS_TO_DCCEX == false)) { //Railsync source. 
+    return;     
+  }
+  tx_send(txdata, txsize); 
+  return; 
 }
 
 void DCCEX_Class::dccex_init(){
