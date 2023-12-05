@@ -52,4 +52,8 @@ class DCCEX_Class {
   void ddiag(); //Process diagnostic commands
   void Fastclock_set();
   void Fastclock_get(); 
+
+  private:
+  uint64_t fastclock_ping;
+  uint32_t fastclock_next; 
 };

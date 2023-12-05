@@ -100,7 +100,8 @@ class LN_Slot_data{ //Each slot will be created and have a pointer stored in LN_
   7 char snd; //sound, F5-8
   8 char id1; //unused
   9 char id2; //unused */
-  uint64_t last_refresh;
+  uint64_t last_refresh; //TIME_US of last refresh
+  uint32_t next_refresh; //uS elapsed to try to send at. 
 
   LN_Slot_data(); //Constructor
   ~LN_Slot_data(); //Destructor
@@ -122,10 +123,13 @@ class LN_Class {
       //Opcode handlers: 
   void rx_req_sw(uint8_t rx_pkt); // 0xB0 request switch
   void tx_req_sw(); 
-  
+
+  uint8_t slot_new(uint8_t index); //Check if a slot is empty and initialize it. 
   void slot_read(int8_t slotnumber); //Handle slot reads
   void slot_write(int8_t slotnumber, uint8_t rx_pkt); //Handle slot writes
-  void slot_move(int8_t slotnumber, int8_t newslotnumber); //Handle slot moves
+  int8_t slot_move(int8_t slot_src, int8_t slot_dest); //Handle slot moves
+  //int8_t loco_search(uint8_t low_addr, uint8_t high_addr);
+  int8_t loco_select(uint8_t low_addr, uint8_t high_addr); //Return the slot managing this locomotive, or assign one if new. 
   
   LN_Class(); //Constructor
 
@@ -140,11 +144,13 @@ class LN_Class {
   uint8_t tx_next_new;
   uint8_t tx_next_send; 
   volatile int8_t tx_pending; //Index of which packet is actively sending. Set to -1 if none. 
-  
+
+  //Slot constants
+  const uint8_t slot_hours = 104; 
+  const uint8_t slot_minutes = 67; //DCS100 mode. Use 68 for others.   
 
   LN_Slot_data* slot_ptr[127]; //Stores pointers for accessing slot data.
   char LN_TRK; //Byte for track status flags, shared between all slots
-  uint64_t fastclock_ping; 
   
   uint8_t uart_rx(); //Receive data from uart to rx ring
   void rx_scan(); //Scan rx ring for a valid packet
@@ -165,10 +171,7 @@ class LN_Class {
   bool receive_break(uint8_t break_ptr);
 
   void fastclock_update(); //Calculate updated fast clock
-  int8_t loco_select(uint8_t low_addr); //Return the slot managing this locomotive, or assign one if new. 
-  uint8_t slot_new(uint8_t index); //Check if a slot is empty and initialize it. 
   uint8_t slot_del(uint8_t index); //Remove a slot from memory
-  
-
+  void send_long_ack(uint8_t opcode, uint8_t response);
 
 };

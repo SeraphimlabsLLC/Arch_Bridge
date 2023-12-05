@@ -42,6 +42,19 @@ void DCCEX_Class::loop_process(){
   //Serial.printf("DCCEX tx_queue cycle: \n");
   //tx_queue(); //Try to send any queued packets
   //Serial.printf("DCCEX loop complete \n");
+
+#if BOARD_TYPE == ARCH_BRIDGE
+  if ((Fastclock.active == true) && (Fastclock.set_rate > 0)) { //Broadcast time every fast minute if active at non-zero rate
+    if ((time_us - fastclock_ping) > fastclock_next) { //Broadcast time 
+      uint16_t time_minutes = 0; 
+      Fastclock.clock_get();
+      time_minutes = Fastclock.minutes + Fastclock.hours * 60;
+      fastclock_next = 60000000 / Fastclock.set_rate; //Ping faster at higher rates
+      //Serial.printf("<JC %u %u> \n", time_minutes, Fastclock.set_rate);
+      fastclock_ping = time_us; 
+    } 
+  }
+#endif  
   return;
 }
 
@@ -134,7 +147,7 @@ void DCCEX_Class::rx_decode(){
 
     case 'J':
     #if BOARD_TYPE == ARCH_BRIDGE //define ARCH_BRIDGE specific tests
-      if (data_pkt[2] == 'C') { //Fast Clock functions 
+      if (data_pkt[2] == 'C') { //Fast Clock functions. <JC minutes rate> to set. minutes has range 0-1440, number of minutes in 24h. 
         Serial.printf("Fast Clock Command: \n");
         Loconet.slot_read(123); //Broadcast fast clock
         break;          

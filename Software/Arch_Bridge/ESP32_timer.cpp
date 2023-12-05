@@ -52,16 +52,17 @@ void Fastclock_setup(bool enabled){ //Initialize fastclock from outside class
 }
 
 void Fastclock_class::clock_init() { //Call clock_set with the values from the config file
-  clock_set(FCLK_RATE, FCLK_SECONDS, FCLK_MINUTES, FCLK_HOURS, FCLK_DAYS);
+  
+  clock_set(FCLK_RATE, FCLK_DAYS, FCLK_HOURS, FCLK_MINUTES, FCLK_SECONDS, 0);
   clock_get();
   active = true;
   return; 
 }
 
-void Fastclock_class::clock_set(uint8_t s_rate, uint8_t s_seconds, uint8_t s_minutes, uint8_t s_hours, uint8_t s_days) {
+void Fastclock_class::clock_set(uint8_t s_rate, uint8_t s_days, uint8_t s_hours, uint8_t s_minutes, uint8_t s_seconds, uint32_t s_uS_remain) {
 
   set_rate = s_rate;
-  set_us = (s_days * US_PER_DAY) + (s_hours * US_PER_HOUR) + (s_minutes * US_PER_MINUTE) + (s_seconds * US_PER_SECOND);
+  set_us = (s_days * US_PER_DAY) + (s_hours * US_PER_HOUR) + (s_minutes * US_PER_MINUTE) + (s_seconds * US_PER_SECOND) + s_uS_remain;
   set_at_us = TIME_US; //Time last set at
   active = true; 
   Serial.printf("Fastclock: Clock set to day %u, %u:%u:%u \n", s_days, s_hours, s_minutes, s_seconds);
