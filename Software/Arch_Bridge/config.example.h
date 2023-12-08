@@ -13,12 +13,14 @@
 * Parser selection. 0 = no parser, 1 = dccex, 2 = loconet
 */
 #define TTY_CONFIG tty.uart_init(0, 43, 44, 115200, 4, 256); 
+#define DCCEX_UART dccex.dccex_port.uart_init(2, 15, 16, 115200, 255, 255); //41 and 42 are right next to the uart0 pins for easy routing
 //#define DCCEX_UART dccex.dccex_port.uart_init(0, 43, 44, 115200, 4, 256); 
 
 //Command bridging filters
 #define LN_TO_DCCEX true
 #define RS_TO_DCCEX false //Only enable if DCC-EX is not the CS. 
 #define DCCEX_TO_LN true 
+#define RCN
 
 #define LN_MODE Master //MASTER has priority delay 0. SENSOR has priority delay of 6 down to 2. THROTTLE has priority delay of 20 down to 6. 
 
@@ -28,8 +30,8 @@
 //Fast Clock settings:
 #define FCLK_ENABLE true //False stops the clock from being activated at all. 
 #define FCLK_ACTIVE false //True if fastclock should be active at startup. If false it can still be activated by a Loconet device. 
-#define FCLK_RATE 10 //Clock multiplier
+#define FCLK_RATE 1 //Clock multiplier
 #define FCLK_DAYS 0 //Initial clock days
-#define FCLK_HOURS 5 //Initial clock hours
+#define FCLK_HOURS 17 //Initial clock hours
 #define FCLK_MINUTES 0 //Initial clock minutes
 #define FCLK_SECONDS 0 //Initial clock seconds

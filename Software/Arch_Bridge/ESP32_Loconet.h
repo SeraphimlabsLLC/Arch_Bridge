@@ -16,9 +16,9 @@
 #ifndef ESP32_UART_H
   #include "ESP32_uart.h"
 #endif
-#ifndef ESP32_DCCEX_H
-  #include "ESP32_dccex.h"
-#endif
+//#ifndef ESP32_DCCEX_H
+//  #include "ESP32_dccex.h"
+//#endif
 
 #include "Arduino.h"
 #include "esp_timer.h" //Required for timer functions to work.
@@ -43,17 +43,17 @@
 
 //typedef enum LN_Priority_min {Master = 0, Sensor = 2, Throttle = 6;
 //#if LN_PRIORITY == LN_MASTER 
-  #define LN_MAX_PRIORITY 20
-  #define LN_MIN_PRIORITY 0
+  #define LN_MAX_PRIORITY 0
+  #define LN_MIN_PRIORITY 20
 //#endif
 /*
 #if LN_PRIORITY == LN_SENSOR
-  #define LN_MAX_PRIORITY 6 
-  #define LN_MIN_PRIORITY 2
+  #define LN_MAX_PRIORITY 2 
+  #define LN_MIN_PRIORITY 6
 #endif  
 #if LN_PRIORITY == LN_THROTTLE
-  #define LN_MAX_PRIORITY 20
-  #define LN_MIN_PRIORITY 6
+  #define LN_MAX_PRIORITY 6
+  #define LN_MIN_PRIORITY 20
 #endif 
 */
 
@@ -118,17 +118,20 @@ class LN_Class {
   uint64_t last_rx_process; //time of last read scan
   uint64_t last_tx_us; //timestamp of last tx attempt
   uint8_t tx_pkt_len; //length of last tx packet
+ 
   void loop_process(); //Process time based data
 
       //Opcode handlers: 
   void rx_req_sw(uint8_t rx_pkt); // 0xB0 request switch
-  void tx_req_sw(); 
+  void tx_req_sw(uint16_t addr, bool dir, bool state); //Send 0xB0
 
-  uint8_t slot_new(uint8_t index); //Check if a slot is empty and initialize it. 
-  void slot_read(int8_t slotnumber); //Handle slot reads
-  void slot_write(int8_t slotnumber, uint8_t rx_pkt); //Handle slot writes
+  int8_t slot_new(uint8_t index); //Check if a slot is empty and initialize it. 
+  void slot_read(int8_t slotnum); //Handle slot reads
+  int8_t slot_write(int8_t slotnum, uint8_t rx_pkt); //Handle slot writes
   int8_t slot_move(int8_t slot_src, int8_t slot_dest); //Handle slot moves
-  //int8_t loco_search(uint8_t low_addr, uint8_t high_addr);
+  void slot_fastclock_set(uint8_t rx_pkt);
+  void slot_fastclock_get();
+
   int8_t loco_select(uint8_t low_addr, uint8_t high_addr); //Return the slot managing this locomotive, or assign one if new. 
   
   LN_Class(); //Constructor
@@ -146,7 +149,7 @@ class LN_Class {
   volatile int8_t tx_pending; //Index of which packet is actively sending. Set to -1 if none. 
 
   const uint8_t slot_hours = 104; 
-  const uint8_t slot_minutes = 67; //DCS100 mode. Use 68 for others.   
+  uint8_t slot_minutes = 67; //DCS100 mode. Use 68 for others.   
   LN_Slot_data* slot_ptr[127]; //Stores pointers for accessing slot data.
   char LN_TRK; //Byte for track status flags, shared between all slots
   

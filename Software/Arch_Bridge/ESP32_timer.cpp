@@ -90,10 +90,7 @@ void Fastclock_class::clock_get() {
    
   seconds = time_delta / US_PER_SECOND; //uS per second
   time_delta = time_delta - ( uint64_t(seconds) * US_PER_SECOND); //Subtract seconds from time_delta
-  
-  //Serial.printf ("Remaining time_delta %u \n", time_delta);  
-
-  Serial.printf("Fastclock clock_get: day %u, %u:%u:%u \n", days, hours, minutes, seconds);
+  //Serial.printf("Fastclock clock_get: day %u, %u:%u:%u \n", days, hours, minutes, seconds);
   return;
 }
 #endif

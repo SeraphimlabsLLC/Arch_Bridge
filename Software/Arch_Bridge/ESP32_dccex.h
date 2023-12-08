@@ -20,17 +20,15 @@
 void dccex_init(); //DCCEX_Class::dccex_init();
 void dccex_loop(); //DCCEX_Class::dccex_loop();
 
+//DCC-EX UART settings, from ESP32_uart.h: (uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
+
 /*
-
-//DCC-EX UART settings, from ESP32_uart.h: (uint8_t uartnum, uint8_t uartmode, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
-#define DCCEX_UART dccex.dccex_port.uart_init(2, 42, 41, 115200, 255, 255); //41 and 42 are right next to the uart0 pins for easy routing
-
-#define RELAY_FROM_DCC false //Commands from DCC get sent to DCC-EX. Do not enable if DCC-EX is the DCC source
-
-#define RELAY_FROM_LOCONET true //Commands to DCC-EX get sent from Loconet
-#define RELAY_TO_LOCONET true //Commands from DCC-EX get sent to Loconet
-*/
-
+class Turnout_Sensor{
+  uint16_t addr; 
+  uint8_t state; //bit 0 = output 0/1, bit 1 = direction 0/1. RCN_213 has direction 1 as closed and 0 as thrown. 
+  uint8_t source; //Where it was learned from: 1 = DCC, 2 = Loconet, 3 = DCCEX
+  uint64_t last_cmd_us; //Time of last action  
+}*/
 
 class DCCEX_Class {
   public:
@@ -45,19 +43,20 @@ class DCCEX_Class {
   void dccex_init(); //in-class initializer
   void loop_process(); //Scanning loop to include in loop();
   void rx_decode(); //Process the opcode that was found
-  void ext_send(char* txdata, uint8_t txsize, uint8_t src); //Encode data for sending. src is to indicate where this data came from. 
-  //src 1 = internal. 2 = loconet. 3 = Railsync. 
-  //uint8_t tx_loopback(uint8_t packet_size); //RX ring found an opcode we just sent, check if it is ours
 
   void ddiag(); //Process diagnostic commands
   void Fastclock_set();
   void Fastclock_get(); 
 
+  //Opcode handlers: 
+  void rx_req_sw(); //Received switch command
+  void tx_req_sw(uint16_t addr, bool dir, bool state); //Send switch command
+
   private:
   uint64_t fastclock_ping;
-  uint32_t fastclock_next; 
-
-  uint8_t uart_rx(); //Receive data from uart to rx ring
+  uint32_t fastclock_next;
+  
+  uint8_t uart_rx(bool console); //Receive data from uart, either from the dccex input or console
   void rx_scan(); //Scan rx ring for a valid packet
   void tx_send(char* txdata, uint8_t txsize); //Send data
 };

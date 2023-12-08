@@ -10,7 +10,7 @@
 #endif
 #ifndef ESP32_DCCEX_H
   #include "ESP32_dccex.h"
-  DCCEX_Class dccex;
+  extern DCCEX_Class dccex;
 #endif
 #ifndef ESP32_TIMER_H
   #include "ESP32_timer.h" //For fastclock access
@@ -177,7 +177,7 @@ void LN_Class::rx_scan(){ //Scan received data for a valid frame
     }
       
     if (rx_packets[rx_pending]->Read_Checksum()) { //Valid checksum, mark as received. 
-      Serial.printf("RX_Scan Completed packet %u ready to decode \n", rx_pending); 
+      //Serial.printf("RX_Scan Completed packet %u ready to decode \n", rx_pending); 
       rx_packets[rx_pending]->state = 3; //Set state to received 
     } else {//Checksum was invalid. Drop the packet. 
       Serial.printf("RX_Scan Failed packet %u, RX checksum invalid \n", rx_pending); 
@@ -187,7 +187,7 @@ void LN_Class::rx_scan(){ //Scan received data for a valid frame
   }
   LN_port.rx_read_processed = 255; //Mark as fully processed.
   LN_port.rx_read_len = 0;  
-  Serial.printf("RX_Scan Complete \n");
+  //Serial.printf("RX_Scan Complete \n");
   return; 
 }  
 
@@ -282,7 +282,6 @@ uint8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
       slot_ptr[slotnum]->last_refresh = TIME_US; 
       break;      
     case 0xB0: //REQ SWITCH function
-      //DCCEX: <H addr state>, eg <H 1 1> for turnout 1 thrown
       rx_req_sw(rx_pkt);
       break;
     case 0xB1: //Turnout SENSOR state REPORT
@@ -314,14 +313,13 @@ uint8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
       }
       break; 
     case 0xBB: //Request SLOT DATA/status block
-      Serial.printf("Throttle requesting slot %u data \n", rx_packets[rx_pkt]->data_ptr[1]);
-      slot_read(rx_packets[rx_pkt]->data_ptr[1]); //Read slot data out to Loconet  
-      break;
+      slotnum = rx_packets[rx_pkt]->data_ptr[1];
+      Serial.printf("Throttle requesting slot %u data \n", slotnum);
+      slot_read(slotnum); //Read slot data out to Loconet  
+      break; 
     case 0xBC: //REQ state of SWITCH. LACK response 7F for ok. 
-      send_long_ack(0xBC, 0x7F); 
-      break;   
     case 0xBD: //REQ SWITCH WITH acknowledge function (not DT200
-      send_long_ack(0xBD, 0x7F); 
+      //send_long_ack(0xBD, 0x7F); 
       break;
     case 0xBF: //;Request Locomotive Address
       slotnum = loco_select(rx_packets[rx_pkt]->data_ptr[2], 0); //Only short addresses supported at this time. 
@@ -340,13 +338,19 @@ uint8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
 
     //Variable byte opcodes: 
     case 0xE7: //Slot read data
-      
+      slotnum = rx_packets[rx_pkt]->data_ptr[2];
+      if (slotnum == 123) { //Set fast clock using sync from some other device. 
+        slot_fastclock_set(rx_pkt);
+      }
+      //slot_read(slot_read);
       break;
     case 0xED: //Send Immeadiate Packet
       send_long_ack(0xED, 0);
       break; 
     case 0xEF: //Slot write data
-      slot_write(rx_packets[rx_pkt]->data_ptr[2], rx_pkt); //Accept slot write data and send Long Ack
+    
+      slotnum = slot_write(rx_packets[rx_pkt]->data_ptr[2], rx_pkt); //Accept slot write data and send Long Ack
+      send_long_ack(0xEF, slotnum); //Send LACK with the result
       break; 
     
     default: 
@@ -366,7 +370,7 @@ void LN_Class::tx_queue(){ //Try again to send queued packets on each loop cycle
     tx_next_send = tx_pending;
   }
   //Serial.printf("TX_Q priority loop \n");
-  while (priority <= LN_MAX_PRIORITY){ 
+  while (priority <= LN_MIN_PRIORITY){ 
     while (i < LN_TX_Q) {
       //Serial.printf("TX_Q. priority = %u i = %u, tx_next_send %u, LN_TX_Q = %u \n", priority, i, tx_next_send, LN_TX_Q);
       
@@ -390,9 +394,9 @@ void LN_Class::tx_queue(){ //Try again to send queued packets on each loop cycle
               Serial.printf("TX_Q tx_next_send failed to send after %u mS. %u attempts remain \n", (time_us - tx_packets[tx_next_send]->last_start_time) / 1000, tx_packets[tx_next_send]->tx_attempts);
               tx_packets[tx_next_send]->state = 4;
               tx_packets[tx_next_send]->tx_attempts--;
-              tx_packets[tx_next_send]->priority--; //Count down priority for next attempt.
-              if (tx_packets[tx_next_send]->priority < LN_MIN_PRIORITY) {//Enforce priority floor
-                tx_packets[tx_next_send]->priority = LN_MIN_PRIORITY;
+              tx_packets[tx_next_send]->priority--; //Increase priority for the next attempt.
+              if (tx_packets[tx_next_send]->priority < LN_MAX_PRIORITY) {//Enforce priority limit
+                tx_packets[tx_next_send]->priority = LN_MAX_PRIORITY;
               }
               if (tx_next_send == tx_pending) {
                 tx_pending = -1;
@@ -597,9 +601,10 @@ uint8_t LN_Class::tx_packet_getempty(){ //Scan tx_packets and return 1st empty s
     if (!tx_packets[count]) {//Doesn't exist yet, we can take this slot.
       //Serial.printf("Found uninitialized slot tx_packets[%u]\n", count);
       tx_packets[count] = new LN_Packet();
+      
     }
     if (tx_packets[count]->state == 0) { //Although it already exists, it is in the empty state. Claim it. 
-      Serial.printf("Reusing slot tx_packets[%u]\n", count);
+      //Serial.printf("Reusing slot tx_packets[%u]\n", count);
         tx_packets[count]->reset_packet();
         if (count == tx_pending) { //Shouldn't happen but just in case. 
           tx_pending = -1;
@@ -623,15 +628,32 @@ void LN_Class::tx_packet_del(uint8_t index){ //Delete a packet after confirmatio
 
 void LN_Class::rx_req_sw(uint8_t rx_pkt){
   uint16_t addr = 0; 
-  uint8_t cmd = 0;
+  uint8_t cmd = 0; 
   addr = (((rx_packets[rx_pkt]->data_ptr[2]) & 0x0F) << 8) | (rx_packets[rx_pkt]->data_ptr[1] & 0x7F);
   cmd = ((rx_packets[rx_pkt]->data_ptr[2]) & 0xF0);
   Serial.printf("Req switch addr %u direction %u, output %u \n", addr + 1, (cmd & 0x20) >> 5, (cmd & 0x10) >> 4);
+  #if DCCEX_TO_LN == true //Only send if allowed to. 
+  if (((cmd & 0x10) >> 4) == true) { //only forward if output is on. 
+    dccex.tx_req_sw(addr + 1, (cmd & 0x20) >> 5, (cmd & 0x10) >> 4);
+  }
+  #endif
+
   return;
 }
 
-void LN_Class::tx_req_sw(){
-
+void LN_Class::tx_req_sw(uint16_t addr, bool dir, bool state){
+  uint8_t tx_index; 
+  uint8_t sw1 = addr & 0x7F; //Truncate to addr bits 0-6
+  uint8_t sw2 = ((addr >> 8) & 0x0F) | (0x10 * state) | (0x20 * dir); //addr bits 7-10 | (state * 16) | (dir * 32)
+  tx_index = tx_packet_getempty();
+  tx_packets[tx_index]->state = 1;
+  tx_packets[tx_index]->priority = LN_MIN_PRIORITY; 
+  tx_packets[tx_index]->data_len = 4;
+  tx_packets[tx_index]->data_ptr[0] = 0xB0; //REQ_SW
+  tx_packets[tx_index]->data_ptr[1] = sw1; 
+  tx_packets[tx_index]->data_ptr[2] = sw2; 
+  tx_packets[tx_index]->Make_Checksum(); //Populate checksum  
+  //Don't send this one right away, let it go through the queue. 
   return;
 }
 
@@ -639,12 +661,13 @@ void LN_Class::send_long_ack(uint8_t opcode, uint8_t response) {
   uint8_t tx_index; 
   tx_index = tx_packet_getempty();
   tx_packets[tx_index]->state = 1;
+  tx_packets[tx_index]->priority = LN_MIN_PRIORITY;
   tx_packets[tx_index]->data_len = 4;
   tx_packets[tx_index]->data_ptr[0] = 0xB4; //Long Acknowledge
   tx_packets[tx_index]->data_ptr[1] = opcode & 0x7F; //Opcode being given LACK & 0x7F to unset bit 7. 
   tx_packets[tx_index]->data_ptr[2] = response & 0x7F; //Response & 0x7F to make sure bit 7 isn't set. 
   tx_packets[tx_index]->Make_Checksum(); //Populate checksum
-  if (tx_pending < 0) { //If no packets pending, send now. 
+  if (tx_pending < 0) { //Needs to send ASAP, so try to send now. 
     tx_pending = tx_index; 
     tx_send(tx_index); 
   }
@@ -778,30 +801,16 @@ int8_t LN_Class::loco_select(uint8_t low_addr, uint8_t high_addr){ //Return the 
   return slotnum;
 }
 
-void LN_Class::slot_read(int8_t slotnumber){ //Handle slot reads
+void LN_Class::slot_read(int8_t slotnum){ //Handle slot reads
   uint8_t i = 0;
   uint8_t tx_index = 0;
   uint8_t response_size = 0;
 
-  slot_new(slotnumber); //Initialize slot if it isn't already. 
-  if (slotnumber == 123) { //Update fast clock slot
-    //Serial.printf("Processing fast clock update. \n");
-      Fastclock.clock_get(); //Update fastclock values
-      slot_ptr[123]->last_refresh = time_us; //Store when it was copied. 
-      slot_ptr[123]->next_refresh = 80000000; //Refresh ping every 80 seconds
-      
-      slot_ptr[123]->slot_data[0] = Fastclock.set_rate; //Clock multiplier
-      slot_ptr[123]->slot_data[1] = 127; //FRAC_MINS_L, 0-127 tick count
-      slot_ptr[123]->slot_data[2] = 127; //FRAC_MINS_H, 0-127 tick count
-      slot_ptr[123]->slot_data[3] = 67 + Fastclock.minutes; //127 - 60 or 128 - 60 depending on DCS100 compat mode
-      slot_ptr[123]->slot_data[4] = LN_TRK; //Global slot byte;
-      slot_ptr[123]->slot_data[5] = 104 + Fastclock.hours; //128 - 24
-      slot_ptr[123]->slot_data[6] = Fastclock.days; //Days since fast clock init
-      slot_ptr[123]->slot_data[7] = 32; //Bit D6 = 1 for valid clock data
-      slot_ptr[123]->slot_data[8] = 0x7F; //ID1, 0x7F = PC
-      slot_ptr[123]->slot_data[9] = 0x7F; //ID2, 0x7x = PC
+  slot_new(slotnum); //Initialize slot if it isn't already. 
+  if (slotnum == 123) { //Update fast clock slot
+    slot_fastclock_get(); 
   }
-  if (slotnumber == 124) { //Programmer not supported. 
+  if (slotnum == 124) { //Programmer not supported. 
     //Serial.printf("Loconet Programmer not supported. \n"); 
     send_long_ack(0x7F, 0x7F); 
     return; 
@@ -810,6 +819,7 @@ void LN_Class::slot_read(int8_t slotnumber){ //Handle slot reads
   response_size = 14; //Packet is 14 bytes long, should be 0x0E
   tx_index = tx_packet_getempty();
   tx_packets[tx_index]->state = 1;
+  tx_packets[tx_index]->priority = LN_MAX_PRIORITY; 
   tx_packets[tx_index]->data_len = response_size;
   //Serial.printf("Preparing Loconet reply data \n");
   i = 0;
@@ -819,17 +829,15 @@ void LN_Class::slot_read(int8_t slotnumber){ //Handle slot reads
    i++;
   }
   Serial.printf("\n");*/
+
+  for (i = 0; i < 10; i++) {
+    tx_packets[tx_index]->data_ptr[i + 3] = slot_ptr[slotnum]->slot_data[i]; //Copy values from slot_low_data
+
+  }
   tx_packets[tx_index]->data_ptr[0] = 0xE7; //OPC_SL_RD_DATA
   tx_packets[tx_index]->data_ptr[1] = response_size; 
-  tx_packets[tx_index]->data_ptr[2] = slotnumber;
-  slot_ptr[slotnumber]->slot_data[4] = LN_TRK; //Loconet slot global status
-  i = 0;
-  while (i < 10) {
-    tx_packets[tx_index]->data_ptr[i + 3] = slot_ptr[slotnumber]->slot_data[i]; //Copy values from slot_low_data
-    i++;
-  }
-  tx_packets[tx_index]->data_ptr[7] = LN_TRK; //Loconet slot global status
-  i = 0;
+  tx_packets[tx_index]->data_ptr[2] = slotnum;
+  tx_packets[tx_index]->data_ptr[7] = LN_TRK; //Loconet slot global status. Although slot_data[4] is defined, it isn't used. 
   //Serial.printf("Calculating checksum \n");
   tx_packets[tx_index]->Make_Checksum(); //Populate checksum
   i = 0;
@@ -844,44 +852,30 @@ void LN_Class::slot_read(int8_t slotnumber){ //Handle slot reads
   */
   //LN_port.tx_data[LN_port.tx_write_ptr] = LN_port.tx_data[LN_port.tx_write_ptr] + i;
   tx_packets[tx_index]->state = 1; //Mark as pending packet
-  tx_send(tx_index);
+  
+  if (tx_pending == -1) { //Send now if possible. 
+    tx_send(tx_index);
+  }
   return;
 }
-void LN_Class::slot_write(int8_t slotnumber, uint8_t rx_pkt){ //Handle slot writes
+int8_t LN_Class::slot_write(int8_t slotnum, uint8_t rx_pkt){ //Handle slot writes
   uint8_t i = 0;
   uint8_t response_size = 4;
   uint8_t tx_index = 0;
   uint8_t ack = 0;
-  if (slotnumber < 120) { 
-    while (i < 10) {
-      slot_ptr[slotnumber]->slot_data[i] = rx_packets[rx_pkt]->data_ptr[i + 3]; //Copy values from slot_data
-      i++;
+  if (!(slot_ptr[slotnum])) { 
+    slot_new(slotnum); 
+  }
+  if (slotnum < 120) { 
+    for (i = 0; i < 10; i++) {
+      slot_ptr[slotnum]->slot_data[i] = rx_packets[rx_pkt]->data_ptr[i + 3]; //Copy values from slot_data
     }
     ack = 0x7f; //Find out what the correct ACK code is
   }
-  if (slotnumber == 123) { //Set fast clock
-    slot_ptr[slotnumber]->slot_data[0] = 0x7B; //Slot number 123
-    slot_ptr[slotnumber]->slot_data[1] = rx_packets[rx_pkt]->data_ptr[3]; //Rate
-    slot_ptr[slotnumber]->slot_data[2] = rx_packets[rx_pkt]->data_ptr[4]; //Fractional minutes. 
-    slot_ptr[slotnumber]->slot_data[3] = rx_packets[rx_pkt]->data_ptr[5]; //Fractional minutes
-    slot_ptr[slotnumber]->slot_data[4] = rx_packets[rx_pkt]->data_ptr[6]; //Minutes
-    //rx_packets[rx_pkt]->data_ptr[7]; //needs to set to LN_TRK
-    slot_ptr[slotnumber]->slot_data[5] = rx_packets[rx_pkt]->data_ptr[8]; //Hours
-    slot_ptr[slotnumber]->slot_data[6] = rx_packets[rx_pkt]->data_ptr[9]; //Days
-    slot_ptr[slotnumber]->slot_data[7] = rx_packets[rx_pkt]->data_ptr[10]; //CLK_CTRL, valid data this is 32. 
-    slot_ptr[slotnumber]->slot_data[8] = rx_packets[rx_pkt]->data_ptr[11]; //ID1
-    slot_ptr[slotnumber]->slot_data[9] = rx_packets[rx_pkt]->data_ptr[12]; //ID2
-    
-    //Todo: Implement Frac_MinsL (0-127) and Frac_MinsH (0-127) to seconds conversion.   
-     
-    Fastclock.clock_set(slot_ptr[slotnumber]->slot_data[1], slot_ptr[slotnumber]->slot_data[6], slot_ptr[slotnumber]->slot_data[5] - slot_hours, slot_ptr[slotnumber]->slot_data[4] - slot_minutes, 0, 0);
-    slot_ptr[slotnumber]->next_refresh = 100000000; //default clock ping every 100 seconds
+  if (slotnum == 123) { //Set fast clock
+    slot_fastclock_set(rx_pkt); 
   }
-  send_long_ack(0xEF, ack); 
-
-// tx_packets[tx_index]->state = 1; //Mark as pending packet
-//  tx_send(tx_index);
-  return;
+  return ack;
 }
 
 int8_t LN_Class::slot_move(int8_t slot_src, int8_t slot_dest){ //Handle slot moves
@@ -912,25 +906,78 @@ int8_t LN_Class::slot_move(int8_t slot_src, int8_t slot_dest){ //Handle slot mov
   return slot_dest;
 }
 
-uint8_t LN_Class::slot_new(uint8_t index) { //Initialize empty slots
-  if (!(slot_ptr[index])){
-    Serial.printf("Initializing Loconet slot %u \n", index);
-    slot_ptr[index] = new LN_Slot_data; 
-    slot_ptr[index] -> slot_data[0] = 0; //Slot status set to free.
-    slot_ptr[index]->last_refresh = TIME_US;
-    slot_ptr[index]->next_refresh = 200000000; //Expect refresh within 200 seconds 
+
+
+void LN_Class::slot_fastclock_set(uint8_t rx_pkt){
+  const uint8_t slotnum = 123;
+  slot_ptr[slotnum]->last_refresh = TIME_US;
+  slot_ptr[slotnum]->slot_data[9] = rx_packets[rx_pkt]->data_ptr[12]; //ID2
+  slot_ptr[slotnum]->slot_data[8] = rx_packets[rx_pkt]->data_ptr[11]; //ID1
+  slot_ptr[slotnum]->slot_data[7] = rx_packets[rx_pkt]->data_ptr[10]; //CLK_CTRL, valid data this is 32. 
+  slot_ptr[slotnum]->slot_data[6] = rx_packets[rx_pkt]->data_ptr[9]; //Days
+  slot_ptr[slotnum]->slot_data[5] = rx_packets[rx_pkt]->data_ptr[8]; //Hours
+  slot_ptr[slotnum]->slot_data[4] = LN_TRK; //Global status byte. Not actually used here, set anyway just because. 
+  slot_ptr[slotnum]->slot_data[3] = rx_packets[rx_pkt]->data_ptr[6]; //Minutes
+  slot_ptr[slotnum]->slot_data[2] = rx_packets[rx_pkt]->data_ptr[5]; //Fractional minutes
+  slot_ptr[slotnum]->slot_data[1] = rx_packets[rx_pkt]->data_ptr[4]; //Fractional minutes. 
+  slot_ptr[slotnum]->slot_data[0] = rx_packets[rx_pkt]->data_ptr[3]; //Rate
+
+  //Frac_MinsH (0-127) to seconds conversion.   
+  uint8_t s_seconds = uint32_t(472440 * (127 - rx_packets[rx_pkt]->data_ptr[5])) / 1000000; 
+  if (s_seconds > 59) { //Probable math error here, this works around it. 
+    s_seconds = s_seconds - 60; 
   }
-  if (!(slot_ptr[index])){
+  Serial.printf("Loconet: Seconds set %i \n", s_seconds); 
+  Fastclock.clock_set(slot_ptr[slotnum]->slot_data[0], slot_ptr[slotnum]->slot_data[6], slot_ptr[slotnum]->slot_data[5] - slot_hours, slot_ptr[slotnum]->slot_data[3] - slot_minutes, s_seconds, 0);
+  Fastclock.clock_get(); //Update clock values with new setpoint. 
+  Serial.printf("Loconet: Fastclock set to day %u %u:%u:%u \n", Fastclock.days, Fastclock.hours, Fastclock.minutes, Fastclock.seconds);  
+  return; 
+}
+
+
+
+void LN_Class::slot_fastclock_get(){
+  const uint8_t slotnum = 123;
+  //Serial.printf("Processing fast clock update. \n");
+  Fastclock.clock_get(); //Update fastclock values
+  slot_ptr[slotnum]->last_refresh = TIME_US;
+/* //Leave the ID untouched, it is set when the clock is. 
+  slot_ptr[slotnum]->slot_data[9] = 0x7F; //ID2, 0x7x = PC
+  slot_ptr[slotnum]->slot_data[8] = 0x7F; //ID1, 0x7F = PC */
+  slot_ptr[slotnum]->slot_data[7] = 32; //Bit D6 = 1 for valid clock data
+  slot_ptr[slotnum]->slot_data[6] = Fastclock.days; //Days since fast clock init
+  slot_ptr[slotnum]->slot_data[5] = slot_hours + Fastclock.hours; //128 - 24
+  slot_ptr[slotnum]->slot_data[4] = LN_TRK; //Global slot byte;
+  slot_ptr[slotnum]->slot_data[3] = slot_minutes + Fastclock.minutes; //127 - 60 or 128 - 60 depending on DCS100 compat mode
+  slot_ptr[slotnum]->slot_data[2] = 127 - Fastclock.frac_minutes_uS / 472441; //frac_minutes_us is the remaining uS after calculating minutes. FRAC_MINS_H, 0-127 tick count
+  slot_ptr[slotnum]->slot_data[1] = 127 - (Fastclock.frac_minutes_uS - (slot_ptr[123]->slot_data[2] * 472441)) / 3872; //FRAC_MINS_L, 0-127 tick count
+  slot_ptr[slotnum]->slot_data[0] = Fastclock.set_rate; //Clock multiplier
+  return; 
+}
+
+int8_t LN_Class::slot_new(uint8_t slotnum) { //Initialize empty slots
+  if (!(slot_ptr[slotnum])){
+    //Serial.printf("Initializing Loconet slot %u \n", slotnum);
+    slot_ptr[slotnum] = new LN_Slot_data; 
+    slot_ptr[slotnum] -> slot_data[0] = 0; //Slot status set to free.
+    slot_ptr[slotnum]->last_refresh = TIME_US;
+    slot_ptr[slotnum]->next_refresh = 200000000; //Expect refresh within 200 seconds 
+  }
+  if (!(slot_ptr[slotnum])){
     Serial.printf("Failure allocating slot %u \n", index);
-    return 1; 
+    return -1; 
   }  
   //Implement special slot initialization
-  if (index == 123) { //Fast Clock, set last_refresh to 0 so the initial load happens right away. 
-    slot_ptr[123]->last_refresh = 0;  
-    slot_ptr[123]->next_refresh = 80000000; //Fastclock pings around every 80 seconds. 
+  if (slotnum == 123) { //Fast Clock, set last_refresh to 0 so the initial load happens right away. 
+    slot_ptr[slotnum]->last_refresh = 0;  
+    slot_ptr[slotnum]->next_refresh = 80000000; //Fastclock sends pings around every 80-100 seconds instead of receiving within 200. 
+    slot_ptr[slotnum]->slot_data[9] = 0x7F; //ID2, 0x7x = PC
+    slot_ptr[slotnum]->slot_data[8] = 0x7F; //ID1, 0x7F = PC
   }
-  return index;
+  return slotnum;
 }
+
+
 
 uint8_t LN_Class::slot_del(uint8_t index) {
   delete slot_ptr[index];

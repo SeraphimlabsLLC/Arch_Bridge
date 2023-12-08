@@ -23,6 +23,7 @@
 #endif
 
 DCCEX_Class dccex;
+
 extern ESP_Uart tty; //normal serial port
 extern uint64_t time_us; 
 extern TrackChannel DCCSigs[];
@@ -31,45 +32,51 @@ extern Rmtdcc dcc;
 
 void DCCEX_Class::loop_process(){
   //Serial.printf("DCCEX uart_rx cycle: \n");
-  uart_rx(); //Read uart data into the RX ring
+  uart_rx(false); //Read uart data 
   //Serial.printf("DCCEX rx_scan cycle: \n");
   rx_scan(); //Scan RX ring for an opcode
   if (rx_state == 2) {
     rx_decode();
   }
-  //Serial.printf("DCCEX rx_queue cycle: \n");
-  //rx_queue(); //Process queued RX packets and run rx_decode
-  //Serial.printf("DCCEX tx_queue cycle: \n");
-  //tx_queue(); //Try to send any queued packets
-  //Serial.printf("DCCEX loop complete \n");
+  uart_rx(true); //Read console data 
+  //Serial.printf("DCCEX rx_scan cycle: \n");
+  rx_scan(); //Scan RX ring for an opcode
+  if (rx_state == 2) {
+    rx_decode();
+  }
 
 #if BOARD_TYPE == ARCH_BRIDGE
   if ((Fastclock.active == true) && (Fastclock.set_rate > 0)) { //Broadcast time every fast minute if active at non-zero rate
     if ((time_us - fastclock_ping) > fastclock_next) { //Broadcast time 
-      uint16_t time_minutes = 0; 
-      Fastclock.clock_get();
-      time_minutes = Fastclock.minutes + Fastclock.hours * 60;
-      fastclock_next = 60000000 / Fastclock.set_rate; //Ping faster at higher rates
-      //Serial.printf("<JC %u %u> \n", time_minutes, Fastclock.set_rate);
-      fastclock_ping = time_us; 
+      Fastclock_get(); 
     } 
   }
 #endif  
   return;
 }
 
-uint8_t DCCEX_Class::uart_rx(){ //Read incoming data into a buffer
+uint8_t DCCEX_Class::uart_rx(bool console){ //Read incoming data into a buffer
   uint8_t read_size = 0;
   uint8_t i = 0;
+  if (console == true) {
    tty.rx_read_processed = dccex_port.rx_read_processed; //Sync tty rx_read_processed with ours.  
    read_size = tty.uart_read(0); //populate rx_read_data and rx_read_len
    dccex_port.rx_read_data = tty.rx_read_data; //Pointer to the data just read
    dccex_port.rx_read_len = tty.rx_read_len; //Size of rx_read_data
-   tty.rx_read_len = 0; //Take over the data
+   dccex_port.rx_read_processed = tty.rx_read_processed; //Sync tty rx_read_processed with ours
+   tty.rx_read_len = 0; //Steal the data. 
+  } else { 
+   read_size = dccex_port.uart_read(0); //populate rx_read_data and rx_read_len
+   dccex_port.rx_read_data = dccex_port.rx_read_data; //Pointer to the data just read
+   dccex_port.rx_read_len = dccex_port.rx_read_len; //Size of rx_read_data
+   if (dccex_port.rx_read_len > 0){
+     //Serial.printf("UART %u received", dccex_port.uart_num);
+     //Serial.printf(dccex_port.rx_read_data); 
+     //Serial.printf("\n");
+   }
+  }
    
   if (dccex_port.rx_read_len > 0){ //Data was actually moved, update the timer.
-    Serial.printf("DCCEX uart_rx read %u bytes from tty \n", dccex_port.rx_read_len);
-    dccex_port.rx_read_processed = tty.rx_read_processed; //Sync tty rx_read_processed with ours.  
     rx_last_us = TIME_US;
   }
   return read_size;
@@ -111,13 +118,13 @@ void DCCEX_Class::rx_decode(){
   }
   switch (data_pkt[1]) {
     case 0:  //power off
-    Serial.printf("Changing to OFF \n");
+    Serial.printf("DCCEX Changing to OFF \n");
       DCCSigs[0].ModeChange(0);
       DCCSigs[1].ModeChange(0);
 
     break;
     case '1':
-    Serial.printf("Changing to DCC EXT, ON_FWD \n");
+    Serial.printf("DCCEX Changing to DCC EXT, ON_FWD \n");
       DCCSigs[0].ModeChange(1);
       DCCSigs[1].ModeChange(1);   
       DCCSigs[0].StateChange(2);//Set to DCC_ON
@@ -125,7 +132,7 @@ void DCCEX_Class::rx_decode(){
 
     break;
     case '2':
-      Serial.printf("Changing to DCC EXT, ON_FWD \n");
+      Serial.printf("DCCEX Changing to DCC EXT, ON_FWD \n");
       DCCSigs[0].ModeChange(3);
       DCCSigs[1].ModeChange(3);   
       DCCSigs[0].StateChange(2);//Set to ON_FWD
@@ -133,7 +140,7 @@ void DCCEX_Class::rx_decode(){
       break; 
 
     case '3': 
-      Serial.printf("Changing to DCC EXT, ON_REV \n");
+      Serial.printf("DCCEX Changing to DCC EXT, ON_REV \n");
       DCCSigs[0].ModeChange(3);
       DCCSigs[1].ModeChange(3);   
       DCCSigs[0].StateChange(3);//Set to ON_REV
@@ -141,22 +148,32 @@ void DCCEX_Class::rx_decode(){
       break; 
 
     case 'D': 
-      Serial.printf("Debug: \n"); 
+      Serial.printf("DCCEX Debug: \n"); 
       ddiag(); 
       break;
-
-    case 'J':
     #if BOARD_TYPE == ARCH_BRIDGE //define ARCH_BRIDGE specific tests
-      if (data_pkt[2] == 'C') { //Fast Clock functions. <JC minutes rate> to set. minutes has range 0-1440, number of minutes in 24h. 
-        Serial.printf("Fast Clock Command: \n");
-        Loconet.slot_read(123); //Broadcast fast clock
-        break;          
-      }
-    #endif
+
+    case 'H': //Turnout command
+      Serial.printf("DCCEX Turnout command \n");
+      rx_req_sw();
       
+      break; 
+      
+    case 'j': 
+    //jC is fastclock echo
     break; 
 
-      
+    case 'J': 
+      if (data_pkt[2] == 'C') { //Fast Clock functions. <JC minutes rate> to set. minutes has range 0-1440, number of minutes in 24h. 
+        Serial.printf("JC: Fast Clock currently days %u %u:%u:%u \n", Fastclock.days, Fastclock.hours, Fastclock.minutes, Fastclock.seconds);
+        Loconet.slot_read(123); //Broadcast fast clock
+        
+        break;          
+      }
+    #endif 
+    break; 
+    case 'X': //DCCEX received invalid command. 
+      break; 
     default:
     Serial.printf("Invalid Command \n");
     
@@ -192,7 +209,14 @@ void DCCEX_Class::ddiag() { //Diagnostic mode features
 
 void DCCEX_Class::Fastclock_get() {
 #if BOARD_TYPE == ARCH_BRIDGE
-
+  uint16_t time_minutes = 0; 
+   char output[15]; 
+   Fastclock.clock_get();
+   time_minutes = Fastclock.minutes + Fastclock.hours * 60;
+   fastclock_next = 60000000 / Fastclock.set_rate; //Ping faster at higher rates
+   sprintf(output, "<JC %u %u>\n", time_minutes, Fastclock.set_rate); 
+   tx_send(output, 15); 
+   fastclock_ping = time_us; 
 #endif
   return;
 }
@@ -203,19 +227,35 @@ void DCCEX_Class::Fastclock_set() {
 #endif
   return;
 }
-void DCCEX_Class::tx_send(char* txdata, uint8_t txsize){
-  dccex_port.uart_write(txdata, txsize);
+
+void DCCEX_Class::rx_req_sw(){ //Received switch command
+   uint8_t i = 3; 
+   uint16_t addr = 0; 
+   bool dir; 
+   while (data_pkt[i] != ' ') {
+     addr = addr * 10 + (data_pkt[i] - 48); //Convert str to int
+     i++;
+   } 
+   i++; //Should put us on the state byte. 
+   dir = (data_pkt[i] - 48);
+  Serial.printf("DCCEX commanded turnout %u to state %u \n", addr, dir); 
+  #if LN_TO_DCCEX == true //Only send if allowed to. 
+  Loconet.tx_req_sw(addr, dir, 1); //State defaults to 1 for now. It may be necessary to add a delay off that sends a 2nd packet with state 0. 
+  #endif
   return; 
 }
 
-void DCCEX_Class::ext_send(char* txdata, uint8_t txsize, uint8_t src){
-  if ((src == 2) && (LN_TO_DCCEX == false)) { //Loconet source. 
-    return;     
-  }
-  if ((src == 3) && (RS_TO_DCCEX == false)) { //Railsync source. 
-    return;     
-  }
-  tx_send(txdata, txsize); 
+void DCCEX_Class::tx_req_sw(uint16_t addr, bool dir, bool state){ //Send switch command
+  char output[15];
+  sprintf(output, "<T %u %u>\n", addr, dir);
+  tx_send(output, 15);
+  return; 
+}
+
+void DCCEX_Class::tx_send(char* txdata, uint8_t txsize){
+  dccex_port.uart_write(txdata, txsize);
+  Serial.printf(txdata);
+  //Serial.printf(" < sent to DCCEX \n");
   return; 
 }
 
