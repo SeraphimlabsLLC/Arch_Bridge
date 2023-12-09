@@ -86,7 +86,7 @@ void Fastclock_class::clock_get() {
   
   minutes = time_delta / US_PER_MINUTE; //time_delta / uS per minute
   time_delta = time_delta - ( uint64_t(minutes) * US_PER_MINUTE); //Subtract minutes from time_delta 
-  frac_minutes_uS = time_delta; 
+  minutes_rem_uS = time_delta; 
    
   seconds = time_delta / US_PER_SECOND; //uS per second
   time_delta = time_delta - ( uint64_t(seconds) * US_PER_SECOND); //Subtract seconds from time_delta

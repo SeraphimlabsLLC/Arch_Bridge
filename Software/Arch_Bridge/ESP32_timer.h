@@ -31,7 +31,7 @@ class Fastclock_class {
   uint8_t hours; 
   uint8_t minutes; 
   uint8_t seconds; 
-  uint32_t frac_minutes_uS; //uS remainder after calculating minutes time. Used in Loconet.
+  uint32_t minutes_rem_uS; //uS remainder after calculating minutes time. Used in Loconet.
   
   void clock_init(); //Initialize fastclock to defined value and record set time
   void clock_set(uint8_t s_rate, uint8_t s_days, uint8_t s_hours, uint8_t s_minutes, uint8_t s_seconds, uint32_t s_uS_remain); //Set fastclock to specified time 

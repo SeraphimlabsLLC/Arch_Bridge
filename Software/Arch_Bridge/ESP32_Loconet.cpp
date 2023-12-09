@@ -950,12 +950,20 @@ void LN_Class::slot_fastclock_set(uint8_t rx_pkt){
   slot_ptr[slotnum]->slot_data[5] = rx_packets[rx_pkt]->data_ptr[8]; //Hours
   slot_ptr[slotnum]->slot_data[4] = LN_TRK; //Global status byte. Not actually used here, set anyway just because. 
   slot_ptr[slotnum]->slot_data[3] = rx_packets[rx_pkt]->data_ptr[6]; //Minutes
-  slot_ptr[slotnum]->slot_data[2] = rx_packets[rx_pkt]->data_ptr[5]; //Fractional minutes
-  slot_ptr[slotnum]->slot_data[1] = rx_packets[rx_pkt]->data_ptr[4]; //Fractional minutes. 
+  slot_ptr[slotnum]->slot_data[2] = rx_packets[rx_pkt]->data_ptr[5]; //Fractional minutes high
+  slot_ptr[slotnum]->slot_data[1] = rx_packets[rx_pkt]->data_ptr[4]; //Fractional minutes low 
   slot_ptr[slotnum]->slot_data[0] = rx_packets[rx_pkt]->data_ptr[3]; //Rate
 
-  //Frac_MinsH (0-127) to seconds conversion.   
-  uint8_t s_seconds = uint32_t(472440 * (127 - rx_packets[rx_pkt]->data_ptr[5])) / 1000000; 
+  //Frac_Mins to uS seconds conversion.  
+  uint32_t frac_minutes_uS = 0; //frac_minutes converted to uS
+  uint8_t s_seconds = 0; 
+  if ((slot_ptr[slotnum]->slot_data[2] - 120) > 0) { //Minimum value is 120, which has a shorter period than 121-127
+   frac_minutes_uS = (slot_ptr[slotnum]->slot_data[2] - 121) * 8388480 + 1245165; //rollovers from 121-127 + the shorter period of cycle 120
+  } 
+  frac_minutes_uS = frac_minutes_uS + (slot_ptr[slotnum]->slot_data[1] * 65535); 
+
+  //Convert the uS to sec  s_seconds = minutes_rem_uS / 10000000;
+  //uint8_t s_seconds = uint32_t(472440 * (127 - rx_packets[rx_pkt]->data_ptr[5])) / 1000000; 
   if (s_seconds > 59) { //Probable math error here, this works around it. 
     s_seconds = s_seconds - 60; 
   }
@@ -970,9 +978,30 @@ void LN_Class::slot_fastclock_set(uint8_t rx_pkt){
 
 void LN_Class::slot_fastclock_get(){
   const uint8_t slotnum = 123;
+  uint8_t minsl = 0; 
+  uint8_t minsh = 120;
+  uint32_t frac_mins_uS = 0;
   //Serial.printf("Processing fast clock update. \n");
   Fastclock.clock_get(); //Update fastclock values
-  slot_ptr[slotnum]->last_refresh = TIME_US;
+  //Convert minutes_rem_uS to frac_minsh and frac_minsl. 
+  frac_mins_uS = Fastclock.minutes_rem_uS;
+  if (frac_mins_uS > 1245165) { //Equivalent minsl count of 109 to 127, used for minsh cycle 0. 
+    minsh++; 
+    frac_mins_uS = frac_mins_uS - 1245165; 
+  } else { 
+    minsl = 109; //Prime minsl for the 1st loop
+  }
+  while (frac_mins_uS > 8388480) { //Equivalent minsl count of 0-127, used for cycles 1-7
+    minsh++; 
+    frac_mins_uS = frac_mins_uS - 8388480;
+  }
+  if (minsh > 127) { //Enforce high limit of 127. 
+    minsh = 127; 
+  }
+  minsl = minsl + frac_mins_uS / 65535; //Divide out the remainder for minsl. 
+
+  
+  slot_ptr[slotnum]->last_refresh = time_us; //The existing global should have been set by Fastclock.clock_get(); 
 /* //Leave the ID untouched, it is set when the clock is. 
   slot_ptr[slotnum]->slot_data[9] = 0x7F; //ID2, 0x7x = PC
   slot_ptr[slotnum]->slot_data[8] = 0x7F; //ID1, 0x7F = PC */
@@ -981,8 +1010,8 @@ void LN_Class::slot_fastclock_get(){
   slot_ptr[slotnum]->slot_data[5] = slot_hours + Fastclock.hours; //128 - 24
   slot_ptr[slotnum]->slot_data[4] = LN_TRK; //Global slot byte;
   slot_ptr[slotnum]->slot_data[3] = slot_minutes + Fastclock.minutes; //127 - 60 or 128 - 60 depending on DCS100 compat mode
-  slot_ptr[slotnum]->slot_data[2] = 127 - Fastclock.frac_minutes_uS / 472441; //frac_minutes_us is the remaining uS after calculating minutes. FRAC_MINS_H, 0-127 tick count
-  slot_ptr[slotnum]->slot_data[1] = 127 - (Fastclock.frac_minutes_uS - (slot_ptr[123]->slot_data[2] * 472441)) / 3872; //FRAC_MINS_L, 0-127 tick count
+  slot_ptr[slotnum]->slot_data[2] = minsh; //127 - Fastclock.minutes_rem_uS / 472441; //frac_minutes_us is the remaining uS after calculating minutes. FRAC_MINS_H, 0-127 tick count
+  slot_ptr[slotnum]->slot_data[1] = minsl; //127 - (Fastclock.frac_minutes_uS - (slot_ptr[123]->slot_data[2] * 472441)) / 3872; //FRAC_MINS_L, 0-127 tick count
   slot_ptr[slotnum]->slot_data[0] = Fastclock.set_rate; //Clock multiplier
   return; 
 }
