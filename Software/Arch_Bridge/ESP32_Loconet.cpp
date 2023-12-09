@@ -253,28 +253,43 @@ uint8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
     case 0x82: //Global power off
       Serial.print("Power off requested \n"); 
       LN_TRK = LN_TRK & 0xFE; //Set power bit off in TRK byte
+       #if DCCEX_TO_LN == true //Only send if allowed to. 
       //dccex.power(false);
+      #endif
       break;
     case 0x83: //Global power on
       Serial.print("Power on requested \n");
       LN_TRK = LN_TRK | 0x03; //Modify TRK byte, power on and clear estop. 
+       #if DCCEX_TO_LN == true //Only send if allowed to. 
       //dccex.power(true);
+      #endif
       break;
     case 0x85: //Force idle, broadcast estop
       Serial.print("<!> \n"); //DCC-EX Estop
       LN_TRK = LN_TRK & 0xFD; //Clear estop bit for global estop. 
+       #if DCCEX_TO_LN == true //Only send if allowed to. 
+       
+       #endif
       break; 
       
     //4 byte opcodes: 
     case 0xA0: //Set slot speed
       slotnum = rx_packets[rx_pkt]->data_ptr[1];
       slot_ptr[slotnum]->slot_data[2] = rx_packets[rx_pkt]->data_ptr[2]; //Update speed byte
-      slot_ptr[slotnum]->last_refresh = TIME_US; 
+      slot_ptr[slotnum]->last_refresh = TIME_US;
+      #if DCCEX_TO_LN == true //Only send if allowed to.
+        dccex.tx_cab_speed(slot_ptr[slotnum]->slot_data[1] + uint16_t (slot_ptr[slotnum]->slot_data[6] << 7),
+        slot_ptr[slotnum]->slot_data[2], bool(~(slot_ptr[slotnum]->slot_data[3]) & 0x20)); //Extract dir bit
+      #endif
       break;
     case 0xA1: //Set slot dirf
       slotnum = rx_packets[rx_pkt]->data_ptr[1];
       slot_ptr[slotnum]->slot_data[3] = rx_packets[rx_pkt]->data_ptr[2]; //Update dirf byte
-      slot_ptr[slotnum]->last_refresh = TIME_US; 
+      slot_ptr[slotnum]->last_refresh = TIME_US;
+      #if DCCEX_TO_LN == true //Only send if allowed to.
+        dccex.tx_cab_speed(slot_ptr[slotnum]->slot_data[1] + uint16_t (slot_ptr[slotnum]->slot_data[6] << 7), 
+        slot_ptr[slotnum]->slot_data[2], bool(~(slot_ptr[slotnum]->slot_data[3]) & 0x20)); 
+      #endif       
       break;
     case 0xA2: //Set slot sound
       slotnum = rx_packets[rx_pkt]->data_ptr[1];
@@ -322,7 +337,7 @@ uint8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
       //send_long_ack(0xBD, 0x7F); 
       break;
     case 0xBF: //;Request Locomotive Address
-      slotnum = loco_select(rx_packets[rx_pkt]->data_ptr[2], 0); //Only short addresses supported at this time. 
+      slotnum = loco_select(rx_packets[rx_pkt]->data_ptr[1], rx_packets[rx_pkt]->data_ptr[2]); //0xBF addr_h, addr_l, chk 
       if (slotnum < 0) { //No free slot found. Send LACK fail. 
         send_long_ack(0xBF, 0);
         break;
@@ -330,7 +345,7 @@ uint8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
       Serial.printf("Request for loco %u found/set in slot %u \n", rx_packets[rx_pkt]->data_ptr[2], slotnum);
       //slot_data[0] already set to free if this is a new assignment 
       slot_ptr[slotnum] -> slot_data[1] = rx_packets[rx_pkt]->data_ptr[2];
-      slot_ptr[slotnum] -> slot_data[6] = 0;
+      slot_ptr[slotnum] -> slot_data[6] = rx_packets[rx_pkt]->data_ptr[1];
       slot_read(slotnum); //Read the slot back to the source. 
     
       break;                                   
@@ -631,10 +646,10 @@ void LN_Class::rx_req_sw(uint8_t rx_pkt){
   uint8_t cmd = 0; 
   addr = (((rx_packets[rx_pkt]->data_ptr[2]) & 0x0F) << 8) | (rx_packets[rx_pkt]->data_ptr[1] & 0x7F);
   cmd = ((rx_packets[rx_pkt]->data_ptr[2]) & 0xF0);
-  Serial.printf("Req switch addr %u direction %u, output %u \n", addr + 1, (cmd & 0x20) >> 5, (cmd & 0x10) >> 4);
+  Serial.printf("Req switch addr %u direction %u, output %u \n", addr, (cmd & 0x20) >> 5, (cmd & 0x10) >> 4);
   #if DCCEX_TO_LN == true //Only send if allowed to. 
   if (((cmd & 0x10) >> 4) == true) { //only forward if output is on. 
-    dccex.tx_req_sw(addr + 1, (cmd & 0x20) >> 5, (cmd & 0x10) >> 4);
+    dccex.tx_req_sw(addr, (cmd & 0x20) >> 5, (cmd & 0x10) >> 4);
   }
   #endif
 
@@ -654,6 +669,15 @@ void LN_Class::tx_req_sw(uint16_t addr, bool dir, bool state){
   tx_packets[tx_index]->data_ptr[2] = sw2; 
   tx_packets[tx_index]->Make_Checksum(); //Populate checksum  
   //Don't send this one right away, let it go through the queue. 
+  return;
+}
+
+void LN_Class::rx_cab(){
+
+  return;
+}
+void LN_Class::tx_cab_speed(uint16_t addr, uint8_t spd, bool dir){
+
   return;
 }
 
@@ -773,10 +797,13 @@ LN_Packet::LN_Packet (){ //Functionality moved to LN_Packet::Reset_Packet()
  * Slot Manager (LN_Slot_data) Functions *
 ******************************************/
 
-int8_t LN_Class::loco_select(uint8_t low_addr, uint8_t high_addr){ //Return the slot managing this locomotive, or assign one if new. 
+int8_t LN_Class::loco_select(uint8_t high_addr, uint8_t low_addr){ //Return the slot managing this locomotive, or assign one if new. 
   int8_t slotnum = -1; //Slot numbers < 0 indicate failure to find 
   uint8_t freeslotnum = 0; //First empty slot, we can note this while scanning for the address to save time
-  uint8_t i = 1; //Skip slot 0 since it is system data.
+  uint8_t i; //Skip slot 0 since it is system data.
+
+ //Note: If high_addr > 0 there may be bit shifting required between high_addr and low_addr
+  
   for (i = 1; i < 120; i++) { //Scan slots 1-120 to see if this loco is known
     if (!(slot_ptr[i])){ //Slot has not been initialized.
       if (freeslotnum == 0) { //If this is the first unused or free slot, take note.
@@ -792,11 +819,16 @@ int8_t LN_Class::loco_select(uint8_t low_addr, uint8_t high_addr){ //Return the 
       return i;
     }
   }
+  //Didn't find that loco in an existing slot. Assign one for it.
   slotnum = freeslotnum;
   if (!(slot_ptr[slotnum])){ //Empty slot. Initialize it. 
     slot_new(slotnum); 
-    slot_ptr[slotnum] -> slot_data[0] = 0; //Slot status set to free.
   }
+    slot_ptr[slotnum] -> slot_data[0] = 0; //Slot status set to free.
+    slot_ptr[slotnum] -> slot_data[1] = low_addr;
+    slot_ptr[slotnum] -> slot_data[6] = high_addr
+    
+    ;
   
   return slotnum;
 }

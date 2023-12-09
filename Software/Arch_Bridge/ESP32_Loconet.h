@@ -121,9 +121,13 @@ class LN_Class {
  
   void loop_process(); //Process time based data
 
-      //Opcode handlers: 
+  //Turnout handlers 
   void rx_req_sw(uint8_t rx_pkt); // 0xB0 request switch
   void tx_req_sw(uint16_t addr, bool dir, bool state); //Send 0xB0
+
+  //Throttle functions
+  void rx_cab(); 
+  void tx_cab_speed(uint16_t addr, uint8_t spd, bool dir);
 
   int8_t slot_new(uint8_t index); //Check if a slot is empty and initialize it. 
   void slot_read(int8_t slotnum); //Handle slot reads
@@ -132,7 +136,7 @@ class LN_Class {
   void slot_fastclock_set(uint8_t rx_pkt);
   void slot_fastclock_get();
 
-  int8_t loco_select(uint8_t low_addr, uint8_t high_addr); //Return the slot managing this locomotive, or assign one if new. 
+  int8_t loco_select(uint8_t high_addr, uint8_t low_addr); //Return the slot managing this locomotive, or assign one if new. 
   
   LN_Class(); //Constructor
 

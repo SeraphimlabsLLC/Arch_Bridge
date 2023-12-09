@@ -170,6 +170,9 @@ void DCCEX_Class::rx_decode(){
         
         break;          
       }
+    case 'l': //Throttle broadcast
+      rx_cab();
+      
     #endif 
     break; 
     case 'X': //DCCEX received invalid command. 
@@ -248,6 +251,52 @@ void DCCEX_Class::rx_req_sw(){ //Received switch command
 void DCCEX_Class::tx_req_sw(uint16_t addr, bool dir, bool state){ //Send switch command
   char output[15];
   sprintf(output, "<T %u %u>\n", addr, dir);
+  tx_send(output, 15);
+  return; 
+}
+
+uint16_t DCCEX_Class::find_sw(uint16_t addr) {
+
+  return 0; 
+}
+
+void DCCEX_Class::rx_cab(){
+   uint8_t i = 3; 
+   uint16_t addr = 0; 
+   uint8_t reg = 0; 
+   uint8_t spd; 
+   bool dir = 0;
+   uint8_t funct; 
+   while (data_pkt[i] != ' ') { //addr str to int
+     addr = addr * 10 + (data_pkt[i] - 48);
+     i++;
+   } 
+   i++;
+   while (data_pkt[i] != ' ') {//reg str to int
+     reg = reg * 10 + (data_pkt[i] - 48);
+     i++;
+   } 
+   i++;
+   while (data_pkt[i] != ' ') {//reg str to int
+     spd = spd * 10 + (data_pkt[i] - 48);
+     i++;
+   } 
+   i++;
+   while (data_pkt[i] != ' ') {//reg str to int
+     funct = funct * 10 + (data_pkt[i] - 48);
+     i++;
+   } 
+   dir = spd << 7;
+   spd = spd & 0x7F;
+    #if LN_TO_DCCEX == true //Only send if allowed to. 
+      Loconet.tx_cab_speed(addr, spd, dir);
+    #endif
+  return; 
+}
+void DCCEX_Class::tx_cab_speed(uint16_t addr, uint8_t spd, bool dir){
+
+  char output[15]; 
+  sprintf(output, "<t %u %u %u>\n", addr, spd, dir);
   tx_send(output, 15);
   return; 
 }

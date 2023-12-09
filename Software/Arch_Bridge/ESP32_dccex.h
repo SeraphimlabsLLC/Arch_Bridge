@@ -24,8 +24,10 @@ void dccex_loop(); //DCCEX_Class::dccex_loop();
 
 /*
 class Turnout_Sensor{
-  uint16_t addr; 
-  uint8_t state; //bit 0 = output 0/1, bit 1 = direction 0/1. RCN_213 has direction 1 as closed and 0 as thrown. 
+  uint16_t addr; //DCC address
+  uint16_t ID; //DCC-EX turnout or sensor ID
+  uint8_t state; 
+  //bit 0 = output 0/1, bit 1 = direction 0/1. RCN_213 has direction 1 as closed and 0 as thrown. Bit 7 as type, 0 for turnout 1 for sensor. 
   uint8_t source; //Where it was learned from: 1 = DCC, 2 = Loconet, 3 = DCCEX
   uint64_t last_cmd_us; //Time of last action  
 }*/
@@ -48,9 +50,14 @@ class DCCEX_Class {
   void Fastclock_set();
   void Fastclock_get(); 
 
-  //Opcode handlers: 
+  //Turnout functions: 
   void rx_req_sw(); //Received switch command
   void tx_req_sw(uint16_t addr, bool dir, bool state); //Send switch command
+  uint16_t find_sw(uint16_t addr); 
+
+  //Throttle functions
+  void rx_cab(); 
+  void tx_cab_speed(uint16_t addr, uint8_t spd, bool dir);
 
   private:
   uint64_t fastclock_ping;
