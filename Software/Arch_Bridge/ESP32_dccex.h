@@ -22,19 +22,21 @@ void dccex_loop(); //DCCEX_Class::dccex_loop();
 
 //DCC-EX UART settings, from ESP32_uart.h: (uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
 
-/*
+
 class Turnout_Sensor{
   uint16_t addr; //DCC address
   uint16_t ID; //DCC-EX turnout or sensor ID
   uint8_t state; 
-  //bit 0 = output 0/1, bit 1 = direction 0/1. RCN_213 has direction 1 as closed and 0 as thrown. Bit 7 as type, 0 for turnout 1 for sensor. 
+  //bit 0 = output 0/1, bit 1 = direction 0/1. RCN_213 has direction 1 as closed and 0 as thrown. 
   uint8_t source; //Where it was learned from: 1 = DCC, 2 = Loconet, 3 = DCCEX
   uint64_t last_cmd_us; //Time of last action  
-}*/
+};
 
 class DCCEX_Class {
   public:
-  ESP_Uart dccex_port; //Class inside a class
+  ESP_Uart dccex_port; //uart access
+  Turnout_Sensor* turnout[MAX_TURNOUTS];
+  Turnout_Sensor* sensor[MAX_SENSORS];
   uint8_t rx_read_processed;
   uint64_t rx_last_us; 
   //uint8_t rx_read_len;

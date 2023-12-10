@@ -315,7 +315,7 @@ void DCCEX_Class::dccex_init(){
   dccex_port.rx_read_processed = 255; //Mark buffer processed so it can be read again. 
   #ifdef DCCEX_UART //Use our own uart
     DCCEX_UART
-    Serial.printf("DCCEX running on DCCEX_UART, uart %u, dccex_port.rx_read_data %u, dccex_port.tx_write_data %u \n",  dccex_port.uart_num, dccex_port.rx_read_data, dccex_port.tx_write_data);
+    Serial.printf("DCCEX running on DCCEX_UART, uart %u\n",  dccex_port.uart_num);
   #endif   
   return;
 }

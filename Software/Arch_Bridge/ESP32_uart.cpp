@@ -33,16 +33,6 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t
   rx_read_data = new char[rx_buff]; //Define rx_read_data as char[rx_buff]
   //Serial.printf("Uart %u rx_read_data %u \n", uart_num, rx_read_data);
 
-  //Configure TX buffer
-  if (tx_buff < 4) { 
-    tx_buff = 4;
-  }
-  if (tx_write_data) {
-    delete tx_write_data; //Delete any existing write buffer
-  }
-  tx_write_data = new char[tx_buff]; //Define tx_write_data as char[tx_buff]
-  //Serial.printf("Uart %u tx_write_data %u \n", uart_num, tx_write_data);
-  
   if (uart_num == 0) { //Use Arduino serial library for now. This will eventually need to be replaced. 
     Serial.begin (baudrate);
     Serial.printf(BOARD_ID);
@@ -158,8 +148,5 @@ void ESP_Uart::rx_flush(){ //Reset the rx buffer to 0
 }
 
 void ESP_Uart::tx_flush() { //Reset the tx buffer
-  delete tx_write_data; //delete the previous result so we can define it again at a new length
-  tx_write_len = 1;
-  tx_write_data = new char[tx_buff]; 
   return;
 }

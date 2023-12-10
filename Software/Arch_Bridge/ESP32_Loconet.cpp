@@ -974,8 +974,6 @@ void LN_Class::slot_fastclock_set(uint8_t rx_pkt){
   return; 
 }
 
-
-
 void LN_Class::slot_fastclock_get(){
   const uint8_t slotnum = 123;
   uint8_t minsl = 0; 
@@ -1005,7 +1003,10 @@ void LN_Class::slot_fastclock_get(){
 /* //Leave the ID untouched, it is set when the clock is. 
   slot_ptr[slotnum]->slot_data[9] = 0x7F; //ID2, 0x7x = PC
   slot_ptr[slotnum]->slot_data[8] = 0x7F; //ID1, 0x7F = PC */
-  slot_ptr[slotnum]->slot_data[7] = 32; //Bit D6 = 1 for valid clock data
+  if (slot_ptr[slotnum]->slot_data[7] == 0) { //Only change slot validity if it is invalid. 
+    slot_ptr[slotnum]->slot_data[7] = 32; //Bit D6 = 1 for valid clock data  
+  }
+  
   slot_ptr[slotnum]->slot_data[6] = Fastclock.days; //Days since fast clock init
   slot_ptr[slotnum]->slot_data[5] = slot_hours + Fastclock.hours; //128 - 24
   slot_ptr[slotnum]->slot_data[4] = LN_TRK; //Global slot byte;
@@ -1029,15 +1030,14 @@ int8_t LN_Class::slot_new(uint8_t slotnum) { //Initialize empty slots
     return -1; 
   }  
   //Implement special slot initialization
-  if (slotnum == 123) { //Fast Clock, set last_refresh to 0 so the initial load happens right away. 
-    slot_ptr[slotnum]->last_refresh = 0;  
-    slot_ptr[slotnum]->next_refresh = 80000000; //Fastclock sends pings around every 80-100 seconds instead of receiving within 200. 
-    slot_ptr[slotnum]->slot_data[9] = 0x7F; //ID2, 0x7x = PC
+  if (slotnum == 123) { //Fast Clock
+    slot_ptr[slotnum]->last_refresh = 0; //last refresh of 0 forces initial load quickly.   
+    slot_ptr[slotnum]->next_refresh = 90000000; //Fastclock sends pings around every 80-100 seconds instead of receiving within 200. 
+    slot_ptr[slotnum]->slot_data[9] = 0x70; //ID2, 0x7x = PC
     slot_ptr[slotnum]->slot_data[8] = 0x7F; //ID1, 0x7F = PC
   }
   return slotnum;
 }
-
 
 
 uint8_t LN_Class::slot_del(uint8_t index) {
