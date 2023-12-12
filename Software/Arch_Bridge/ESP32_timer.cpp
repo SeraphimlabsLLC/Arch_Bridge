@@ -64,7 +64,7 @@ void Fastclock_class::clock_set(uint8_t s_rate, uint8_t s_days, uint8_t s_hours,
   set_us = (s_days * US_PER_DAY) + (s_hours * US_PER_HOUR) + (s_minutes * US_PER_MINUTE) + (s_seconds * US_PER_SECOND) + s_uS_remain;
   set_at_us = TIME_US; //Time last set at
   active = true; 
-  Serial.printf("Fastclock: Clock set to day %u, %u:%u:%u \n", s_days, s_hours, s_minutes, s_seconds);
+  Serial.printf("Fastclock: Clock set to day %u, %u:%u:%u, rate %ux\n", s_days, s_hours, s_minutes, s_seconds, set_rate);
   return;
 }
 

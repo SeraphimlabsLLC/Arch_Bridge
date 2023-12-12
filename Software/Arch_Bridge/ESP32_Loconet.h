@@ -42,16 +42,16 @@
 #define LN_COL_BACKOFF 20
 
 //typedef enum LN_Priority_min {Master = 0, Sensor = 2, Throttle = 6;
-//#if LN_PRIORITY == LN_MASTER 
+//#if LN_PRIORITY == MASTER 
   #define LN_MAX_PRIORITY 0
   #define LN_MIN_PRIORITY 20
 //#endif
 /*
-#if LN_PRIORITY == LN_SENSOR
+#if LN_PRIORITY == SENSOR
   #define LN_MAX_PRIORITY 2 
   #define LN_MIN_PRIORITY 6
 #endif  
-#if LN_PRIORITY == LN_THROTTLE
+#if LN_PRIORITY == THROTTLE
   #define LN_MAX_PRIORITY 6
   #define LN_MIN_PRIORITY 20
 #endif 

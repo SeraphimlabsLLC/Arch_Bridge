@@ -82,12 +82,13 @@ void Tracks_Loop(){ //Check tasks each scan cycle.
   return;
 }
 
-void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint32_t adcscale, int32_t adcoffset, uint32_t adc_ol_trip) { 
+void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint32_t adcscale, int32_t adcoffset, uint32_t adc_ol_trip, char track) { 
     max_tracks++; //Add 1 to max tracks
     index = max_tracks; //store the index of this track. 
     #ifdef DEBUG
       Serial.printf("Configuring Track %d \n" , index);
     #endif
+    trackID = track; //track ID char for DCCEX
     powerstate = 0; //Power is off by default
     powermode = 0; //Mode is not configured by default  
     //Copy config values to class values
@@ -119,7 +120,7 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
 }
 
 void TrackChannel::ModeChange (uint8_t newmode){ //Updates GPIO modes when changing powermode
-  //powermode 0 = none, 1 = DCC_external, 2 = DCC_override, 3 = DC.  
+  //powermode 0 = none, 1 = DCC_external, 2 = DCC_override, 3 = DC, 4 = DCX.
   gpio_set_level(gpio_num_t(enable_out_pin), 0); //Always turn the track off before changing modes
   switch (newmode) {     
     case 0: //Not Configured, reset the pins and don't configure them
@@ -142,12 +143,18 @@ void TrackChannel::ModeChange (uint8_t newmode){ //Updates GPIO modes when chang
       gpio_set_direction(gpio_num_t(brake_pin), GPIO_MODE_OUTPUT); 
       Serial.printf("Track %d configured to DCC INT \n", index);
     break;
-    case 3: //DC Mode:
+    case 3: //DC:
+    case 4: //DC Reverse (DCX): 
     //todo: DC mode IO changes. For now it is the same as mode 2.
       gpio_reset_pin(gpio_num_t(reverse_pin));
       gpio_set_direction(gpio_num_t(reverse_pin), GPIO_MODE_OUTPUT); 
       gpio_reset_pin(gpio_num_t(brake_pin));
       gpio_set_direction(gpio_num_t(brake_pin), GPIO_MODE_OUTPUT); 
+      if (newmode == 4) { //DC Reversed
+        gpio_set_level(reverse_pin, 1);
+      } else {
+        gpio_set_level(reverse_pin, 0);
+      }
       //TODO: Insert commands to enable brake PWM
       Serial.printf("Track %d configured to DC \n", index);
     break;

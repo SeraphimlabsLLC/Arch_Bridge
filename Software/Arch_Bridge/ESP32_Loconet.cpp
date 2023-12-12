@@ -275,6 +275,10 @@ uint8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
     //4 byte opcodes: 
     case 0xA0: //Set slot speed
       slotnum = rx_packets[rx_pkt]->data_ptr[1];
+      if (!(slot_ptr[slotnum])) { //Invalid slot, do nothing. 
+        break; 
+      }
+      //if (slot_ptr[slotnum].
       slot_ptr[slotnum]->slot_data[2] = rx_packets[rx_pkt]->data_ptr[2]; //Update speed byte
       slot_ptr[slotnum]->last_refresh = TIME_US;
       #if DCCEX_TO_LN == true //Only send if allowed to.
@@ -284,6 +288,9 @@ uint8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
       break;
     case 0xA1: //Set slot dirf
       slotnum = rx_packets[rx_pkt]->data_ptr[1];
+      if (!(slot_ptr[slotnum])) { //Invalid slot, do nothing. 
+        break; 
+      }
       slot_ptr[slotnum]->slot_data[3] = rx_packets[rx_pkt]->data_ptr[2]; //Update dirf byte
       slot_ptr[slotnum]->last_refresh = TIME_US;
       #if DCCEX_TO_LN == true //Only send if allowed to.
@@ -293,6 +300,9 @@ uint8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
       break;
     case 0xA2: //Set slot sound
       slotnum = rx_packets[rx_pkt]->data_ptr[1];
+      if (!(slot_ptr[slotnum])) { //Invalid slot, do nothing. 
+        break; 
+      }
       slot_ptr[slotnum]->slot_data[3] = rx_packets[rx_pkt]->data_ptr[7]; //Update sound byte
       slot_ptr[slotnum]->last_refresh = TIME_US; 
       break;      
@@ -354,6 +364,9 @@ uint8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
     //Variable byte opcodes: 
     case 0xE7: //Slot read data
       slotnum = rx_packets[rx_pkt]->data_ptr[2];
+      if (!(slot_ptr[slotnum])) { //Invalid slot, do nothing. 
+        break; 
+      }
       if (slotnum == 123) { //Set fast clock using sync from some other device. 
         slot_fastclock_set(rx_pkt);
       }
@@ -657,6 +670,7 @@ void LN_Class::rx_req_sw(uint8_t rx_pkt){
 }
 
 void LN_Class::tx_req_sw(uint16_t addr, bool dir, bool state){
+  
   uint8_t tx_index; 
   uint8_t sw1 = addr & 0x7F; //Truncate to addr bits 0-6
   uint8_t sw2 = ((addr >> 8) & 0x0F) | (0x10 * state) | (0x20 * dir); //addr bits 7-10 | (state * 16) | (dir * 32)
@@ -677,7 +691,45 @@ void LN_Class::rx_cab(){
   return;
 }
 void LN_Class::tx_cab_speed(uint16_t addr, uint8_t spd, bool dir){
+  int8_t slotnum;
+  uint8_t dirb = dir * 0x20; 
+  slotnum = loco_select(uint8_t ((addr >> 7) & 0x7F), uint8_t (addr & 0x7F));
+  slot_ptr[slotnum]->slot_data[2] = spd; //Update speed byte
+  if (dir == true) { //Inverse of  bool(~(slot_ptr[slotnum]->slot_data[3]) & 0x20)); 
+    slot_ptr[slotnum]->slot_data[3] = slot_ptr[slotnum]->slot_data[3] & 0xDF; //Clear dir bit
+  } else {
+    slot_ptr[slotnum]->slot_data[3] = slot_ptr[slotnum]->slot_data[3] | 0x20; //Set dir bit
+  }
+  slot_ptr[slotnum]->slot_data[1] | 0x20; //D5 to 11, IN_USE
+  slot_ptr[slotnum]->next_refresh = 200000000; //200 seconds
+  slot_ptr[slotnum]->last_refresh = TIME_US;
+  Serial.printf("LN_Class::tx_cab_speed Slot %u upated with throttle info. Preparing new data \n");
+  
+//Loconet response: 
+  uint8_t response_size = 14; //Packet is 14 bytes long, should be 0x0E
+  uint8_t tx_index = tx_packet_getempty();
+  tx_packets[tx_index]->state = 1;
+  tx_packets[tx_index]->priority = LN_MAX_PRIORITY; 
+  tx_packets[tx_index]->data_len = response_size;
+  //Serial.printf("Preparing Loconet reply data \n");
+  uint8_t i = 0;
+  for (i = 0; i < 10; i++) {
+    tx_packets[tx_index]->data_ptr[i + 3] = slot_ptr[slotnum]->slot_data[i]; //Copy values from slot_low_data
 
+  }
+  tx_packets[tx_index]->data_ptr[0] = 0xEF; //OPC_WR_SL_DATA
+  tx_packets[tx_index]->data_ptr[1] = response_size; 
+  tx_packets[tx_index]->data_ptr[2] = slotnum;
+  tx_packets[tx_index]->data_ptr[7] = LN_TRK; //Loconet slot global status. Although slot_data[4] is defined, it isn't used. 
+  //Serial.printf("Calculating checksum \n");
+  tx_packets[tx_index]->Make_Checksum(); //Populate checksum
+  i = 0;
+
+  tx_packets[tx_index]->state = 1; //Mark as pending packet
+  Serial.printf("LN_Class::tx_cab_speed ready to send updated throttle info \n");
+  if (tx_pending == -1) { //Send now if possible. 
+    tx_send(tx_index);
+  }
   return;
 }
 
@@ -824,7 +876,7 @@ int8_t LN_Class::loco_select(uint8_t high_addr, uint8_t low_addr){ //Return the 
   if (!(slot_ptr[slotnum])){ //Empty slot. Initialize it. 
     slot_new(slotnum); 
   }
-    slot_ptr[slotnum] -> slot_data[0] = 0; //Slot status set to free.
+    slot_ptr[slotnum] -> slot_data[0] = 3; //Slot status set to free, 128 step speed
     slot_ptr[slotnum] -> slot_data[1] = low_addr;
     slot_ptr[slotnum] -> slot_data[6] = high_addr
     
@@ -855,13 +907,6 @@ void LN_Class::slot_read(int8_t slotnum){ //Handle slot reads
   tx_packets[tx_index]->data_len = response_size;
   //Serial.printf("Preparing Loconet reply data \n");
   i = 0;
-  /*
-  while (i < response_size) {
-   Serial.printf("%x ", tx_packets[tx_index]->data_ptr[i]);
-   i++;
-  }
-  Serial.printf("\n");*/
-
   for (i = 0; i < 10; i++) {
     tx_packets[tx_index]->data_ptr[i + 3] = slot_ptr[slotnum]->slot_data[i]; //Copy values from slot_low_data
 
@@ -873,16 +918,7 @@ void LN_Class::slot_read(int8_t slotnum){ //Handle slot reads
   //Serial.printf("Calculating checksum \n");
   tx_packets[tx_index]->Make_Checksum(); //Populate checksum
   i = 0;
-  /*
-  Serial.printf("Response: ");
-  while (i < response_size) {
-    Serial.printf("%x ", tx_packets[tx_index]->data_ptr[i]);
-    //LN_port.tx_data[LN_port.tx_write_ptr + i] = tx_packets[tx_index]->data_ptr[i];
-    i++;
-  }
-  Serial.printf(" \n");
-  */
-  //LN_port.tx_data[LN_port.tx_write_ptr] = LN_port.tx_data[LN_port.tx_write_ptr] + i;
+
   tx_packets[tx_index]->state = 1; //Mark as pending packet
   
   if (tx_pending == -1) { //Send now if possible. 
@@ -912,6 +948,12 @@ int8_t LN_Class::slot_write(int8_t slotnum, uint8_t rx_pkt){ //Handle slot write
 
 int8_t LN_Class::slot_move(int8_t slot_src, int8_t slot_dest){ //Handle slot moves
   uint8_t i = 0;
+  if (!(slot_ptr[slot_src])) { //Invalid source slot, do nothing. 
+        return -1; 
+      }
+  if (!(slot_ptr[slot_dest])) { //Invalid dest slot, create it. 
+        slot_new(slot_dest);  
+      }      
   if (slot_src == 0) {//When activated it sets all locomotives to speed 0 functions off
     Serial.printf("Requested slot 0, stop the train \n");
     for (i = 1; i < 120; i++){
@@ -937,8 +979,6 @@ int8_t LN_Class::slot_move(int8_t slot_src, int8_t slot_dest){ //Handle slot mov
 
   return slot_dest;
 }
-
-
 
 void LN_Class::slot_fastclock_set(uint8_t rx_pkt){
   const uint8_t slotnum = 123;
@@ -1014,6 +1054,7 @@ void LN_Class::slot_fastclock_get(){
   slot_ptr[slotnum]->slot_data[2] = minsh; //127 - Fastclock.minutes_rem_uS / 472441; //frac_minutes_us is the remaining uS after calculating minutes. FRAC_MINS_H, 0-127 tick count
   slot_ptr[slotnum]->slot_data[1] = minsl; //127 - (Fastclock.frac_minutes_uS - (slot_ptr[123]->slot_data[2] * 472441)) / 3872; //FRAC_MINS_L, 0-127 tick count
   slot_ptr[slotnum]->slot_data[0] = Fastclock.set_rate; //Clock multiplier
+  Serial.printf("Loconet: Fastclock slot checked, minutes %u, minsh %u, minsl %u \n", slot_ptr[slotnum]->slot_data[3], slot_ptr[slotnum]->slot_data[2], slot_ptr[slotnum]->slot_data[1]);  
   return; 
 }
 
@@ -1021,14 +1062,14 @@ int8_t LN_Class::slot_new(uint8_t slotnum) { //Initialize empty slots
   if (!(slot_ptr[slotnum])){
     //Serial.printf("Initializing Loconet slot %u \n", slotnum);
     slot_ptr[slotnum] = new LN_Slot_data; 
+    if (!(slot_ptr[slotnum])){
+      Serial.printf("Failure allocating slot %u \n", index);
+      return -1; 
+    }  
     slot_ptr[slotnum] -> slot_data[0] = 0; //Slot status set to free.
     slot_ptr[slotnum]->last_refresh = TIME_US;
     slot_ptr[slotnum]->next_refresh = 200000000; //Expect refresh within 200 seconds 
   }
-  if (!(slot_ptr[slotnum])){
-    Serial.printf("Failure allocating slot %u \n", index);
-    return -1; 
-  }  
   //Implement special slot initialization
   if (slotnum == 123) { //Fast Clock
     slot_ptr[slotnum]->last_refresh = 0; //last refresh of 0 forces initial load quickly.   

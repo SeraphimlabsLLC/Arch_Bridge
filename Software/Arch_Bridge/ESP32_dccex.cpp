@@ -117,7 +117,16 @@ void DCCEX_Class::rx_decode(){
     return; 
   }
   switch (data_pkt[1]) {
-    case 0:  //power off
+
+    case '=': //Track Manager
+    rx_track_manager();
+    break; 
+
+    case 'p': //power manager
+    rx_power_manager();
+    break;
+/*    
+    case '0':  //power off
     Serial.printf("DCCEX Changing to OFF \n");
       DCCSigs[0].ModeChange(0);
       DCCSigs[1].ModeChange(0);
@@ -145,7 +154,7 @@ void DCCEX_Class::rx_decode(){
       DCCSigs[1].ModeChange(3);   
       DCCSigs[0].StateChange(3);//Set to ON_REV
       DCCSigs[1].StateChange(3);//Set to ON_REV  
-      break; 
+      break;  */
 
     case 'D': 
       Serial.printf("DCCEX Debug: \n"); 
@@ -183,6 +192,36 @@ void DCCEX_Class::rx_decode(){
   } 
   rx_state = 0;  
   return; 
+}
+
+void DCCEX_Class::rx_track_manager(){ //Process track manager input
+  uint8_t i = 0; 
+  char track = (data_pkt[2]);
+  char rawmode[6]; 
+  for (i = 0; data_pkt[i + 4] != '>'; i++) {
+    rawmode[i] = data_pkt[i + 4];
+  }
+  
+  rawmode [i + 1] = NULL; 
+  Serial.printf("Track %c mode %s \n", track, rawmode);
+
+  return; 
+}
+void DCCEX_Class::rx_power_manager(){
+  uint8_t i = 0; 
+  bool power = false;
+  char track = (data_pkt[4]);
+  if (data_pkt[2] == '1') {
+    power = true;
+  }
+  for (i = 0; i <= max_tracks; i++) {
+  if (track == DCCSigs[i].trackID) { //Command relevant to one of ours
+    if (power == true){ 
+      DCCSigs[i].StateChange(2);
+      }  
+    }
+  }
+  return;
 }
 
 void DCCEX_Class::ddiag() { //Diagnostic mode features
@@ -328,4 +367,48 @@ void dccex_init(){ //Reflector into DCCEX_Class
 void dccex_loop(){ //Reflector into DCCEX_Class
   dccex.loop_process();
   return; 
+}
+
+/*****************************************
+ * Turnout, Sensor, and Signal (Accessory_Device) Functions *
+******************************************/
+int16_t DCCEX_Class::acc_search_id(uint16_t id, accessory_type type){ //Find an accessory by its DCCEX ID
+  int16_t i; 
+  for (i = 0; i < MAX_ACCESSORIES; i++) {
+    if (!(accessory[i])){ 
+      continue; 
+    }
+    if ((accessory[i]->ID = id) && (accessory[i]->type = type)){
+      return i; 
+    }
+  }
+  return -1;
+}
+int16_t DCCEX_Class::acc_search_addr(uint16_t addr, accessory_type type){ //Find an accessory by its DCC Address
+  int16_t i; 
+  for (i = 0; i < MAX_ACCESSORIES; i++) {
+    if (!(accessory[i])){ 
+      continue; 
+    }
+    if ((accessory[i]->addr = addr) && (accessory[i]->type = type)) {
+      return i; 
+    }
+  }
+  return -1; 
+}
+
+int16_t DCCEX_Class::acc_get_new(uint16_t index){
+  if (!(accessory[index])){
+    accessory[index] = new Accessory_Device; 
+    if (!(accessory[index])){
+      Serial.printf("Unable to allocate accessory slot. \n"); 
+      return -1; 
+    }
+    accessory[index]->addr = -1; //DCC address, -1 means not set yet.
+    accessory[index]->state = 0; //Empty 
+    accessory[index]->source = 0; //Where it was learned from: 0 = empty, 1 = DCC, 2 = Loconet, 3 = DCCEX
+    accessory[index]->last_cmd_us = 0; //Time of last action  
+  }
+
+  return index;
 }

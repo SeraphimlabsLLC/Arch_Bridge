@@ -41,10 +41,10 @@ bool MasterEnable();
 #if BOARD_TYPE == DYNAMO
  // #pragma message "Building as Dynamo"
   #define MAX_TRACKS 4
-  #define TRACK_1 DCCSigs[0].SetupHW(9, 0, 6, 13, 1, 81900, -60000, 3500000);
-  #define TRACK_2 DCCSigs[1].SetupHW(10, 0, 7,  14, 2, 81900, -60000, 3500000);
-  #define TRACK_3 DCCSigs[2].SetupHW(11, 0, 8, 48, 4, 81900, -60000, 3500000);
-  #define TRACK_4 DCCSigs[3].SetupHW(12, 0, 9, 48, 5, 81900, -60000, 3500000);
+  #define TRACK_1 DCCSigs[0].SetupHW(9, 0, 6, 13, 1, 81900, -60000, 3500000, 'R');
+  #define TRACK_2 DCCSigs[1].SetupHW(10, 0, 7,  14, 2, 81900, -60000, 3500000, 'S');
+  #define TRACK_3 DCCSigs[2].SetupHW(11, 0, 8, 48, 4, 81900, -60000, 3500000, 'T');
+  #define TRACK_4 DCCSigs[3].SetupHW(12, 0, 9, 48, 5, 81900, -60000, 3500000, 'U');
   #define MASTER_EN 15 //GPIO15
   #define MASTER_EN_DEGLITCH 4 //uSec required between readings. Must have 2 of the same value to change state.
   #define DIR_MONITOR 38 //GPIO38, Dir Monitor 
@@ -55,8 +55,8 @@ bool MasterEnable();
 #if BOARD_TYPE == ARCH_BRIDGE
  // #pragma message "Building as Arch Bridge"
   #define MAX_TRACKS 2
-  #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 16938409, -65000, 3541000);
-  #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 1693480, -65000, 3541000);
+  #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 16938409, -65000, 3541000, 'R');
+  #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 1693480, -65000, 3541000, 'S');
   #define MASTER_EN 3 //Is an Output Enable instead of an input
   #define DIR_MONITOR 9 //GPIO9, railsync input. 
   #define ADC_MIN_OFFSET 60 //ADC is inaccurate at low values.
@@ -83,10 +83,11 @@ class TrackChannel {
   public:
     uint8_t index; //What track number is this? 
     uint8_t powerstate; //0 = off, 1 = overload, 2 = on_forward, 3 =on_reversed. 
-    uint8_t powermode; //0 = none, 1 = DCC_external, 2 = DCC_override, 3 = DC.
+    uint8_t powermode; //0 = none, 1 = DCC_external, 2 = DCC_override, 3 = DC, 4 = DCX.
+    char trackID;
     uint32_t adc_previous_ticks; //value read on prior scan
     uint32_t adc_current_ticks; //value read on most recent scan
-    void SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint32_t adcscale, int32_t adcoffset, uint32_t adc_ol_trip); 
+    void SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint32_t adcscale, int32_t adcoffset, uint32_t adc_ol_trip, char track); 
     void ModeChange (uint8_t newmode);
     void StateChange(uint8_t newstate);
     uint8_t CheckEnable(); //Reads en_in, sets en_out the same, and returns on or off. 
