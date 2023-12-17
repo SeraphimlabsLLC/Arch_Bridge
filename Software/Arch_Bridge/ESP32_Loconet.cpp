@@ -482,6 +482,7 @@ void LN_Class::tx_send(uint8_t txptr){
   //Note: tx_priority from LN_Class needs to be replaced by per-packet priority handling. 
   time_us = TIME_US;
   uint8_t i = 0;
+  uint16_t rx_len = 0;
   if (!tx_packets[txptr]) { //If the handle is invalid, abort.
     return; 
   }
@@ -490,6 +491,12 @@ void LN_Class::tx_send(uint8_t txptr){
     Serial.printf("Buffer should still have data, send wait \n");
     return;    
   }
+
+  rx_len = LN_port.read_len(); //Check if data has been received since the last read. Don't send now if it has. 
+  if (rx_len > 0) {
+    return; 
+  }
+  
    //Serial.printf("TX_Send Pending Packet %u has mark %u \n", txptr, tx_packets[txptr]->state);
   if ((tx_packets[txptr]->state == 1) || (tx_packets[txptr]->state == 4)) { //Packet is pending or failed. Mark attempting.
     tx_packets[txptr]->last_start_time = time_us;
@@ -497,7 +504,7 @@ void LN_Class::tx_send(uint8_t txptr){
     //Serial.printf("TX_Send Packet %u changed from 1 or 4 to  %u \n", txptr, tx_packets[txptr]->state);
   }
   
-  if ((time_us - rx_last_us) > (LN_BITLENGTH_US * (tx_packets[txptr]->priority + LN_COL_BACKOFF))){
+  if ((time_us - rx_last_us) > (LN_BITLENGTH_US * (tx_packets[txptr]->priority + LN_COL_BACKOFF))) {
     //Serial.printf("Sending packet %u \n", txptr); 
     rx_last_us = time_us; //Force it to prevent looping transmissions
     tx_pending = txptr; //Save txpending for use in tx_loopback

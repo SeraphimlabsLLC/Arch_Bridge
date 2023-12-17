@@ -36,6 +36,7 @@ class ESP_Uart {
   void uart_rx_flush(); //Erase the RX buffer contents
   void rx_flush(); //Reset the rx buffer
   void tx_flush(); //Reset the tx buffer
+  //void set_rx_thresh(uint8_t limit); //Maximum 96 bytes
 
   private: 
   gpio_num_t tx_pin;
