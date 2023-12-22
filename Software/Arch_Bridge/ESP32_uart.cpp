@@ -47,8 +47,8 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t
       //.rx_flow_ctrl_thresh = 122, //not used with flowctrl_disable
       //.source_clk = UART_SCLK_DEFAULT,  
     };
-    txbuff = 128; 
-    rxbuff = 128; 
+    txbuff = 256; 
+    rxbuff = 256; 
     Serial.printf("Configuring uart %u to baud %u with txbuff %u rxbuff %u \n", uartnum, baudrate, txbuff, rxbuff); 
     ESP_ERROR_CHECK(uart_driver_install(uart_port_t(uartnum), txbuff, rxbuff, 0, NULL, 0));
     ESP_ERROR_CHECK(uart_param_config(uart_port_t(uartnum), &uart_config));

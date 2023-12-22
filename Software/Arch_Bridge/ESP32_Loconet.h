@@ -145,11 +145,11 @@ class LN_Class {
   
   LN_Packet* rx_packets[LN_RX_Q]; //Pointers to RX packets
   uint8_t rx_next_new; 
-  uint8_t rx_next_decode;
+  uint8_t rx_next_check;
   volatile int8_t rx_pending; //Index of which packet slot is receiving. Set to -1 if none.
   LN_Packet* tx_packets[LN_TX_Q]; //Pointers to TX packets
   uint8_t tx_next_new;
-  uint8_t tx_next_send; 
+  uint8_t tx_next_check; 
   volatile int8_t tx_pending; //Index of which packet is actively sending. Set to -1 if none. 
 
   const uint8_t slot_hours = 104; 
@@ -160,7 +160,7 @@ class LN_Class {
   uint8_t uart_rx(); //Receive data from uart to rx ring
   void rx_scan(); //Scan rx ring for a valid packet
   void rx_queue(); //Process RX queue into rx_decode
-  uint8_t rx_decode(uint8_t rx_pkt); //Process the opcode that was found. Return 0 when complete. 
+  int8_t rx_decode(uint8_t rx_pkt); //Process the opcode that was found. Return 0 when complete. 
 
   void tx_queue(); //Process TX queue into tx_send
   void tx_send(uint8_t txptr); //Try to send data and update tracking info

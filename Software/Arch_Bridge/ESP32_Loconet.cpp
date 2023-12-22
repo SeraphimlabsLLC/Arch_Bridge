@@ -63,8 +63,9 @@ void LN_Class::loop_process(){
   rx_queue(); //Process queued RX packets and run rx_decode
   measure_time_stop();
   //Serial.printf("Loconet tx_queue cycle: \n");
-
-#if FCLK_ENABLE == true //Only include the poller if the fastclock should be enabled. If false, the clock won't broadcast. 
+  tx_queue(); //Try to send any queued packets
+  slot_queue(); //Clean up stale slots
+  #if FCLK_ENABLE == true //Only include the poller if the fastclock should be enabled. If false, the clock won't broadcast. 
   if (Fastclock.active == true) {
     if (!(slot_ptr[123])){ //Initialize fastclock slot if it doesn't exist yet. 
       slot_new(123);
@@ -74,10 +75,6 @@ void LN_Class::loop_process(){
     } 
   }
 #endif 
-
-  slot_queue(); //Clean up stale slots
- 
-  tx_queue(); //Try to send any queued packets
   //Serial.printf("Loconet loop complete \n");
   return;
 } 
@@ -194,52 +191,65 @@ void LN_Class::rx_scan(){ //Scan received data for a valid frame
 void LN_Class::rx_queue(){ //Loop through the RX queue and process all packets in it. 
   uint8_t i = 0;
   uint8_t complete = 0;
+  uint8_t priority = 255; //Maximum of 20, the out of bounds init means no packet was matched. 
+  uint8_t rx_next_decode = 0; 
   time_us = TIME_US;
 
-  while (i < LN_RX_Q){
-    //Serial.printf("RX_Queue. i = %u, LN_RX_Q = %u \n", i, LN_RX_Q);
-    if (rx_packets[rx_next_decode]) { //Packet exists, check it.
-      //Serial.printf("Queue Processing RX packet %u, state is %u \n", rx_next_decode, rx_packets[rx_next_decode]->state);
-      switch (rx_packets[rx_next_decode]->state) {
+  for (i = 0; i < LN_RX_Q; i++){
+    //Serial.printf("RX_Queue. rx_next_check = %u, LN_RX_Q = %u \n", rx_next_check, LN_RX_Q);
+    if (rx_packets[rx_next_check]) { //Packet exists, check it.
+      //Serial.printf("Queue Processing RX packet %u, state is %u \n", rx_next_check, rx_packets[rx_next_check]->state);
+      switch (rx_packets[rx_next_check]->state) {
         case 1:
         case 2:
-          if (time_us - rx_packets[rx_next_decode]->last_start_time > 15000) { //Pending or Attempting must be finished within 15mS since their state last changed.
-            //Serial.printf("RX_Q Cleaning up incomplete packet %u \n", rx_next_decode);
-            rx_packets[rx_next_decode]->reset_packet();
-            if (rx_next_decode == rx_pending) {
+          if (time_us - rx_packets[rx_next_check]->last_start_time > 15000) { //Pending or Attempting must be finished within 15mS since their state last changed.
+            //Serial.printf("RX_Q Cleaning up incomplete packet %u \n", rx_next_check);
+            rx_packets[rx_next_check]->reset_packet();
+            if (rx_next_check == rx_pending) {
               rx_pending = -1;
             } 
           }          
           break;
         case 3: 
-          complete = rx_decode(rx_next_decode); 
-          if (complete == 0) {
-            rx_packets[rx_next_decode]->state == 5; //Completed. Can delete it. 
+          if (rx_packets[rx_next_check]-> priority <= priority) { //New most urgent packet. 
+            //Serial.printf("RX_Q: Next packet to decode: %u \n", rx_next_check);
+            rx_next_decode = rx_next_check;
+            priority = rx_packets[rx_next_decode]-> priority; 
           }
-
+          break; 
         case 5:
           //LN_port.uart_rx_flush(); //Failed packet. 
         case 4: 
-          //Serial.printf("RX_Q Cleaning up complete or failed packet %u \n", rx_next_decode);
-          rx_packets[rx_next_decode]->reset_packet(); 
-          if (rx_next_decode == rx_pending) {
+          //Serial.printf("RX_Q Cleaning up complete or failed packet %u \n", rx_next_check);
+          rx_packets[rx_next_check]->reset_packet(); 
+          if (rx_next_check == rx_pending) {
               rx_pending = -1;
           }
       }
     }
-    rx_next_decode++;
-    if (rx_next_decode >= LN_RX_Q){
-      rx_next_decode = 0; 
+    rx_next_check++;
+    if (rx_next_check >= LN_RX_Q){
+      rx_next_check = 0; 
     }
-    i++;
+  }
+  if ((priority < 21) && (rx_packets[rx_next_decode])) { //A packet was in state 3 and had lowest priority. Ifit still exists, process it. 
+    //Serial.printf("RX_Q Before rx_decode of %u \n", rx_next_decode);
+    complete = rx_decode(rx_next_decode); 
+    //Serial.printf("RX_Q After rx_decode of %u \n", rx_next_decode);
+    if (complete == 0) {
+      rx_packets[rx_next_decode]->state == 5; //Completed. Can delete it on next cycle. 
+    }    
   }
   //Serial.printf("RX_QUEUE Done \n");
   return;
 }
 
-uint8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
+int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
   //Finally processing the packet.
   //Serial.printf("Processing received packet from RX_Q slot %u \n", rx_pkt);
+  if (!(rx_packets[rx_pkt])) { //An invalid handle was given. Abort. 
+    return -1; 
+  }
   
   char opcode = rx_packets[rx_pkt]->data_ptr[0];
   uint8_t i = 0;
@@ -390,91 +400,97 @@ uint8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
 
 void LN_Class::tx_queue(){ //Try again to send queued packets on each loop cycle
   uint8_t i = 0;
-  uint8_t priority = 0;
+  uint8_t priority = 255; //max allowed is actually 20, so this is out of bounds to indicate no packet matched. 
+  uint8_t tx_next_send = 0;
   time_us = TIME_US;
-  if (tx_pending > -1) { //A packet is already active. Send it, then scan the rest of the queue. 
-    tx_send(tx_pending); 
-    priority = tx_packets[tx_pending]-> priority;
-    tx_next_send = tx_pending;
-  }
+
   //Serial.printf("TX_Q priority loop \n");
-  while (priority <= LN_MIN_PRIORITY){ 
-    while (i < LN_TX_Q) {
-      //Serial.printf("TX_Q. priority = %u i = %u, tx_next_send %u, LN_TX_Q = %u \n", priority, i, tx_next_send, LN_TX_Q);
-      
-      if (tx_packets[tx_next_send]) { //Packet exists, check it.
-        //Serial.printf("TX_Q Processing TX packet %u, state is %u \n", tx_next_send, tx_packets[tx_next_send]->state);
-        time_us = TIME_US; //Update time
-        switch (tx_packets[tx_next_send]->state) {
-          case 0: //No action needed, empty slot. 
+  //while (priority <= LN_MIN_PRIORITY){ 
+  //  while (i < LN_TX_Q) {
+  for (i = 0; i < LN_TX_Q; i++) {
+  //Serial.printf("TX_Q. priority = %u i = %u, tx_next_check %u, LN_TX_Q = %u \n", priority, i, tx_next_check, LN_TX_Q);  
+    if (tx_packets[tx_next_check]) { //Packet exists, check it.
+      //Serial.printf("TX_Q Processing TX packet %u, state is %u \n", tx_next_check, tx_packets[tx_next_check]->state);
+      time_us = TIME_US; //Update time
+      switch (tx_packets[tx_next_check]->state) {
+        case 0: //No action needed, empty slot. 
           break; 
-          case 1: //Pending. 
-            if (((tx_pending < 0) || tx_pending == tx_next_send) && (priority == tx_packets[tx_next_send]-> priority)) { //Clear to try sending it.
-              tx_pending = tx_next_send;  
-              tx_send(tx_pending);
+        case 1: //Pending. 
+          if (tx_packets[tx_next_check]->priority < priority) {
+            Serial.printf("TX_Q: Try sending packet %i \n", tx_next_check);
+            priority = tx_packets[tx_next_check]->priority;
+            tx_next_send = tx_next_check;
+          }
+          break; 
+        case 2: //Attempting. Check if valid state and within 15mS window
+          if (tx_next_check != tx_pending) {  //A packet in this state that doesn't match tx_pending is a problem.
+            tx_packets[tx_next_check]->state = 4;
+            break;
+          } 
+          if ((time_us - tx_packets[tx_next_check]->last_start_time) < 15000) { //Still within 15mS window, try tx_send again to see if cooldown has passed.
+            Serial.printf("TX_Q: Re-check send packet %i %i \n", tx_pending, tx_next_check); 
+            priority = 0;
+            tx_next_send = tx_next_check;
+           
+          } else { //15mS exceeded since start of window, mark as failed. 
+            Serial.printf("TX_Q tx_next_check failed to send after %u mS. %u attempts remain \n", (time_us - tx_packets[tx_next_check]->last_start_time) / 1000, tx_packets[tx_next_check]->tx_attempts);
+            tx_packets[tx_next_check]->state = 4;
+            tx_packets[tx_next_check]->tx_attempts--;
+            tx_packets[tx_next_check]->priority--; //Increase priority for the next attempt.
+          if (tx_packets[tx_next_check]->priority < LN_MAX_PRIORITY) {//Enforce priority limit
+              tx_packets[tx_next_check]->priority = LN_MAX_PRIORITY;
             }
+            if (tx_next_check == tx_pending) {
+              tx_pending = -1;
+            }
+          }
           break; 
-          case 2: //Attempting. Check 
-            if (tx_next_send != tx_pending) {  //A packet in this state that doesn't match tx_pending is a problem.
-              tx_packets[tx_next_send]->state = 4;
+        case 3: //Sent. 
+          if ((time_us - tx_packets[tx_next_check]->last_start_time) > TX_SENT_EXPIRE) { //Packet was sent long enough ago loopback should have seen it by now if it arrived ok. Clear it out if it still exists. 
+            tx_packets[tx_next_check]->state = 4;
+            tx_packets[tx_next_check]->tx_attempts = 0;
+            Serial.printf("TX_Q Purging stale sent packet %u ", tx_next_check);
+            Serial.printf("after %u uS \n", (time_us - tx_packets[tx_next_check]->last_start_time));
+            tx_packets[tx_next_check]->reset_packet(); 
+            if (tx_next_check == tx_pending) {
+              Serial.printf("TX_Q Purged pending packet. This should not happen \n");
+              tx_pending = -1;
             } 
-            if ((time_us - tx_packets[tx_next_send]->last_start_time) > 15000) { //Attempting must be finished within 15mS since their state last changed.
-              Serial.printf("TX_Q tx_next_send failed to send after %u mS. %u attempts remain \n", (time_us - tx_packets[tx_next_send]->last_start_time) / 1000, tx_packets[tx_next_send]->tx_attempts);
-              tx_packets[tx_next_send]->state = 4;
-              tx_packets[tx_next_send]->tx_attempts--;
-              tx_packets[tx_next_send]->priority--; //Increase priority for the next attempt.
-              if (tx_packets[tx_next_send]->priority < LN_MAX_PRIORITY) {//Enforce priority limit
-                tx_packets[tx_next_send]->priority = LN_MAX_PRIORITY;
-              }
-              if (tx_next_send == tx_pending) {
-                tx_pending = -1;
-              }
-            }
-            break; 
-          case 3: //Sent. 
-            if ((time_us - tx_packets[tx_next_send]->last_start_time) > TX_SENT_EXPIRE) { //Packet was sent long enough ago loopback should have seen it by now if it arrived ok. Clear it out if it still exists. 
-              tx_packets[tx_next_send]->state = 4;
-              tx_packets[tx_next_send]->tx_attempts = 0;
-              Serial.printf("TX_Q Purging stale sent packet %u ", tx_next_send);
-              Serial.printf("after %u uS \n", (time_us - tx_packets[tx_next_send]->last_start_time));
-              tx_packets[tx_next_send]->reset_packet(); 
-              if (tx_next_send == tx_pending) {
-                Serial.printf("TX_Q Purged pending packet. This should not happen \n");
-                tx_pending = -1;
-              } 
-            }
-          
+          }
           break; 
-          case 4: //Failed. 
-            if (tx_packets[tx_next_send]->tx_attempts <= 0) {
-              //Serial.printf("TX_Q Unable to transmit packet from TX queue index %u, dropping. \n", tx_next_send);
-              tx_packets[tx_next_send]->reset_packet();     
-              if (tx_next_send == tx_pending) {
-                tx_pending = -1;
-              }
-            } else {
-              if (((tx_pending < 0) || tx_pending == tx_next_send) && (priority == tx_packets[tx_next_send]-> priority)) { //Clear to try sending it again
-                tx_pending = tx_next_send;  
-                tx_send(tx_next_send);   
-              }
+        case 4: //Failed. 
+          if (tx_packets[tx_next_check]->tx_attempts <= 0) {
+            //Serial.printf("TX_Q Unable to transmit packet from TX queue index %u, dropping. \n", tx_next_check);
+            tx_packets[tx_next_check]->reset_packet();     
+            if (tx_next_check == tx_pending) {
+              tx_pending = -1;
             }
-            break;  
-          case 5: //Success? Either way we don't need it anymore. 
-            tx_packets[tx_next_send]->reset_packet(); 
-            if (tx_next_send == tx_pending) { //This should never be needed, but just in case. 
-                tx_pending = -1;
+          } else { //Packet still has retries left. 
+            if (tx_packets[tx_next_check]->priority < priority) {
+            priority = tx_packets[tx_next_check]->priority;
+            tx_next_send = tx_next_check;
             }
+          }
+          break;  
+        case 5: //Success? Either way we don't need it anymore. 
+          tx_packets[tx_next_check]->reset_packet(); 
+          if (tx_next_check == tx_pending) { //This should never be needed, but just in case. 
+              tx_pending = -1;
+          }
         }
+      } //endif packet exists
+      tx_next_check++; 
+      if (tx_next_check >= LN_TX_Q){ 
+        tx_next_check = 0; 
       }
-      i++;
-      tx_next_send++; 
-      if (tx_next_send >= LN_TX_Q){ 
-        tx_next_send = 0; 
-      }
-    }
-    i = 0;
-    priority++; 
   }
+  if (priority < 21) { //Send best priority packet if one was found
+    if ((tx_pending < 0) || (tx_pending == tx_next_send)) { //Clear to try sending or already are sending
+      //tx_pending = tx_next_send;  
+      tx_send(tx_next_send);
+      }
+  }
+  
   return;
 }
 
@@ -501,7 +517,7 @@ void LN_Class::tx_send(uint8_t txptr){
   if ((tx_packets[txptr]->state == 1) || (tx_packets[txptr]->state == 4)) { //Packet is pending or failed. Mark attempting.
     tx_packets[txptr]->last_start_time = time_us;
     tx_packets[txptr]->state = 2; //Attempting
-    //Serial.printf("TX_Send Packet %u changed from 1 or 4 to  %u \n", txptr, tx_packets[txptr]->state);
+    Serial.printf("TX_Send Packet %u changed from 1 or 4 to  %u \n", txptr, tx_packets[txptr]->state);
   }
   
   if ((time_us - rx_last_us) > (LN_BITLENGTH_US * (tx_packets[txptr]->priority + LN_COL_BACKOFF))) {
@@ -751,7 +767,6 @@ void LN_Class::send_long_ack(uint8_t opcode, uint8_t response) {
   tx_packets[tx_index]->data_ptr[2] = response & 0x7F; //Response & 0x7F to make sure bit 7 isn't set. 
   tx_packets[tx_index]->Make_Checksum(); //Populate checksum
   if (tx_pending < 0) { //Needs to send ASAP, so try to send now. 
-    tx_pending = tx_index; 
     tx_send(tx_index); 
   }
   return; 
@@ -774,7 +789,7 @@ LN_Class::LN_Class(){ //Constructor, initializes some values.
   rx_pending = -1;
   tx_pending = -1;
   rx_next_new = 0; 
-  rx_next_decode = 0;
+  rx_next_check = 0;
   netstate = startup;
   rx_last_us = time_us;
   LN_TRK = 0x06; //Slot global TRK. 0x06 = Loconet 1.1 capable, track idle, power off. 
@@ -896,7 +911,7 @@ void LN_Class::slot_read(int8_t slotnum){ //Handle slot reads
   uint8_t i = 0;
   uint8_t tx_index = 0;
   uint8_t response_size = 0;
-
+  //Serial.printf("Slot_read %i \n", slotnum);
   slot_new(slotnum); //Initialize slot if it isn't already. 
   if (slotnum == 123) { //Update fast clock slot
     slot_fastclock_get(); 
@@ -927,7 +942,7 @@ void LN_Class::slot_read(int8_t slotnum){ //Handle slot reads
   i = 0;
 
   tx_packets[tx_index]->state = 1; //Mark as pending packet
-  
+  Serial.printf("slot_read %i reply in txpacket %i, tx_pending %i \n", slotnum, tx_index, tx_pending); 
   if (tx_pending == -1) { //Send now if possible. 
     tx_send(tx_index);
   }

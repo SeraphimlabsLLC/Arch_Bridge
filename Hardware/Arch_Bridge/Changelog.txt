@@ -13,5 +13,8 @@ Changed pinout: +5v, TX, RX, GND.
 Added status LED on TX. 
 Connected OE to processor OE output. 
 
-PCB revision to incorporate these changes. 
+PCB revision to incorporate these changes.
+
+Rev 06A: 
+Changed CB1 to through hole for field installation. Removed from default bom and populate.
 
