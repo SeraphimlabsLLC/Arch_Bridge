@@ -10,6 +10,10 @@
   #include "ESP32_Tracks_HW.h"
 #endif
 
+#ifndef DCC_READ_H
+  #include "dcc_read.h"
+#endif
+
 #if BOARD_TYPE == ARCH_BRIDGE //If this is an arch bridge, include loconet functions
   #ifndef ESP32_LOCONET_H
     #include "ESP32_Loconet.h"
@@ -28,7 +32,7 @@ extern ESP_Uart tty; //normal serial port
 extern uint64_t time_us; 
 extern TrackChannel DCCSigs[];
 extern uint8_t max_tracks;
-extern Rmtdcc dcc; 
+extern dccrx dcc; 
 
 void DCCEX_Class::loop_process(){
   //Serial.printf("DCCEX uart_rx cycle: \n");

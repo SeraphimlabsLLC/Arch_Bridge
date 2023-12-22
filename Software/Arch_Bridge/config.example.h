@@ -37,3 +37,11 @@
 */
 #define TTY_CONFIG tty.uart_init(0, 43, 44, 115200, 4, 128); 
 #define DCCEX_UART dccex.dccex_port.uart_init(2, 15, 16, 115200, 4, 128); //41 and 42 are right next to the uart0 pins for easy routing
+
+//RMT time Constants. Periods from NMRA S9.1 with some additional fudge factor
+#define DCC_1_HALFPERIOD 58  //4640 // 1 / 80000000 * 4640 = 58us
+#define DCC_1_MIN_HALFPERIOD 50 //NMRA S9.1 says 55uS Minimum half-1. 
+#define DCC_1_MAX_HALFPERIOD 66 //NMRA S9.1 says 61uS Maximum half-1
+#define DCC_0_HALFPERIOD 100 //8000
+#define DCC_0_MIN_HALFPERIOD 90 //NMRA S9.1 says 95uS Minimum half-0
+#define DCC_0_MAX_HALFPERIOD 12000 //NMRA S9.1 says 10000uS Maximum half-0, and 12000uS maximum full-0. 

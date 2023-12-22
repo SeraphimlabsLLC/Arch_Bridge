@@ -10,9 +10,14 @@
 #ifndef ESP32_UART_H
   #include "ESP32_uart.h"
 #endif
-#ifndef ESP32_RMTDCC_H
+
+/*#ifndef ESP32_RMTDCC_H
   #include "ESP32_rmtdcc.h"
+#endif */
+#ifndef DCC_READ_H
+  #include "dcc_read.h"
 #endif
+
 #ifndef ESP32_TRACKS_HW_H
   #include "ESP32_Tracks_HW.h"
 #endif
@@ -33,10 +38,35 @@
 //extern TrackChannel DCCSigs[];
 //extern Rmtdcc dcc; 
 
+volatile uint64_t edge_last;
+volatile uint32_t edge_delta;
+volatile uint8_t edge_stream; 
+volatile uint8_t edge_count;
+
+void IRAM_ATTR dir_monitor_isr(){
+  edge_delta = TIME_US - edge_last;
+  edge_last = TIME_US;
+  edge_count++;
+  edge_stream = edge_stream << 1; //bit shift one left
+  edge_stream = edge_stream + gpio_get_level(gpio_num_t(9));
+  if ((edge_delta > DCC_1_MIN_HALFPERIOD) && (edge_delta < DCC_1_MAX_HALFPERIOD)) {
+    edge_stream = edge_stream << 1; //bit shift one let
+    edge_stream = edge_stream + 1; 
+  }
+  if ((edge_delta > DCC_0_MIN_HALFPERIOD) && (edge_delta < DCC_0_MAX_HALFPERIOD)) {
+    edge_stream = edge_stream << 1; //bit shift one left
+    edge_stream = edge_stream + 0; 
+  } 
+  return;
+}
+
 void setup() {
   ESP_uart_init(); //Initialize tty
   dccex_init(); //Initialize DCCEX parser
-  Tracks_Init();  //Initialize GPIO and RMT hardware, calls the relevant rmt inits
+  dccrx_init(); //Initialize DCC signal audit
+  attachInterrupt(9, dir_monitor_isr, CHANGE);
+  Tracks_Init();  //Initialize GPIO
+
   #if BOARD_TYPE == ARCH_BRIDGE
     LN_init(); //Initialize Loconet
     Fastclock_setup(FCLK_ACTIVE); //Check fastclock settings and start it      
@@ -47,7 +77,7 @@ Serial.print("Setup Complete \n");
 void loop() {  
 dccex_loop(); //Process serial input for DCCEX commands
 Tracks_Loop(); //Process and update tracks
-//rmt_loop(); //Process and update DCC packets
+dccrx_loop(); //Process and update DCC packets
 
 #if BOARD_TYPE == ARCH_BRIDGE //If this is an arch bridge, check the loconet
   

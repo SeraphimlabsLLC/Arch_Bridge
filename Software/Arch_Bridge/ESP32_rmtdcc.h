@@ -12,6 +12,13 @@
 #include "freertos/ringbuf.h" 
 #include "esp32-hal.h" //Aduino RMT
 
+/******************
+ * Continuous RMT RX may not be posssible in IDF 4.4 without modifying the driver itself
+ * See https://github.com/espressif/esp-idf/issues/11478
+ * IDF 5.1 will restructure things, revisit this then. 
+ */
+
+
 
 //Use config.h if present, otherwise defaults
 #ifndef CONFIG_H
@@ -45,18 +52,6 @@
 
 void rmt_loop(); //Reflect into Rmtdcc:process_loop();
 
-class DCC_packet {
-  public:
-  uint8_t state; //empty = 0, pending = 1, receiving = 2, complete = 3, failed = 4, success = 5} 
-  char packet_data[48]; //Should only need 38 bytes + a few odd bits. 
-  uint8_t data_len; //Length of packet
-  uint64_t packet_time;
-
-  void Make_Checksum(); //Populate last byte with valid checksum
-  bool Read_Checksum(); //Verify checksum, returns true if valid, false if invalid.
-  uint8_t packet_size_check(); //Check that a packet has a valid size. 
-  void reset_packet(); //Reset packet slot to defaults
-};
 
 class Rmtdcc {
   public:
@@ -96,22 +91,14 @@ class Rmtdcc {
   uint64_t rmt_rx_detect; //Time of last read
   uint64_t last_preamble; //Time of last preamble detect
  
-  DCC_packet* rx_packets[DCC_RX_Q]; //Array of pointers to DCC packet data
+//  DCC_packet* rx_packets[DCC_RX_Q]; //Array of pointers to DCC packet data
   uint8_t rx_packet_getempty(); //Get the next available rx_packet handle, creating one if necessary.
 /*
   void setDCCBit1(rmt_item32_t* item);
   void setDCCBit0(rmt_item32_t* item);
   void setEOT(rmt_item32_t* item);*/
 #if DCC_GENERATE == true 
-  DCC_packet* tx_data[DCC_TX_Q]; //Array of pointers to DCC packet data
+//  DCC_packet* tx_data[DCC_TX_Q]; //Array of pointers to DCC packet data
 
 #endif
 }; 
-
-//RMT time Constants. Periods from NMRA S9.1 with some additional fudge factor
-#define DCC_1_HALFPERIOD 58  //4640 // 1 / 80000000 * 4640 = 58us
-#define DCC_1_MIN_HALFPERIOD 50 //NMRA S9.1 says 55uS Minimum half-1. 
-#define DCC_1_MAX_HALFPERIOD 66 //NMRA S9.1 says 61uS Maximum half-1
-#define DCC_0_HALFPERIOD 100 //8000
-#define DCC_0_MIN_HALFPERIOD 90 //NMRA S9.1 says 95uS Minimum half-0
-#define DCC_0_MAX_HALFPERIOD 12000 //NMRA S9.1 says 10000uS Maximum half-0, and 12000uS maximum full-0. 

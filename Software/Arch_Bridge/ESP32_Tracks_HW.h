@@ -2,9 +2,9 @@
 #pragma once
 #define ESP32_TRACKS_HW_H
 
-#ifndef ESP32_RMTDCC_HW_H
-  #include "ESP32_rmtdcc.h"
-#endif
+//#ifndef ESP32_RMTDCC_HW_H
+//  #include "ESP32_rmtdcc.h"
+//#endif
 
 //Use config.h if present, otherwise defaults
 #ifndef CONFIG_H

@@ -1,22 +1,21 @@
 #ifndef ESP32_TRACKS_HW_H
   #include "ESP32_Tracks_HW.h"
 #endif
-#ifndef ESP32_RMTDCC_HW_H
-  #include "ESP32_rmtdcc.h"
-#endif
+//#ifndef ESP32_RMTDCC_HW_H
+//  #include "ESP32_rmtdcc.h"
+//#endif
 
 //TrackChannel(enable_out_pin, enable_in_pin, uint8_t reverse_pin, brake_pin, adc_channel, adcscale, adc_overload_trip)
 TrackChannel DCCSigs[MAX_TRACKS]; //Define track channel objects with empty values.
-extern Rmtdcc dcc; //DCC on RMT
+//extern Rmtdcc dcc; //DCC on RMT
 
 uint8_t max_tracks = 0; //Will count tracks as they are initialized. 
 volatile bool Master_Enable = false; 
 volatile uint64_t Master_en_chk_time = 0; //Store when it was checked last. 
 volatile bool Master_en_deglitch = false; //Interim value
-bool rmt_dcc_ok = true; //RMT reports a valid DCC signal. 
+//bool dcc_ok = true; //RMT reports a valid DCC signal. 
 extern uint64_t time_us; //Reuse time_us from main
 
-uint32_t rmt_rxdata_ptr; //RMT RX Ring Buffer locator
 
 void Tracks_Init(){ //Populates track class with values including ADC
   
@@ -43,10 +42,10 @@ void Tracks_Init(){ //Populates track class with values including ADC
   gpio_set_pull_mode(gpio_num_t(MASTER_EN), GPIO_PULLUP_PULLDOWN);    
   gpio_set_level(gpio_num_t(MASTER_EN), 1); //Turn OE on 
 #endif
-  dcc.rmt_rx_init();
+/*dcc.rmt_rx_init();
 #if DCC_GENERATE == true 
   dcc.rmt_tx_init(); //Initialize DIR_OVERRIDE for DCC generation
-#endif
+#endif*/
   
   adc1_config_width(ADC_WIDTH_12Bit);//config adc1 width
   

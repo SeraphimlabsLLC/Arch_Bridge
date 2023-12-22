@@ -328,7 +328,7 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
       break;         
     case 0xB5: //WRITE slot stat1
       slotnum = rx_packets[rx_pkt]->data_ptr[1];
-      if (!(slot_ptr[slotnum])) { //Invalid slot, do nothing. 
+      if (!(slot_ptr[slotnum]) || (slotnum > 120)) { //Invalid slot, do nothing. 
         break; 
       }
       slot_ptr[slotnum]->slot_data[0] = rx_packets[rx_pkt]->data_ptr[2]; //Update stat1 byte

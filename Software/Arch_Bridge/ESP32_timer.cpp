@@ -94,3 +94,9 @@ void Fastclock_class::clock_get() {
   return;
 }
 #endif
+
+void IRAM_ATTR ESP_pwmcap_isr(){ //ISR Handler for the timer
+  
+
+  return;
+}
