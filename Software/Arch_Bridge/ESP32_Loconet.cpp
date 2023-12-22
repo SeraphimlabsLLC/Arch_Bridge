@@ -327,7 +327,12 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
       
       break;         
     case 0xB5: //WRITE slot stat1
-    
+      slotnum = rx_packets[rx_pkt]->data_ptr[1];
+      if (!(slot_ptr[slotnum])) { //Invalid slot, do nothing. 
+        break; 
+      }
+      slot_ptr[slotnum]->slot_data[0] = rx_packets[rx_pkt]->data_ptr[2]; //Update stat1 byte
+      slot_ptr[slotnum]->last_refresh = TIME_US;      
       break;   
     case 0xB6: //SET FUNC bits in a CONSIST uplink elemen
       break; 
@@ -517,7 +522,7 @@ void LN_Class::tx_send(uint8_t txptr){
   if ((tx_packets[txptr]->state == 1) || (tx_packets[txptr]->state == 4)) { //Packet is pending or failed. Mark attempting.
     tx_packets[txptr]->last_start_time = time_us;
     tx_packets[txptr]->state = 2; //Attempting
-    Serial.printf("TX_Send Packet %u changed from 1 or 4 to  %u \n", txptr, tx_packets[txptr]->state);
+    //Serial.printf("TX_Send Packet %u changed from 1 or 4 to  %u \n", txptr, tx_packets[txptr]->state);
   }
   
   if ((time_us - rx_last_us) > (LN_BITLENGTH_US * (tx_packets[txptr]->priority + LN_COL_BACKOFF))) {
@@ -726,33 +731,23 @@ void LN_Class::tx_cab_speed(uint16_t addr, uint8_t spd, bool dir){
   slot_ptr[slotnum]->slot_data[1] | 0x20; //D5 to 11, IN_USE
   slot_ptr[slotnum]->next_refresh = 200000000; //200 seconds
   slot_ptr[slotnum]->last_refresh = TIME_US;
-  Serial.printf("LN_Class::tx_cab_speed Slot %u upated with throttle info. Preparing new data \n");
+  Serial.printf("LN_Class::tx_cab_speed cab %u upated with throttle info. Preparing Loconet notification \n", addr);
   
 //Loconet response: 
-  uint8_t response_size = 14; //Packet is 14 bytes long, should be 0x0E
+  uint8_t response_size = 4; //Packet is 4 bytes long
   uint8_t tx_index = tx_packet_getempty();
-  tx_packets[tx_index]->state = 1;
   tx_packets[tx_index]->priority = LN_MAX_PRIORITY; 
   tx_packets[tx_index]->data_len = response_size;
-  //Serial.printf("Preparing Loconet reply data \n");
-  uint8_t i = 0;
-  for (i = 0; i < 10; i++) {
-    tx_packets[tx_index]->data_ptr[i + 3] = slot_ptr[slotnum]->slot_data[i]; //Copy values from slot_low_data
-
-  }
-  tx_packets[tx_index]->data_ptr[0] = 0xEF; //OPC_WR_SL_DATA
-  tx_packets[tx_index]->data_ptr[1] = response_size; 
-  tx_packets[tx_index]->data_ptr[2] = slotnum;
-  tx_packets[tx_index]->data_ptr[7] = LN_TRK; //Loconet slot global status. Although slot_data[4] is defined, it isn't used. 
-  //Serial.printf("Calculating checksum \n");
+  tx_packets[tx_index]->data_ptr[0] = 0xA0; //OPC_LOCO_SPD
+  tx_packets[tx_index]->data_ptr[1] = slotnum; 
+  tx_packets[tx_index]->data_ptr[2] = spd;
   tx_packets[tx_index]->Make_Checksum(); //Populate checksum
-  i = 0;
-
   tx_packets[tx_index]->state = 1; //Mark as pending packet
-  Serial.printf("LN_Class::tx_cab_speed ready to send updated throttle info \n");
+  tx_packets[tx_index]->last_start_time = TIME_US;
+  Serial.printf("LN_Class::tx_cab_speed ready to send updated throttle info for cab %u \n", addr);
   if (tx_pending == -1) { //Send now if possible. 
     tx_send(tx_index);
-  }
+  } 
   return;
 }
 
@@ -942,7 +937,7 @@ void LN_Class::slot_read(int8_t slotnum){ //Handle slot reads
   i = 0;
 
   tx_packets[tx_index]->state = 1; //Mark as pending packet
-  Serial.printf("slot_read %i reply in txpacket %i, tx_pending %i \n", slotnum, tx_index, tx_pending); 
+  //Serial.printf("slot_read %i reply in txpacket %i, tx_pending %i \n", slotnum, tx_index, tx_pending); 
   if (tx_pending == -1) { //Send now if possible. 
     tx_send(tx_index);
   }
