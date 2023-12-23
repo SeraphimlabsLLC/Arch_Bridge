@@ -13,7 +13,7 @@ uint8_t max_tracks = 0; //Will count tracks as they are initialized.
 volatile bool Master_Enable = false; 
 volatile uint64_t Master_en_chk_time = 0; //Store when it was checked last. 
 volatile bool Master_en_deglitch = false; //Interim value
-//bool dcc_ok = true; //RMT reports a valid DCC signal. 
+extern bool dcc_ok; //A valid DCC signal is present. 
 extern uint64_t time_us; //Reuse time_us from main
 
 
@@ -64,7 +64,7 @@ void Tracks_Init(){ //Populates track class with values including ADC
 }
 void Tracks_Loop(){ //Check tasks each scan cycle.
   uint8_t i = 0;
-  //uint32_t milliamps = 0;
+  uint32_t milliamps = 0;
   MasterEnable(); //Update Master status. Dynamo this is external input, ArchBridge is always true.
     while (i < max_tracks){ //Check active tracks for faults
     if (DCCSigs[i].powerstate >= 2){ //State is set to on forward or on reverse, ok to enable. 
@@ -229,7 +229,7 @@ void TrackChannel::adc_read() { //Needs the actual ADC read implemented still
 
 uint8_t TrackChannel::CheckEnable(){ //Arch Bridge has to check enable_input_pin for each track. Others this always returns 1 with no pin changes.
   uint8_t enable_in = 1; //default value for enable in
-  #ifdef BOARD_TYPE_ARCH_BRIDGE //Enable In is only used on Arch Bridge
+  #if BOARD_TYPE == ARCH_BRIDGE //Enable In is only used on Arch Bridge
     if ((enable_in_pin != 0) && (powermode = 1)) { //If enable_in_pin is configured and powermode = 1 for DCC EXT, read and update enable_in_pin
       enable_in = gpio_get_level(enable_in_pin);
       //Serial.printf("Enable In is %u \n", enable_in);
@@ -243,9 +243,8 @@ bool MasterEnable(){ //On Dynamo boards, read MASTER_IN twice MASTER_EN_DEGLITCH
   //NMRA S-9.1 gives the rise/fall time as 2.5v/uS, the pin could be off for 6uS each edge.
   
   bool master_en = 1; //default value for master_en.
-#ifdef BOARD_TYPE_DYNAMO
+#if BOARD_TYPE == DYNAMO
   time_us = TIME_US;
-  bool master_en = 1;
   master_en = gpio_get_level(gpio_num_t(MASTER_EN));  
   if (master_en != Master_en_deglitch) { 
     Master_en_deglitch = master_en;
@@ -256,8 +255,9 @@ bool MasterEnable(){ //On Dynamo boards, read MASTER_IN twice MASTER_EN_DEGLITCH
     Serial.printf("Master Enable on gpio %u state changed, new state %u \n", MASTER_EN, master_en);
     Master_Enable = master_en; 
   }  
+  master_en = master_en && dcc_ok; //Master Enable will still shut off if the RMT DCC decoder isn't getting valid packets.
 #endif
-//  master_en = master_en && rmt_dcc_ok; //Master Enable will still shut off if the RMT DCC decoder isn't getting valid packets. 
+ 
 // BOARD_TYPE_ARCHBRIDGE has no master_en input, this will always return 1. 
   return master_en;
 }

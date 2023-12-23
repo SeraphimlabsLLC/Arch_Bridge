@@ -117,6 +117,7 @@ void DCCEX_Class::rx_scan(){ //Scan ring buffer data for an opcode and return it
 void DCCEX_Class::rx_decode(){
   //An implementation of https://dcc-ex.com/throttles/tech-reference.html#
   uint8_t i = 0;
+  uint16_t val = 0; 
   if (rx_state != 2) { //No packet to process
     return; 
   }
@@ -126,10 +127,17 @@ void DCCEX_Class::rx_decode(){
     rx_track_manager();
     break; 
 
+    case 'c': //Display currents
+    for (i = 0; i < max_tracks; i++) {
+      val = (DCCSigs[i].adc_current_ticks)/ DCCSigs[i].adc_scale; //scaled mA
+      Serial.printf("Track %c ADC analog value = %u milliamps, mode %u \n", DCCSigs[i].trackID, val, DCCSigs[i].powermode);
+    }
+    break; 
+
     case 'p': //power manager
     rx_power_manager();
     break;
-/*    
+    
     case '0':  //power off
     Serial.printf("DCCEX Changing to OFF \n");
       DCCSigs[0].ModeChange(0);
@@ -145,7 +153,7 @@ void DCCEX_Class::rx_decode(){
 
     break;
     case '2':
-      Serial.printf("DCCEX Changing to DCC EXT, ON_FWD \n");
+      Serial.printf("DCCEX Changing to DC, ON_FWD \n");
       DCCSigs[0].ModeChange(3);
       DCCSigs[1].ModeChange(3);   
       DCCSigs[0].StateChange(2);//Set to ON_FWD
@@ -153,12 +161,12 @@ void DCCEX_Class::rx_decode(){
       break; 
 
     case '3': 
-      Serial.printf("DCCEX Changing to DCC EXT, ON_REV \n");
+      Serial.printf("DCCEX Changing to DC, ON_REV \n");
       DCCSigs[0].ModeChange(3);
       DCCSigs[1].ModeChange(3);   
       DCCSigs[0].StateChange(3);//Set to ON_REV
       DCCSigs[1].StateChange(3);//Set to ON_REV  
-      break;  */
+      break;  
 
     case 'D': 
       Serial.printf("DCCEX Debug: \n"); 
@@ -200,29 +208,43 @@ void DCCEX_Class::rx_decode(){
 
 void DCCEX_Class::rx_track_manager(){ //Process track manager input
   uint8_t i = 0; 
-  char track = (data_pkt[2]);
-  char rawmode[6]; 
-  for (i = 0; data_pkt[i + 4] != '>'; i++) {
-    rawmode[i] = data_pkt[i + 4];
-  }
-  
-  rawmode [i + 1] = NULL; 
-  Serial.printf("Track %c mode %s \n", track, rawmode);
+  char track = (data_pkt[3]);
+  //char rawmode[6]; 
+  uint8_t tmode = 0; 
+//  for (i = 0; data_pkt[i + 4] != '>'; i++) {
+    //rawmode[i] = data_pkt[i + 4];
+    tmode = tmode * 10 + (data_pkt[5] - 48); //Convert char to int
+ // }
 
+  Serial.printf("Track %c mode %u \n", track, tmode);
+  for (i = 0; i <= max_tracks; i++) {
+  if (track == DCCSigs[i].trackID) { //Command relevant to one of ours
+      DCCSigs[i].ModeChange(tmode);
+    }
+  }
   return; 
 }
 void DCCEX_Class::rx_power_manager(){
   uint8_t i = 0; 
   bool power = false;
   char track = (data_pkt[4]);
-  if (data_pkt[2] == '1') {
-    power = true;
-  }
+//  if (data_pkt[2] == '1') {
+//    power = true;
+//  }
   for (i = 0; i <= max_tracks; i++) {
   if (track == DCCSigs[i].trackID) { //Command relevant to one of ours
-    if (power == true){ 
+        if (data_pkt[2] == '3'){ 
+      DCCSigs[i].StateChange(4);
+      }
+    if (data_pkt[2] == '2'){ 
+      DCCSigs[i].StateChange(3);
+      }
+    if (data_pkt[2] == '1'){ 
       DCCSigs[i].StateChange(2);
-      }  
+      }
+    if (data_pkt[2] == '0') {
+      DCCSigs[i].StateChange(0);  
+    }
     }
   }
   return;

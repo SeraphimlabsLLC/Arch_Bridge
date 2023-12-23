@@ -32,11 +32,15 @@ void dccrx::loop_process(){
         
   }
   if ((TIME_US - last_rx_time) < 50000) {
-    dcc_ok = true;
-    //Serial.printf("DCC OK \n");
+    if (dcc_ok != true) {
+      Serial.printf("DCC OK \n");
+     dcc_ok = true;
+    }
   } else {
-    dcc_ok = false; 
-    //Serial.printf("DCC NOT OK\n");
+    if (dcc_ok != false) {
+      Serial.printf("DCC NOT OK\n");
+      dcc_ok = false;
+    }
   }
   rx_queue(); 
   return;
@@ -57,7 +61,7 @@ uint8_t dccrx::rx_bit_processor(bool input){ //Append the input bit onto the dat
     rx_num_bytes = 0; //packet byte 0
     rx_byteout = 0; // empty output byte
     consecutive_ones = 0; //Preamble count
-    Serial.printf("New Packet %u started \n", rx_pending); 
+    //Serial.printf("New Packet %u started \n", rx_pending); 
     return 1; //Packet was created and will start populating on the next call    
   }
   if (input == 0) {
@@ -73,18 +77,23 @@ uint8_t dccrx::rx_bit_processor(bool input){ //Append the input bit onto the dat
     rx_byteout = rx_byteout | input; //OR the new bit onto the byte, since the bit shift added a zero at the end.
     
   } else { //rx_num_bits >= 8, copy the finished byte into the packet and check if the packet is complete. 
+    if (rx_num_bytes > 48) {
+      rx_num_bytes = 48; //truncate so it doesn't crash. 
+    }
     rx_packets[rx_pending]->data_len = rx_num_bytes;         
     rx_packets[rx_pending]->packet_data[rx_packets[rx_pending]->data_len] = rx_byteout;
     rx_packets[rx_pending]->packet_time = TIME_US; //Update time this packet last received a bit
-    Serial.printf("dccrx: Byte %x complete, %u in packet %u \n", rx_byteout, rx_num_bytes, rx_pending); 
+    //Serial.printf("dccrx: Byte %x complete, %u in packet %u \n", rx_byteout, rx_num_bytes, rx_pending); 
     if (input == 1) { //Bit 8 is 1, mark packet complete. Checksum it and reset rx_pending. 
-      Serial.printf("dccrx: Completed packet %u \n", rx_pending); 
-      //if (rx_packets[rx_pending]->Read_Checksum()) { //Read checksum, true if valid false if bad.
-       // rx_packets[rx_pending]->state = 3; //packet rx complete
-       // last_rx_time = TIME_US;
-      //} else { //Checksum was invalid, discard packet. 
+      if (rx_packets[rx_pending]->Read_Checksum()) { //Read checksum, true if valid false if bad.
+        //Serial.printf("dccrx: Completed packet %u, checksum ok \n", rx_pending);
+        rx_packets[rx_pending]->state = 3; //packet rx complete
+        
+        last_rx_time = TIME_US;
+      } else { //Checksum was invalid, discard packet. 
+        Serial.printf("dccrx: Completed packet %u, checksum bad \n", rx_pending);
         rx_packets[rx_pending]->state = 4; //packet rx failed, mark for deletion.
-      //}
+      }
       //rx_packets[rx_pending]->reset_packet(); //Dump it for now. 
       rx_pending = -1;
     }
@@ -114,9 +123,10 @@ void dccrx::rx_queue() { //Process queue of packets checking expirations, proces
     }   
     
     if ((rx_packets[i]->state == 4) || (rx_packets[DCC_RX_Q]->state == 5)) { //Packet failed or processed, remove.
-      rx_packets[i]->state = 0;
-      rx_packets[i]->data_len = 0;
-      rx_packets[i]->packet_time = 0;
+      if (i == rx_pending) {
+        rx_pending = -1; 
+      }
+      rx_packets[i]->reset_packet();
     }
   }
 
@@ -124,12 +134,13 @@ void dccrx::rx_queue() { //Process queue of packets checking expirations, proces
 }
 
 void dccrx::rx_decode(uint8_t rx_pkt) {
-    if (!rx_packets[rx_pkt]) { //Was called on an invalid index. Leave.    
+  if (!(rx_packets[rx_pkt])) { //Was called on an invalid index. Leave.    
     return; 
   }
   if (rx_packets[rx_pkt]->state != 3) { //Was called on a packet that isn't complete. Leave it.  
     return; 
   }
+  rx_packets[rx_pkt]->state = 5; //mark complete. 
   return;
 }
 
@@ -149,6 +160,9 @@ uint8_t dccrx::rx_packet_getempty(){ //Scan rx_packets and return 1st empty slot
   }
   if (count == DCC_RX_Q) { //Checked all slots without a result
     Serial.printf("WARNING: rx_packets out of space. RX packet %d will be overwritten, consider increasing LN_RX_Q \n", rx_next_new);
+  }
+  if (rx_next_new == rx_pending) {
+    rx_pending = -1;
   }
   rx_packets[rx_next_new]->reset_packet(); //Sets it to defaults again   
   return rx_next_new;
@@ -180,21 +194,25 @@ bool DCC_packet::Read_Checksum(){ //Verify checksum, returns true if valid, fals
   char xsum = 0x00;
   uint8_t i = 0;
   i = 0;
-    while (i < data_len){
+  Serial.printf("dccrx Checksum: %x ", xsum); 
+    for (i = 0; i < (data_len); i++){
     xsum = xsum ^ packet_data[i];
-    //Serial.printf("%x ", xsum);
-    i++;
+    Serial.printf("%x ", xsum);
   }
-  if (xsum == 0xFF) {
+  Serial.printf(" \n"); 
+  if (xsum == 0) {
     return true;
   }
   return false; 
 }
 uint8_t DCC_packet::packet_size_check(){ //Check that a packet has a valid size. 
-  uint8_t packet_size = 0;
+  uint8_t packet_size = data_len;
 
   return packet_size;
 }
 void DCC_packet::reset_packet(){ //Reset packet slot to defaults
+  state = 0;
+  data_len = 2;
+  packet_time = 0;
   return;
 }
