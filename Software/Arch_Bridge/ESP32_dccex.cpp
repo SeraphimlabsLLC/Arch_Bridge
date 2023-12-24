@@ -129,7 +129,7 @@ void DCCEX_Class::rx_decode(){
 
     case 'c': //Display currents
     for (i = 0; i < max_tracks; i++) {
-      val = (DCCSigs[i].adc_current_ticks)/ DCCSigs[i].adc_scale; //scaled mA
+      val = (DCCSigs[i].adc_smooth_ticks)/ (DCCSigs[i].adc_scale / 1000); //scaled mA
       Serial.printf("Track %c ADC analog value = %u milliamps, mode %u \n", DCCSigs[i].trackID, val, DCCSigs[i].powermode);
     }
     break; 
@@ -137,36 +137,6 @@ void DCCEX_Class::rx_decode(){
     case 'p': //power manager
     rx_power_manager();
     break;
-    
-    case '0':  //power off
-    Serial.printf("DCCEX Changing to OFF \n");
-      DCCSigs[0].ModeChange(0);
-      DCCSigs[1].ModeChange(0);
-
-    break;
-    case '1':
-    Serial.printf("DCCEX Changing to DCC EXT, ON_FWD \n");
-      DCCSigs[0].ModeChange(1);
-      DCCSigs[1].ModeChange(1);   
-      DCCSigs[0].StateChange(2);//Set to DCC_ON
-      DCCSigs[1].StateChange(2);//Set to DCC_ON
-
-    break;
-    case '2':
-      Serial.printf("DCCEX Changing to DC, ON_FWD \n");
-      DCCSigs[0].ModeChange(3);
-      DCCSigs[1].ModeChange(3);   
-      DCCSigs[0].StateChange(2);//Set to ON_FWD
-      DCCSigs[1].StateChange(2);//Set to ON_FWD  
-      break; 
-
-    case '3': 
-      Serial.printf("DCCEX Changing to DC, ON_REV \n");
-      DCCSigs[0].ModeChange(3);
-      DCCSigs[1].ModeChange(3);   
-      DCCSigs[0].StateChange(3);//Set to ON_REV
-      DCCSigs[1].StateChange(3);//Set to ON_REV  
-      break;  
 
     case 'D': 
       Serial.printf("DCCEX Debug: \n"); 
@@ -227,24 +197,23 @@ void DCCEX_Class::rx_track_manager(){ //Process track manager input
 void DCCEX_Class::rx_power_manager(){
   uint8_t i = 0; 
   bool power = false;
-  char track = (data_pkt[4]);
+  //Serial.printf("DCCEX Power State %c, track %c \n", data_pkt[2], data_pkt[4]);
 //  if (data_pkt[2] == '1') {
 //    power = true;
 //  }
-  for (i = 0; i <= max_tracks; i++) {
-  if (track == DCCSigs[i].trackID) { //Command relevant to one of ours
-        if (data_pkt[2] == '3'){ 
-      DCCSigs[i].StateChange(4);
+  for (i = 0; i < max_tracks; i++) {
+    //Serial.printf("rx_power_manager track find %c, %c \n", data_pkt[4], DCCSigs[i].trackID);
+    if (data_pkt[4] == DCCSigs[i].trackID) { //Command relevant to one of ours
+      if (data_pkt[2] == '2'){ 
+        DCCSigs[i].StateChange(2);
+        }
+      if (data_pkt[2] == '1'){ 
+        DCCSigs[i].StateChange(1);
+        }
+      if (data_pkt[2] == '0') {
+        DCCSigs[i].StateChange(0);  
       }
-    if (data_pkt[2] == '2'){ 
-      DCCSigs[i].StateChange(3);
-      }
-    if (data_pkt[2] == '1'){ 
-      DCCSigs[i].StateChange(2);
-      }
-    if (data_pkt[2] == '0') {
-      DCCSigs[i].StateChange(0);  
-    }
+      break; //Exit the loop early since we found what we needed. 
     }
   }
   return;

@@ -22,7 +22,7 @@
 #include "driver/adc.h"
 
 /*Track Configurations
- * Format: Enable Out pin, Enable In pin, rev/sig pin, brake pin, adc pin, adc ticks per amp x1000, adc zero offset x 1000, adc trip ticks x1000
+ * Format: Enable Out pin, Enable In/DC mode pin, rev/sig pin, brake pin, adc pin, adc ticks per amp x1000, adc zero offset x 1000, adc trip ticks x1000
  * adc ticks per amp is calculated to match the hardware. 
  * adc trip ticks is calculated to where the hardware must shut off. Max is 4095 * 1000. 
  * 
@@ -36,8 +36,6 @@
 void Tracks_Init();
 void Tracks_Loop();
 bool MasterEnable();
-
-#define OL_COOLDOWN 500 //Time in mS that the power should be off when overload detected. 
  
 #if BOARD_TYPE == DYNAMO
  // #pragma message "Building as Dynamo"
@@ -56,8 +54,8 @@ bool MasterEnable();
 #if BOARD_TYPE == ARCH_BRIDGE
  // #pragma message "Building as Arch Bridge"
   #define MAX_TRACKS 2
-  #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 16938409, -65000, 3541000, 'R');
-  #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 1693480, -65000, 3541000, 'S');
+  #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 16938409, -65000, 3650000, 'R');
+  #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 1693480, -65000, 3650000, 'S');
   #define MASTER_EN 3 //Is an Output Enable instead of an input
   #define DIR_MONITOR 9 //GPIO9, railsync input. 
   #define ADC_MIN_OFFSET 60 //ADC is inaccurate at low values.
@@ -65,7 +63,7 @@ bool MasterEnable();
 #endif
 
 //ADC Settings:
-#define OL_COOLDOWN 500 //Time in mS that the power should be off when overload detected. 
+#define OL_COOLDOWN 5000 //Time in mS that the power should be off when overload detected. 
 #define ADC_DMAX 4095 //4095 in single shot, 8191 in continuous
 #define ADC_VMAX 3.1 //Max readable voltage is actually 3.1v using mode ADC_ATTEN_DB_11  
 
@@ -79,9 +77,10 @@ class TrackChannel {
     int32_t adc_base_ticks; //value read from ADC when output is off for calc reference.
     int32_t adc_previous_ticks; //value read on prior scan
     int32_t adc_current_ticks; //value read on most recent scan
+    int32_t adc_smooth_ticks; // =(adc_smooth_ticks * 15 + adc_current_ticks) / 16
     int32_t adc_overload_trip; //Pre-calculate trip threshold in adc ticks
     int32_t adc_scale; //ADC ticks per amp * 1000. This can be higher than the adc max value if the hardware is <1A max. 
-    int32_t adc_offset; //ADC offset in ticks * 1000. Note this is signed. 
+    int16_t adc_offset; //ADC offset in ticks * 1000. 
 
     gpio_num_t enable_out_pin;
     gpio_num_t enable_in_pin; //Enable_in on ArchBridge, DC mode select on Dynamo
