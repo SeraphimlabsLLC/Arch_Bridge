@@ -37,6 +37,7 @@ void Tracks_Init();
 void Tracks_Loop();
 bool MasterEnable();
 
+#define OL_COOLDOWN 500 //Time in mS that the power should be off when overload detected. 
  
 #if BOARD_TYPE == DYNAMO
  // #pragma message "Building as Dynamo"
@@ -64,43 +65,36 @@ bool MasterEnable();
 #endif
 
 //ADC Settings:
+#define OL_COOLDOWN 500 //Time in mS that the power should be off when overload detected. 
 #define ADC_DMAX 4095 //4095 in single shot, 8191 in continuous
 #define ADC_VMAX 3.1 //Max readable voltage is actually 3.1v using mode ADC_ATTEN_DB_11  
-
-//I2C settings: 
-#define I2C_SDA_PIN 8 //GPIO17 on Dynamo
-#define I2C_SCL_PIN 9 //GPIO18 on Dynamo
-#define I2C_MASTER false
-#define I2C_SLAVE_ADDR 43
-#define I2C_CLOCK 40000
-
-#define I2C_SLAVE_PORT 0
-#define I2C_TX_BUFF 256
-#define I2C_RX_BUFF 4096
 
 class TrackChannel {
   //Very similar to DCC-EX class MotorDriver, but no dual signal support. 
   public:
     uint8_t index; //What track number is this? 
-    uint8_t powerstate; //0 = off, 1 = overload, 2 = on_forward, 3 =on_reversed. 
+    char trackID; //Char to use as a handle for DCC-EX commmands
+    int8_t powerstate; //0 = off, 1 = on_forward, 2 = on_reverse - indicates overloaded 
     uint8_t powermode; //0 = none, 1 = DCC_external, 2 = DCC_override, 3 = DC, 4 = DCX.
-    char trackID;
-    uint32_t adc_previous_ticks; //value read on prior scan
-    uint32_t adc_current_ticks; //value read on most recent scan
-    void SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint32_t adcscale, int32_t adcoffset, uint32_t adc_ol_trip, char track); 
-    void ModeChange (uint8_t newmode);
-    void StateChange(uint8_t newstate);
-    uint8_t CheckEnable(); //Reads en_in, sets en_out the same, and returns on or off. 
-    void adc_read();
-    uint32_t adc_scale; //ADC ticks per amp * 1000. This can be higher than the adc max value if the hardware is <1A max. 
+    int32_t adc_base_ticks; //value read from ADC when output is off for calc reference.
+    int32_t adc_previous_ticks; //value read on prior scan
+    int32_t adc_current_ticks; //value read on most recent scan
+    int32_t adc_overload_trip; //Pre-calculate trip threshold in adc ticks
+    int32_t adc_scale; //ADC ticks per amp * 1000. This can be higher than the adc max value if the hardware is <1A max. 
     int32_t adc_offset; //ADC offset in ticks * 1000. Note this is signed. 
-    uint32_t adc_overload_trip; //Pre-calculate trip threshold in adc ticks
-    uint8_t overload_state; //holds previous state on OL, or 0. 
-    uint32_t overload_cooldown; //Holds ticks remaining before retry
-    uint32_t adc_base_ticks; //value read from ADC when output is off for calc reference.
+
     gpio_num_t enable_out_pin;
-    gpio_num_t enable_in_pin; //Not used in Dynamo, will be used in ArchBridge. 
+    gpio_num_t enable_in_pin; //Enable_in on ArchBridge, DC mode select on Dynamo
     gpio_num_t reverse_pin;
     gpio_num_t brake_pin;
     adc1_channel_t adc_channel;
+
+    void SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint32_t adcscale, int32_t adcoffset, uint32_t adc_ol_trip, char track); 
+    void ModeChange (int8_t newmode);
+    void StateChange(int8_t newstate);
+    uint8_t CheckEnable(); //Reads en_in, sets en_out the same, and returns on or off. 
+    void adc_read();
+
+    private: 
+    uint64_t overload_cooldown; //time_us of overload last detected
 };

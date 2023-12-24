@@ -38,7 +38,19 @@
 #define TTY_CONFIG tty.uart_init(0, 43, 44, 115200, 4, 128); 
 #define DCCEX_UART dccex.dccex_port.uart_init(2, 15, 16, 115200, 4, 128); //41 and 42 are right next to the uart0 pins for easy routing
 
-//RMT time Constants. Periods from NMRA S9.1 with some additional fudge factor
+//I2C settings: 
+#define I2C_SDA_PIN 8 //GPIO17 on Dynamo
+#define I2C_SCL_PIN 9 //GPIO18 on Dynamo
+#define I2C_MASTER false
+#define I2C_SLAVE_ADDR 43
+#define I2C_CLOCK 40000
+
+#define I2C_SLAVE_PORT 0
+#define I2C_TX_BUFF 256
+#define I2C_RX_BUFF 4096
+
+
+//DCC time Constants. Periods from NMRA S9.1 with some additional fudge factor
 #define DCC_1_HALFPERIOD 58  //4640 // 1 / 80000000 * 4640 = 58us
 #define DCC_1_MIN_HALFPERIOD 50 //NMRA S9.1 says 55uS Minimum half-1. 
 #define DCC_1_MAX_HALFPERIOD 66 //NMRA S9.1 says 61uS Maximum half-1

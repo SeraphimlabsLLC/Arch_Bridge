@@ -64,18 +64,13 @@ void Tracks_Init(){ //Populates track class with values including ADC
 }
 void Tracks_Loop(){ //Check tasks each scan cycle.
   uint8_t i = 0;
-  uint32_t milliamps = 0;
   MasterEnable(); //Update Master status. Dynamo this is external input, ArchBridge is always true.
-    while (i < max_tracks){ //Check active tracks for faults
-    if (DCCSigs[i].powerstate >= 2){ //State is set to on forward or on reverse, ok to enable. 
+  
+  for (i = 0; i < max_tracks; i++){ //Check active tracks for faults
+    DCCSigs[i].adc_read(); //actually read the ADC and enforce overload cooldown.  
+    if (DCCSigs[i].powerstate > 0){ //Power should be on
       DCCSigs[i].CheckEnable();
-      //gpio_set_level(gpio_num_t(DCCSigs[i].enable_out_pin), 1); //Write 1 to enable out on each track
-      DCCSigs[i].adc_read(); //actually read the ADC and enforce overload shutdown
-      //milliamps = DCCSigs[i].adc_current_ticks; //raw ticks     
-      //milliamps = (DCCSigs[i].adc_current_ticks)/ DCCSigs[i].adc_scale; //scaled mA
-      //Serial.printf("Track %u ADC analog value = %u milliamps \n", i + 1, milliamps);
     }
-    i++;
   }
 
   return;
@@ -118,7 +113,7 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
     return;
 }
 
-void TrackChannel::ModeChange (uint8_t newmode){ //Updates GPIO modes when changing powermode
+void TrackChannel::ModeChange (int8_t newmode){ //Updates GPIO modes when changing powermode
   //powermode 0 = none, 1 = DCC_external, 2 = DCC_override, 3 = DC, 4 = DCX.
   gpio_set_level(gpio_num_t(enable_out_pin), 0); //Always turn the track off before changing modes
   switch (newmode) {     
@@ -162,67 +157,77 @@ void TrackChannel::ModeChange (uint8_t newmode){ //Updates GPIO modes when chang
   return;
 }
 
-void TrackChannel::StateChange(uint8_t newstate){
-  switch (newstate) {
-    case 3: //ON DC REV
-      if (powermode == 3) { //This state can only be selected in DC mode, otherwise it does nothing.
-      gpio_set_level(reverse_pin, 1); //Only set reverse in DCC INT or DC mode
-      gpio_set_level(brake_pin, 0);  //Replace by PWM control     
-      #ifdef DEBUG
-        Serial.printf("Track %d in DC Reverse state \n", index);
-      #endif
-      gpio_set_level(enable_out_pin, 1); //enable out = on   
-      }
-    break;
-    case 2: //ON DCC or ON DC FWD.
-      if (powermode == 3) {//DC Forward
-        gpio_set_level(reverse_pin, 0);    
-        gpio_set_level(brake_pin, 0);  //Replace by PWM control  
-      }
-      if (powermode == 2) {//DCC INT
-        gpio_set_level(reverse_pin, 0); //Replace by RMT output
-        gpio_set_level(brake_pin, 0);      
-      }
-      //DCC EXT is covered by the remaining commands. Powermodes 1 and 0 turn off enable, this turns it back on.
-      #ifdef DEBUG
-        Serial.printf("Track %d in DCC or DC Forward state \n", index);
-      #endif
-      gpio_set_level(enable_out_pin, 1); //enable out = on 
-    break;
-    case 1: //Overloaded. Copy previous state so that it can be changed back after cooldown
+void TrackChannel::StateChange(int8_t newstate){
+  int8_t power_rev = 0;
+//int8_t powerstate; //0 = off, 1 = on_forward, 2 = on_reverse - indicates overloaded 
+//uint8_t powermode; //0 = none, 1 = DCC_external, 2 = DCC_override, 3 = DC, 4 = DCX.
+  if (newstate <= 0) { //Overloaded or off. Shut down enable_out, but no need to change others. 
       gpio_set_level(enable_out_pin, 0); //enable out = off 
-      overload_state = powerstate; //save previous state 
-      overload_cooldown = 4310; //4310 ticks of 58usec = about 250ms to let the chip cool
-      Serial.printf("Track %d Off due to Overloaded state \n", index);
-    break;
-    case 0: //Track off. Clear overload cache/timer since we don't need it now. 
-      gpio_set_level(enable_out_pin, 0); //enable out = off 
-      overload_state = 0;
-      overload_cooldown = 0; 
       #ifdef DEBUG
-      Serial.printf("Track %d in Off state \n", index);
+        Serial.printf("Track %c Off \n", trackID);
       #endif
-    break;           
+      return; 
+  }  
+  //Power should be on in state 1 or 2 at this point. 
+
+  /*In DCC EXT, rev and brk is controlled by EXT waveform generator 
+  * in DCC INT, rev and brk is controlled by INT waveform generator.
+  * Either way, it shouldn't need to be changed here since powermode has control of that. 
+  * Only modes DC and DCX need to be delt with.
+  */
+  if (powermode == 3) {//In DC mode 
+    if (newstate == 1) { //DC mode forward  
+      gpio_set_level(reverse_pin, 0);
+      #ifdef DEBUG
+        Serial.printf("Track %c in DC Forward state \n", trackID);
+      #endif
+    }
+    if (newstate == 2) { //DC mode reverse
+      gpio_set_level(reverse_pin, 1);
+      #ifdef DEBUG
+        Serial.printf("Track %c in DC Reverse state \n", trackID);
+      #endif
+    }
   }
+  if (powermode == 4) {//In DCX mode 
+    if (newstate == 1) { //DCX mode 'forward' is actually reverse. 
+      gpio_set_level(reverse_pin, 1);
+      #ifdef DEBUG
+        Serial.printf("Track %c in DC Reverse state \n", trackID);
+      #endif
+    }
+    if (newstate == 2) { //DCX mode 'reverse' is actually forward. 
+      gpio_set_level(reverse_pin, 0);
+      #ifdef DEBUG
+        Serial.printf("Track %c in DC Forward state \n", trackID);
+      #endif
+    }
+  }
+  CheckEnable(); //Turns on enable if in a mode that allows it
   powerstate = newstate; //update saved power state  
   return;
 }
 
-void TrackChannel::adc_read() { //Needs the actual ADC read implemented still
+void TrackChannel::adc_read() {
   uint16_t adcraw = 0;
   adc_previous_ticks = adc_current_ticks; //update value read on prior scan
   //ADC runs at a max of 5MHz, and needs 25 clock cycles to complete. Effectively 200khz or 5usec minimum. 
-  //adc_current_ticks = analogRead(adc_channel); //Read using Arduino IDE, now obsolete
   adcraw = adc1_get_raw(adc1_channel_t (adc_channel));
-  adc_current_ticks = adcraw * 1000000 + adc_offset; //Expand from uint16_t to uint32_t
-  if (adc_current_ticks > (adcraw * 1000000)){ //int rollover happened due to adc_offset being less than adcraw. Just set it to 0
+  adc_current_ticks = int32_t (adcraw) * 1000000 + adc_offset; //Expand from uint16_t to int32_t
+  if (adc_current_ticks < 0){ //adc_offset was negative, and would result in a negative ticks. Just set it to 0. 
     adc_current_ticks = 0; 
   }
-  
+ 
   //Serial.printf("ADC read %u, upscaled %u \n", adcraw, adc_current_ticks);
   if (adc_current_ticks > adc_overload_trip) {
-    Serial.printf("ADC detected overload at %u ticks, threshold %u \n", adc_current_ticks, adc_overload_trip);
-    StateChange(1); //Set power state overload   
+    if (TIME_US - overload_cooldown < (OL_COOLDOWN * 1000)) { //Only warn when it initially trips, not if it remains. 
+      Serial.printf("ADC detected overload at %u ticks, threshold %u \n", adc_current_ticks, adc_overload_trip);
+    }
+    overload_cooldown = TIME_US;
+    StateChange(powerstate * -1); //Set power state overload by making mode negative. 
+  }
+  if ((powerstate < 0) && (TIME_US - overload_cooldown < (OL_COOLDOWN * 1000))){ 
+    StateChange(powerstate * -1); //Turn power on again by changing the mode back to positive.  
   }
   return;
 }
@@ -230,7 +235,7 @@ void TrackChannel::adc_read() { //Needs the actual ADC read implemented still
 uint8_t TrackChannel::CheckEnable(){ //Arch Bridge has to check enable_input_pin for each track. Others this always returns 1 with no pin changes.
   uint8_t enable_in = 1; //default value for enable in
   #if BOARD_TYPE == ARCH_BRIDGE //Enable In is only used on Arch Bridge
-    if ((enable_in_pin != 0) && (powermode = 1)) { //If enable_in_pin is configured and powermode = 1 for DCC EXT, read and update enable_in_pin
+    if ((enable_in_pin != 0) && (powermode > 0)) { //If enable_in_pin is configured and powermode > 0, read and update enable_in_pin
       enable_in = gpio_get_level(enable_in_pin);
       //Serial.printf("Enable In is %u \n", enable_in);
     }
