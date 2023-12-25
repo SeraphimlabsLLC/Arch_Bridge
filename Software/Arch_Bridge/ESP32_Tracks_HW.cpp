@@ -131,7 +131,7 @@ void TrackChannel::ModeChange (int8_t newmode){ //Updates GPIO modes when changi
       Serial.printf("Track %d configured to NO MODE \n", index);
       StateChange(0); //set state to off since it isn't configured anyway. 
     break;
-    case 1: //DCC external. 
+    case 1: //EXT, external control of all lines 
       gpio_reset_pin(gpio_num_t(reverse_pin));
       gpio_set_direction(gpio_num_t(reverse_pin), GPIO_MODE_INPUT);  //Consider GPIO_MODE_INPUT_OUTPUT_OD to allow IO without mode change
       gpio_reset_pin(gpio_num_t(brake_pin));

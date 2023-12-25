@@ -40,10 +40,10 @@ bool MasterEnable();
 #if BOARD_TYPE == DYNAMO
  // #pragma message "Building as Dynamo"
   #define MAX_TRACKS 4
-  #define TRACK_1 DCCSigs[0].SetupHW(9, 0, 6, 13, 1, 81900, -60000, 3500000, 'R');
-  #define TRACK_2 DCCSigs[1].SetupHW(10, 0, 7,  14, 2, 81900, -60000, 3500000, 'S');
-  #define TRACK_3 DCCSigs[2].SetupHW(11, 0, 8, 48, 4, 81900, -60000, 3500000, 'T');
-  #define TRACK_4 DCCSigs[3].SetupHW(12, 0, 9, 48, 5, 81900, -60000, 3500000, 'U');
+  #define TRACK_1 DCCSigs[0].SetupHW(9, 0, 6, 13, 1, 81900, -60000, 3500000, 'C');
+  #define TRACK_2 DCCSigs[1].SetupHW(10, 0, 7,  14, 2, 81900, -60000, 3500000, 'D');
+  #define TRACK_3 DCCSigs[2].SetupHW(11, 0, 8, 48, 4, 81900, -60000, 3500000, 'E');
+  #define TRACK_4 DCCSigs[3].SetupHW(12, 0, 9, 48, 5, 81900, -60000, 3500000, 'F');
   #define MASTER_EN 15 //GPIO15
   #define MASTER_EN_DEGLITCH 4 //uSec required between readings. Must have 2 of the same value to change state.
   #define DIR_MONITOR 38 //GPIO38, Dir Monitor 
@@ -54,8 +54,8 @@ bool MasterEnable();
 #if BOARD_TYPE == ARCH_BRIDGE
  // #pragma message "Building as Arch Bridge"
   #define MAX_TRACKS 2
-  #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 16938409, -65000, 3650000, 'R');
-  #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 1693480, -65000, 3650000, 'S');
+  #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 16938409, -65000, 3650000, 'C');
+  #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 1693480, -65000, 3650000, 'D');
   #define MASTER_EN 3 //Is an Output Enable instead of an input
   #define DIR_MONITOR 9 //GPIO9, railsync input. 
   #define ADC_MIN_OFFSET 60 //ADC is inaccurate at low values.
@@ -73,7 +73,7 @@ class TrackChannel {
     uint8_t index; //What track number is this? 
     char trackID; //Char to use as a handle for DCC-EX commmands
     int8_t powerstate; //0 = off, 1 = on_forward, 2 = on_reverse - indicates overloaded 
-    uint8_t powermode; //0 = none, 1 = DCC_external, 2 = DCC_override, 3 = DC, 4 = DCX.
+    uint8_t powermode; //0 = none, 1 = EXT, 2 = DCC_Internal, 3 = DC, 4 = DCX.
     int32_t adc_base_ticks; //value read from ADC when output is off for calc reference.
     int32_t adc_previous_ticks; //value read on prior scan
     int32_t adc_current_ticks; //value read on most recent scan
