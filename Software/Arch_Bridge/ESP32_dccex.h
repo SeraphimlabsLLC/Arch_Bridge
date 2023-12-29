@@ -73,6 +73,7 @@ class DCCEX_Class {
   void tx_cab_speed(uint16_t addr, uint8_t spd, bool dir);
 
   private:
+  uint8_t state; //0 = startup, 1 = running
   uint64_t fastclock_ping;
   uint32_t fastclock_next;
   

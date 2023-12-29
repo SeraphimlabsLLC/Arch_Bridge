@@ -72,8 +72,9 @@ class TrackChannel {
   public:
     uint8_t index; //What track number is this? 
     char trackID; //Char to use as a handle for DCC-EX commmands
+    int16_t cabaddr; //DCC addresss used for DC mode
     int8_t powerstate; //0 = off, 1 = on_forward, 2 = on_reverse - indicates overloaded 
-    uint8_t powermode; //0 = none, 1 = EXT, 2 = DCC_Internal, 3 = DC, 4 = DCX.
+    uint8_t powermode; //0 = none, 1 = EXT, 2 = DCC_Internal, 3 = DC, 4 = DCX. Future: Mode for generating PROG? 
     int32_t adc_base_ticks; //value read from ADC when output is off for calc reference.
     int32_t adc_previous_ticks; //value read on prior scan
     int32_t adc_current_ticks; //value read on most recent scan

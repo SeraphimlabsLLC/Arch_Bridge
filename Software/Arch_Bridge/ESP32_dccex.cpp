@@ -35,6 +35,15 @@ extern uint8_t max_tracks;
 extern dccrx dcc; 
 
 void DCCEX_Class::loop_process(){
+  if (state == 0) { //Startup
+    time_us = TIME_US; 
+    if (time_us > 100000) { //100mS startup delay
+      char* txdata = "<=>\n"; //Query track states from an attached DCC-EX
+      tx_send(txdata, 4);
+      state = 1; //Running
+    }
+    return; 
+  }
   //Serial.printf("DCCEX uart_rx cycle: \n");
   uart_rx(false); //Read uart data 
   //Serial.printf("DCCEX rx_scan cycle: \n");
@@ -134,6 +143,10 @@ void DCCEX_Class::rx_decode(){
     }
     break; 
 
+    case 'i': //DCC-EX version string.
+
+    break; 
+
     case 'p': //power manager
     rx_power_manager();
     break;
@@ -179,17 +192,63 @@ void DCCEX_Class::rx_decode(){
 void DCCEX_Class::rx_track_manager(){ //Process track manager input
   uint8_t i = 0; 
   char track = (data_pkt[3]);
-  //char rawmode[6]; 
   uint8_t tmode = 0; 
-//  for (i = 0; data_pkt[i + 4] != '>'; i++) {
-    //rawmode[i] = data_pkt[i + 4];
-    tmode = tmode * 10 + (data_pkt[5] - 48); //Convert char to int
- // }
+  int16_t dcaddr = -1; 
 
+  if (data_pkt[2] == '>') { //Query to list commands, not to set them. 
+      char* txdata = "<=>\n"; //Query track states from an attached DCC-EX
+      tx_send(txdata, 4);
+    return; 
+  }
+
+//  tmode = tmode * 10 + (data_pkt[5] - 48); //Convert char to int
+/*  if ((data_pkt[5] > 47) && (data_pkt[5] < 58)) { //Was given  a symbol from 0-9. Subtract 48 to convert it to int. 
+    tmode = data_pkt[5] - 48; 
+  } */
+
+  //Command is 0 or NONE, set to OFF mode. 
+  if ((data_pkt[5] == 'N') && (data_pkt[6] == 'O') && (data_pkt[7] == 'N') && (data_pkt[8] == 'E')) {
+    tmode = 0; 
+  }  
+  //Command is 1 or MAIN, set to DCC EXT mode. 
+  if ((data_pkt[5] == 'M') && (data_pkt[6] == 'A') && (data_pkt[7] == 'I') && (data_pkt[8] == 'N')) {
+    tmode = 1; 
+  }
+  //Command is PROG, set to DCC EXT mode since we can't make our own prog yet. 
+   if ((data_pkt[5] == 'P') && (data_pkt[6] == 'R') && (data_pkt[7] == 'O') && (data_pkt[8] == 'G')) {
+    tmode = 1; 
+  } 
+  //Command is DC, or DCX. Check which and set.  
+  if ((data_pkt[5] == 'D') && (data_pkt[6] == 'C')) {
+    if (data_pkt[7] == ' ')  { //DC mode
+      tmode = 3; 
+      i = 8; //7 is a ' ', so start from 8.
+    }
+    if (data_pkt[7] == 'X')  { //DCX mode
+      tmode = 4;
+      i = 9; //8 should be a ' ', so start from 9. 
+    } 
+
+    while ((data_pkt[i] > 47) && (data_pkt[i] < 58)){ //input range is a number. 
+      if (dcaddr < 0) { //Don't change it from -1 until we are sure we have a valid input to use. 
+        dcaddr = 0; 
+      }
+      dcaddr = dcaddr * 10 + (data_pkt[i] - 48); //Convert str to int
+      i++; 
+      if (!(data_pkt[i])) { //Out of data. Command was invalid. 
+        return; 
+      }
+    }
+    Serial.printf("DC Mode intended for track %c with cab address %i, command %s \n", track, dcaddr, data_pkt);
+  }  
+ 
   Serial.printf("Track %c mode %u \n", track, tmode);
   for (i = 0; i <= max_tracks; i++) {
   if (track == DCCSigs[i].trackID) { //Command relevant to one of ours
       DCCSigs[i].ModeChange(tmode);
+      if (dcaddr >= 0) { //Set DC address if one was given. 
+        DCCSigs[i].cabaddr = dcaddr; 
+      }
     }
   }
   return; 

@@ -84,6 +84,7 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
     trackID = track; //track ID char for DCCEX
     powerstate = 0; //Power is off by default
     powermode = 0; //Mode is not configured by default  
+    cabaddr = -1; //Set to not configured. 
     //Copy config values to class values
     enable_out_pin = gpio_num_t(en_out_pin);
     enable_in_pin = gpio_num_t(en_in_pin);
@@ -128,7 +129,7 @@ void TrackChannel::ModeChange (int8_t newmode){ //Updates GPIO modes when changi
     case 0: //Not Configured, reset the pins and don't configure them
       gpio_reset_pin(gpio_num_t(reverse_pin));
       gpio_reset_pin(gpio_num_t(brake_pin));
-      Serial.printf("Track %d configured to NO MODE \n", index);
+      Serial.printf("Track %c configured to NO MODE \n", trackID);
       StateChange(0); //set state to off since it isn't configured anyway. 
     break;
     case 1: //EXT, external control of all lines 
@@ -136,14 +137,14 @@ void TrackChannel::ModeChange (int8_t newmode){ //Updates GPIO modes when changi
       gpio_set_direction(gpio_num_t(reverse_pin), GPIO_MODE_INPUT);  //Consider GPIO_MODE_INPUT_OUTPUT_OD to allow IO without mode change
       gpio_reset_pin(gpio_num_t(brake_pin));
       gpio_set_direction(gpio_num_t(brake_pin), GPIO_MODE_INPUT);
-      Serial.printf("Track %d configured to DCC EXT \n", index);
+      Serial.printf("Track %c configured to DCC EXT \n", trackID);
     break;   
     case 2: //DCC internal aka rev override.  
       gpio_reset_pin(gpio_num_t(reverse_pin));
       gpio_set_direction(gpio_num_t(reverse_pin), GPIO_MODE_OUTPUT); 
       gpio_reset_pin(gpio_num_t(brake_pin));
       gpio_set_direction(gpio_num_t(brake_pin), GPIO_MODE_OUTPUT); 
-      Serial.printf("Track %d configured to DCC INT \n", index);
+      Serial.printf("Track %c configured to DCC INT \n", trackID);
     break;
     case 3: //DC:
     case 4: //DCX (DC Reverse). reset_pin inverson is now handled in StateChange()
@@ -152,8 +153,10 @@ void TrackChannel::ModeChange (int8_t newmode){ //Updates GPIO modes when changi
       gpio_reset_pin(gpio_num_t(brake_pin));
       gpio_set_direction(gpio_num_t(brake_pin), GPIO_MODE_OUTPUT); 
       //TODO: Insert commands to enable brake PWM
-      
-      Serial.printf("Track %d configured to DC \n", index);
+      Serial.printf("Track %d configured to DC \n", trackID);
+      if (cabaddr < 0) {
+        Serial.printf("Track %c configured to DC but has no addresss and cannot be controlled. \n", trackID); 
+      }
     break;
   }
   #if BOARD_TYPE == DYNAMO //Dynamo reuses enable_in for DC select. This code isn't necessary on Arch Bridge
