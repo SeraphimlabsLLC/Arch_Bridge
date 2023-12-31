@@ -34,9 +34,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 0.0,
-          "height": 1.0,
-          "width": 1.0
+          "drill": 4.3,
+          "height": 7.5,
+          "width": 7.5
         },
         "silk_line_width": 0.12,
         "silk_text_italic": false,
@@ -713,6 +713,10 @@
       {
         "netclass": "Atmega",
         "pattern": "gnd"
+      },
+      {
+        "netclass": "Atmega",
+        "pattern": "none"
       }
     ]
   },
@@ -752,7 +756,7 @@
     },
     "net_format_name": "Pcbnew",
     "page_layout_descr_file": "",
-    "plot_directory": "C:/Users/Sean/Desktop/Model Trains/",
+    "plot_directory": "../../",
     "spice_adjust_passive_values": false,
     "spice_current_sheet_as_root": false,
     "spice_external_command": "spice \"%I\"",
