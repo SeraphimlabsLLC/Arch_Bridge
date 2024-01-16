@@ -21,6 +21,7 @@ ESP_Uart LN_port; //Loconet uart object
 LN_Class Loconet; //Loconet processing object
 volatile uint64_t LN_cd_edge = 0; //time_us of last edge received. 
 volatile bool LN_cd_hit = false; //true if the ISR saw ((rx_pin == 0) && (tx_pin == 1))
+volatile uint64_t LN_tx_start = 0; 
 
 //extern DCCEX_Class dccex_port;
 extern uint64_t time_us;
@@ -53,12 +54,33 @@ void LN_Class::loop_process(){
       Serial.printf("Loconet start \n");
       attachInterrupt(Loconet.LN_port.rx_pin, LN_CD_isr, CHANGE); //Attach the pcint used for CD     
       netstate = active;
+      //LN_cd_edge = TIME_US; //Prime it to avoid looping. 
     }
     return;
   }
+  //Check for loss of master connection. 
+  if ((TIME_US - LN_cd_edge) > 100000) {
+    if (gpio_get_level(LN_port.rx_pin) == 0) {
+      Loconet.rx_last_us = TIME_US;
+      if (netstate != disconnected) { 
+        netstate = disconnected;
+        Serial.printf("Loconet lost connection to master. Resetting link state. \n"); 
+      }
+      return; 
+    }
+  }
+  
   if ((LN_cd_hit == true) && (tx_pending > -1)) {
     Serial.printf("LN CD true at timestamp %u \n", LN_cd_edge); 
     LN_cd_hit = false; 
+  }
+
+  if ((LN_tx_start > 0) && (tx_pending > -1)) {
+    uint64_t tx_delay = LN_tx_start - tx_packets[tx_pending]->last_start_time; 
+    Serial.printf ("LN_loop TX delay ");
+    Serial.printf ("%u", tx_delay); 
+    Serial.printf (" \n"); 
+    LN_tx_start = 0;     
   }
     
   //Network should be ok to interact with: 
@@ -557,6 +579,7 @@ void LN_Class::tx_send(uint8_t txptr){
      }
       Serial.printf("\n"); 
       tx_packets[txptr]->last_start_time = time_us;  
+      
       //LN_port.uart_write(writedata, tx_pkt_len);
       LN_port.uart_write(tx_packets[txptr]->data_ptr, tx_pkt_len);
       tx_packets[txptr]->state = 3; //sent 
@@ -624,6 +647,12 @@ void IRAM_ATTR LN_CD_isr(){
   if (gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin)) == 1) {
     if (gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin)) == 0) {
       LN_cd_hit = true; //set flag that a collision was detected. 
+    }
+  } else { //Diagnostic: Measure how long from when data was buffered to when it actually starts
+    if (gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin)) == 0) {
+      if (LN_tx_start == 0) {
+        LN_tx_start = TIME_US;
+      } 
     }
   }
 

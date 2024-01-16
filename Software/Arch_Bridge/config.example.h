@@ -28,8 +28,8 @@
 #define FCLK_MINUTES 0 //Initial clock minutes
 #define FCLK_SECONDS 0 //Initial clock seconds
 
-#define TIME_US micros() 
-// Alternative: esp_timer_get_time();
+#define TIME_US esp_timer_get_time()
+// Alternative: micros();
 
 /*TTY settings:
 * uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
