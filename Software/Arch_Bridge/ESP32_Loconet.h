@@ -113,11 +113,8 @@ class LN_Class {
   uint64_t LN_loop_timer; //Time since last loop_process
   ESP_Uart LN_port; //Class inside a class
   LN_netstate netstate; //Network operating condition
-//  char rx_opcode; //Last opcode received
-  uint64_t rx_last_us; //time in startup us of last byte received  
-  uint64_t rx_opcode_last_us; //time of last opcode detected
-  uint64_t last_rx_process; //time of last read scan
-  uint64_t last_tx_us; //timestamp of last tx attempt
+  uint64_t netstate_time; //time of last netstate change
+//  uint64_t rx_last_us; //time in startup us of last byte received  
   uint8_t tx_pkt_len; //length of last tx packet
  
   void loop_process(); //Process time based data

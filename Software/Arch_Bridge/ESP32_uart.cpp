@@ -54,6 +54,7 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t
     ESP_ERROR_CHECK(uart_param_config(uart_port_t(uartnum), &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(uart_port_t(uartnum), tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
     ESP_ERROR_CHECK(uart_flush(uart_port_t(uartnum)));
+    ESP_ERROR_CHECK(uart_set_rx_timeout(uartnum, 2)); //RX Timeout after 2 bit intervals instead of 11
     //REG_SET_FIELD(UART_CONF1_REG, UART_RXFIFO_FULL_THRHD, 1); //Change RX threshold to return single bytes. 
 
 

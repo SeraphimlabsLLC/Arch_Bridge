@@ -6,7 +6,7 @@
 #define DYNAMO 1
 #define ARCH_BRIDGE 2
 #define BOARD_TYPE ARCH_BRIDGE
-#define HEARTBEAT_S 60 //Seconds between console heartbeats
+#define HEARTBEAT_S 10 //Seconds between console heartbeats
 
 //System limits. DCC can address up to 16384 combined devices between turnouts, sensors, and signals. 
 #define MAX_ACCESSORIES 16 

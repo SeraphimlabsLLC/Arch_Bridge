@@ -21,7 +21,7 @@ ESP_Uart LN_port; //Loconet uart object
 LN_Class Loconet; //Loconet processing object
 volatile uint64_t LN_cd_edge = 0; //time_us of last edge received. 
 volatile bool LN_cd_hit = false; //true if the ISR saw ((rx_pin == 0) && (tx_pin == 1))
-volatile uint64_t LN_tx_start = 0; 
+volatile uint64_t LN_tx_start = 0; //Diag: Time how long from tx_send() to 1st edge
 
 //extern DCCEX_Class dccex_port;
 extern uint64_t time_us;
@@ -37,37 +37,34 @@ void LN_loop(){//reflector into LN_Class::loop_Process()
 }
 
 void LN_Class::loop_process(){
-  time_us = TIME_US;
 //  if (!((time_us - LN_loop_timer) > (LN_LOOP_DELAY_US))) { //Only scan at the interval specified in ESP32_Loconet.h
 //    return; 
 //  }
 //  LN_loop_timer = time_us; //Update last loop time
 //  uint8_t i = 0;
-  if ((netstate == startup) || (netstate == disconnected)){
+  //Check for loss of master connection. Will reset the link if rx_pin is 0 and has not changed in 100mS. 
+  if ((gpio_get_level(LN_port.rx_pin) == 0) && ((TIME_US - LN_cd_edge) > 100000)) {
+       netstate_time = TIME_US;
+      if (netstate != disconnected) { 
+        netstate = disconnected;
+        Serial.printf("Loconet lost connection to master. Resetting link state. \n"); 
+      }
+      return; 
+  }
+  if ((gpio_get_level(LN_port.rx_pin) == 1) && ((netstate == startup) || (netstate == disconnected))){
     //During startup interval, read the uart to keep it clear but don't process it. 
      uart_rx();
      LN_port.rx_read_processed = 255; //Mark as fully processed so it gets discarded.
-    if ((time_us - Loconet.rx_last_us) > 250000) { 
+    if (((TIME_US - netstate_time) > 250000)) { 
+      netstate_time = TIME_US; 
       LN_port.rx_flush();
       LN_port.tx_flush();
       LN_cd_hit = false;
       Serial.printf("Loconet start \n");
       attachInterrupt(Loconet.LN_port.rx_pin, LN_CD_isr, CHANGE); //Attach the pcint used for CD     
       netstate = active;
-      //LN_cd_edge = TIME_US; //Prime it to avoid looping. 
     }
     return;
-  }
-  //Check for loss of master connection. 
-  if ((TIME_US - LN_cd_edge) > 100000) {
-    if (gpio_get_level(LN_port.rx_pin) == 0) {
-      Loconet.rx_last_us = TIME_US;
-      if (netstate != disconnected) { 
-        netstate = disconnected;
-        Serial.printf("Loconet lost connection to master. Resetting link state. \n"); 
-      }
-      return; 
-    }
   }
   
   if ((LN_cd_hit == true) && (tx_pending > -1)) {
@@ -75,6 +72,7 @@ void LN_Class::loop_process(){
     LN_cd_hit = false; 
   }
 
+//Diag: Check how long from tx_send() to 1st edge
   if ((LN_tx_start > 0) && (tx_pending > -1)) {
     uint64_t tx_delay = LN_tx_start - tx_packets[tx_pending]->last_start_time; 
     Serial.printf ("LN_loop TX delay ");
@@ -84,14 +82,9 @@ void LN_Class::loop_process(){
   }
     
   //Network should be ok to interact with: 
-  //Serial.printf("Loconet uart_rx cycle: \n");
   uart_rx(); //Read uart data into the RX ring
-  //Serial.printf("Loconet rx_scan cycle: \n");
   rx_scan(); //Scan RX ring for an opcode
-  //Serial.printf("Loconet rx_queue cycle: \n");
-  measure_time_start();
   rx_queue(); //Process queued RX packets and run rx_decode
-  measure_time_stop();
   //Serial.printf("Loconet tx_queue cycle: \n");
   tx_queue(); //Try to send any queued packets
   slot_queue(); //Clean up stale slots
@@ -120,8 +113,6 @@ uint8_t LN_Class::uart_rx(){
   read_size = LN_port.uart_read(read_size); //populate rx_read_data and rx_data
   LN_port.rx_flush(); //Clear the uart after reading. 
   if (read_size > 0){ //Data was actually moved, update the timer.
-    time_us = TIME_US;
-    rx_last_us = time_us;
     Serial.printf("uart_rx has bytes in rx_read_data: ");
     for (i = 0; i < read_size; i++) {
       Serial.printf("%x ", LN_port.rx_read_data[i]);
@@ -140,7 +131,6 @@ void LN_Class::rx_scan(){ //Scan received data for a valid frame
   if (LN_port.rx_read_processed != 0) { //Data has already been processed. 
     return; 
   }
-  last_rx_process = time_us; 
   //Serial.printf("RX_Scan processing %u bytes, pending %i \n", LN_port.rx_read_len, rx_pending);
   for (rx_byte = 0; rx_byte < LN_port.rx_read_len; rx_byte++) {
     //Serial.printf("RX_Scan For, rx_pending %i, rxbyte %x, counter rx_byte %u \n", rx_pending, LN_port.rx_read_data[rx_byte], rx_byte);
@@ -229,7 +219,6 @@ void LN_Class::rx_queue(){ //Loop through the RX queue and process all packets i
   uint8_t priority = 255; //Maximum of 20, the out of bounds init means no packet was matched. 
   uint8_t rx_next_decode = 0; 
   time_us = TIME_US;
-
   for (i = 0; i < LN_RX_Q; i++){
     //Serial.printf("RX_Queue. rx_next_check = %u, LN_RX_Q = %u \n", rx_next_check, LN_RX_Q);
     if (rx_packets[rx_next_check]) { //Packet exists, check it.
@@ -267,6 +256,7 @@ void LN_Class::rx_queue(){ //Loop through the RX queue and process all packets i
       rx_next_check = 0; 
     }
   }
+
   if ((priority < 21) && (rx_packets[rx_next_decode])) { //A packet was in state 3 and had lowest priority. Ifit still exists, process it. 
     //Serial.printf("RX_Q Before rx_decode of %u \n", rx_next_decode);
     complete = rx_decode(rx_next_decode); 
@@ -275,7 +265,6 @@ void LN_Class::rx_queue(){ //Loop through the RX queue and process all packets i
       rx_packets[rx_next_decode]->state == 5; //Completed. Can delete it on next cycle. 
     }    
   }
-  //Serial.printf("RX_QUEUE Done \n");
   return;
 }
 
@@ -285,7 +274,8 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
   if (!(rx_packets[rx_pkt])) { //An invalid handle was given. Abort. 
     return -1; 
   }
-  
+
+  measure_time_start();
   char opcode = rx_packets[rx_pkt]->data_ptr[0];
   uint8_t i = 0;
   int8_t slotnum= -1; //Used for slot processing. 
@@ -435,6 +425,7 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
     Serial.printf("No match for %x \n", rx_packets[rx_pkt]->data_ptr[0]);
     rx_packets[rx_pkt]->state = 4;
   }
+  measure_time_start();
   return 0;
 }
 
@@ -564,7 +555,6 @@ void LN_Class::tx_send(uint8_t txptr){
   //Use LN_cd_time from the ISR instead of rx_last_us because of the rx buffer uncertainty
   if ((TIME_US - LN_cd_edge) > (LN_BITLENGTH_US * (tx_packets[txptr]->priority + LN_COL_BACKOFF))) {
     //Serial.printf("Sending packet %u \n", txptr); 
-    rx_last_us = time_us; //Force it to prevent looping transmissions
     tx_pending = txptr; //Save txpending for use in tx_loopback
    
     i = 0;
@@ -842,7 +832,6 @@ LN_Class::LN_Class(){ //Constructor, initializes some values.
   rx_next_new = 0; 
   rx_next_check = 0;
   netstate = startup;
-  rx_last_us = time_us;
   LN_TRK = 0x06; //Slot global TRK. 0x06 = Loconet 1.1 capable, track idle, power off. 
   return;
 }
