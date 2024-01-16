@@ -25,6 +25,7 @@
 
 //Loconet UART settings, from ESP32_uart.h: (uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
 #define LN_UART Loconet.LN_port.uart_init(1, 17, 18, 16666, 255, 255);
+#define LN_COLL_PIN 8 //GPIO pin for hardware CD
 
 #define LN_LOOP_DELAY_US 0 //60uS * 8 bits
 
@@ -179,5 +180,6 @@ class LN_Class {
   void slot_queue(); //Scan slots and purge inactive
   uint8_t slot_del(uint8_t index); //Remove a slot from memory
   void send_long_ack(uint8_t opcode, uint8_t response);
-
 };
+
+void IRAM_ATTR LN_CD_isr(); //ISR for handling collision detection

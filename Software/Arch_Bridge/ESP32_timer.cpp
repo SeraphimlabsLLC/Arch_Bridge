@@ -14,7 +14,7 @@ uint64_t meas_start_time= 0;
 uint64_t meas_cumu_time = 0;
 
 uint64_t esp_us(){ //Equivalent to micros(); 
-  time_us = micros(); //esp_timer_get_time();
+  time_us = esp_timer_get_time(); //micros(); //
   return time_us;
 }
 

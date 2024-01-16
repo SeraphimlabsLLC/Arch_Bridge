@@ -16,7 +16,9 @@
 #include "soc/mcpwm_struct.h"
 #include "soc/mcpwm_reg.h"
 
-//#include "esp_timer.h" //Is it really needed? Arduino millis() and micros() are present. 
+//#if TIME_US != micros() 
+ #include "esp_timer.h" //Is it really needed? Arduino millis() and micros() are present. 
+//#endif
 
 #if BOARD_TYPE == DYNAMO
   #define DIR_MONITOR 38 //RMT Input pin, 9 on Arch_Bridge 38 on Dynamo

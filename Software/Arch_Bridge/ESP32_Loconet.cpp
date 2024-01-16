@@ -19,6 +19,8 @@
 
 ESP_Uart LN_port; //Loconet uart object
 LN_Class Loconet; //Loconet processing object
+volatile uint64_t LN_cd_edge = 0; //time_us of last edge received. 
+volatile bool LN_cd_hit = false; //true if the ISR saw ((rx_pin == 0) && (tx_pin == 1))
 
 //extern DCCEX_Class dccex_port;
 extern uint64_t time_us;
@@ -32,7 +34,6 @@ void LN_loop(){//reflector into LN_Class::loop_Process()
   Loconet.loop_process(); //Process and update Loconet
   return; 
 }
-
 
 void LN_Class::loop_process(){
   time_us = TIME_US;
@@ -48,11 +49,18 @@ void LN_Class::loop_process(){
     if ((time_us - Loconet.rx_last_us) > 250000) { 
       LN_port.rx_flush();
       LN_port.tx_flush();
+      LN_cd_hit = false;
       Serial.printf("Loconet start \n");
+      attachInterrupt(Loconet.LN_port.rx_pin, LN_CD_isr, CHANGE); //Attach the pcint used for CD     
       netstate = active;
     }
     return;
-  }  
+  }
+  if ((LN_cd_hit == true) && (tx_pending > -1)) {
+    Serial.printf("LN CD true at timestamp %u \n", LN_cd_edge); 
+    LN_cd_hit = false; 
+  }
+    
   //Network should be ok to interact with: 
   //Serial.printf("Loconet uart_rx cycle: \n");
   uart_rx(); //Read uart data into the RX ring
@@ -103,7 +111,8 @@ uint8_t LN_Class::uart_rx(){
 }
 
 void LN_Class::rx_scan(){ //Scan received data for a valid frame
-  uint8_t rx_byte = 0;  
+  uint8_t rx_byte = 0; 
+  int8_t coll = 0;  
   time_us = TIME_US; //update time_us
   //Serial.printf("rx_scan LN_port.rx_read_processed %u \n", LN_port.rx_read_processed);
   if (LN_port.rx_read_processed != 0) { //Data has already been processed. 
@@ -115,7 +124,7 @@ void LN_Class::rx_scan(){ //Scan received data for a valid frame
     //Serial.printf("RX_Scan For, rx_pending %i, rxbyte %x, counter rx_byte %u \n", rx_pending, LN_port.rx_read_data[rx_byte], rx_byte);
 
 //Detect opcode and packet start if there isn't already a packet open
-    if ((LN_port.rx_read_data[rx_byte] & 0x80) && (rx_pending < 0)) { 
+    if (LN_port.rx_read_data[rx_byte] & 0x80) { //rx_byte will only ever have the MSB set on opcodes 
       rx_pending = rx_packet_getempty(); //Get handle of next open packet
       //Serial.printf("Starting new packet %i with opcode %x \n", rx_pending, LN_port.rx_read_data[rx_byte]);
       rx_packets[rx_pending]->state = 1; //Packet is pending data
@@ -123,8 +132,9 @@ void LN_Class::rx_scan(){ //Scan received data for a valid frame
       rx_packets[rx_pending]->xsum = 0;
       rx_packets[rx_pending]->last_start_time = time_us; //Time this opcode was found
     }
-    if ((rx_pending < 0) || (rx_packets[rx_pending]->state == 0) || (rx_packets[rx_pending]->state > 2)) {//No packet active or packet not in pending or attempting state
-      Serial.printf("Not in packet or packet state not ok, going back to for with rx_byte %u and read_len %u \n", rx_byte, LN_port.rx_read_len);
+    //Sanity Block: No packet active or packet not in pending or attempting state
+    if ((rx_pending < 0) || (rx_packets[rx_pending]->state == 0) || (rx_packets[rx_pending]->state > 2)) {
+      //Serial.printf("Not in packet or packet state not ok, going back to for with rx_byte %u and read_len %u \n", rx_byte, LN_port.rx_read_len);
       rx_pending = -1; 
       continue;
     }
@@ -162,23 +172,26 @@ void LN_Class::rx_scan(){ //Scan received data for a valid frame
     }
     //Serial.printf("RX_Scan full packet %u with size %u has bytes %u \n", rx_pending, rx_packets[rx_pending]->data_len, rx_packets[rx_pending]->rx_count);
     //Packet is the length it should be. 
-    rx_packets[rx_pending]->state = 3; //Packet has been fully sent to this device.
-    rx_packets[rx_pending]->last_start_time = TIME_US; //Time it was set to this state.        
 
 //TX Loopback processing: 
-    //Serial.printf("RX_Scan loopback tx_pending %i rx_pending %i \n", tx_pending, rx_pending);
-    if ((tx_pending > -1) && (rx_pending > -1)) { 
-      if (tx_loopback() == 0) { //Check if the data so far matches what we sent. On match, mark both as success. 
+    if (tx_pending > -1) { //rx_pending must be > -1 at this point. && (rx_pending > -1)) { 
+      coll = tx_loopback(); 
+      if (coll == 0) { //Check if the data so far matches what we sent. On match, mark both as success. 
+        tx_pending = -1; 
         continue;
       }
-    }
-      
-    if (rx_packets[rx_pending]->Read_Checksum()) { //Valid checksum, mark as received. 
-      //Serial.printf("RX_Scan Completed packet %u ready to decode \n", rx_pending); 
-      rx_packets[rx_pending]->state = 3; //Set state to received 
-    } else {//Checksum was invalid. Drop the packet. 
-      Serial.printf("RX_Scan Failed packet %u, RX checksum invalid \n", rx_pending); 
-      rx_packets[rx_pending]->state = 4; //Set state to failed
+      Serial.printf("TX Loopback had %i differences. rx_pending %i, tx_pending %i \n", coll, rx_pending, tx_pending);  
+       
+    }   
+    if (rx_packets[rx_pending]->state == 2) {   
+      rx_packets[rx_pending]->last_start_time = TIME_US; //Time it was set to this state.   
+      if (rx_packets[rx_pending]->Read_Checksum()) { //Valid checksum, mark as received. 
+        //Serial.printf("RX_Scan Completed packet %u ready to decode \n", rx_pending); 
+        rx_packets[rx_pending]->state = 3; //Set state to received 
+      } else {//Checksum was invalid. Drop the packet. 
+        Serial.printf("RX_Scan Failed packet %u, RX checksum invalid \n", rx_pending); 
+        rx_packets[rx_pending]->state = 4; //Set state to failed
+      }
     }
     rx_pending = -1; 
   }
@@ -525,7 +538,9 @@ void LN_Class::tx_send(uint8_t txptr){
     //Serial.printf("TX_Send Packet %u changed from 1 or 4 to  %u \n", txptr, tx_packets[txptr]->state);
   }
   
-  if ((time_us - rx_last_us) > (LN_BITLENGTH_US * (tx_packets[txptr]->priority + LN_COL_BACKOFF))) {
+  //if ((time_us - rx_last_us) > (LN_BITLENGTH_US * (tx_packets[txptr]->priority + LN_COL_BACKOFF))) {
+  //Use LN_cd_time from the ISR instead of rx_last_us because of the rx buffer uncertainty
+  if ((TIME_US - LN_cd_edge) > (LN_BITLENGTH_US * (tx_packets[txptr]->priority + LN_COL_BACKOFF))) {
     //Serial.printf("Sending packet %u \n", txptr); 
     rx_last_us = time_us; //Force it to prevent looping transmissions
     tx_pending = txptr; //Save txpending for use in tx_loopback
@@ -579,28 +594,40 @@ uint8_t LN_Class::tx_loopback(){
   //Serial.printf("\n"); 
  
   if (delta == 0) {//No differences in the data given
-    if (rx_packets[rx_pending]->rx_count == tx_packets[tx_pending]->data_len) { //No differences in provided data. 
-      if (rx_packets[rx_pending]->rx_count == tx_packets[tx_pending]->data_len) { //Packet is complete and intact. 
+    if (rx_packets[rx_pending]->rx_count == tx_packets[tx_pending]->data_len) { //Packet is complete and intact. 
         Serial.printf("Transmission of packet %d confirmed in %d \n", tx_pending, rx_pending);
         tx_packets[tx_pending]->state = 5; //Mark TX complete
+        tx_packets[tx_pending]->last_start_time = TIME_US; //Time it was set to this state.  
+        tx_pending = -1;        
         rx_packets[rx_pending]->state = 5; //Mark RX complete
-        tx_pending = -1;
-        rx_pending = -1;  
-      }
+        rx_packets[rx_pending]->last_start_time = TIME_US; //Time it was set to this state.   
     }
     return delta;
   } else { //Collision. Transmit break, drop from rx_packet, and decrement tx_attempts to drop if stale.  
     Serial.printf("Collision detected, %u differences found. \n", delta);
     transmit_break();
     tx_packets[tx_pending]->tx_attempts--; 
-    tx_packets[tx_pending]->state = 4; 
-    tx_pending = -1;
-    if (rx_packets[rx_pending]->rx_count == rx_packets[rx_pending]->data_len) { //If the complete packet is here, drop from rx_pending
-      rx_packets[rx_pending]->state = 4;
-      rx_pending = -1;
-    } 
+    tx_packets [tx_pending]->state = 4; 
+    //tx_pending = -1;
+    //if (rx_packets[rx_pending]->rx_count == rx_packets[rx_pending]->data_len) { //If the complete packet is here, drop from rx_pending
+    rx_packets[rx_pending]->state = 4;
+      //rx_pending = -1;
+    //} 
   }
   return delta;
+}
+
+void IRAM_ATTR LN_CD_isr(){
+//volatile uint64_t LN_cd_time = 0; //time_us of last edge received. 
+//volatile bool LN_cd_hit = false; //true if the ISR saw ((rx_pin == 0) && (tx_pin == 1))
+  LN_cd_edge = TIME_US; 
+  if (gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin)) == 1) {
+    if (gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin)) == 0) {
+      LN_cd_hit = true; //set flag that a collision was detected. 
+    }
+  }
+
+  return; 
 }
 
 void LN_Class::transmit_break(){
