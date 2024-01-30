@@ -17,6 +17,7 @@ void ESP_uart_init(){ //Set up uarts
 void ESP_Uart::uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff){ 
   //store for later 
   uart_num = uartnum; 
+  uart_mode = 0; //Mode defaults to 0. 
   tx_pin = gpio_num_t(txpin);
   rx_pin = gpio_num_t(rxpin);
   tx_buff = txbuff;
@@ -55,7 +56,7 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t
     ESP_ERROR_CHECK(uart_set_pin(uart_port_t(uartnum), tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
     ESP_ERROR_CHECK(uart_flush(uart_port_t(uartnum)));
     ESP_ERROR_CHECK(uart_set_rx_timeout(uartnum, 2)); //RX Timeout after 2 bit intervals instead of 11
-    //REG_SET_FIELD(UART_CONF1_REG, UART_RXFIFO_FULL_THRHD, 1); //Change RX threshold to return single bytes. 
+    REG_SET_FIELD(UART_CONF1_REG(uart_num), UART_RXFIFO_FULL_THRHD, 1); //Change RX threshold to return single bytes. 
 
 
    
@@ -68,7 +69,15 @@ void ESP_Uart::uart_write(const char* write_data, uint8_t write_len){ //Write th
   if (uart_num == 0) { //Don't write to uart0, the arduino Serial library manages that one
     return;
   }
-  uart_write_bytes(uart_num, write_data, write_len);
+ if (uart_mode == 0) { //ESP default driver mode
+   uart_write_bytes(uart_num, write_data, write_len);
+ }
+ if (uart_mode == 1) { //Direct to FIFO write
+   for (i = 0; i <= write_len; i++){
+     REG_WRITE(UART_FIFO_REG(2), write_data[i]); 
+   }
+ }
+  
   return;
 }
 

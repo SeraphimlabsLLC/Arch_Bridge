@@ -4,6 +4,7 @@
 #include "Arduino.h"
 #include "driver/gpio.h"
 #include "driver/uart.h"
+#include "soc/uart_reg.h"
 
 //Use config.h if present, otherwise defaults
 #ifndef CONFIG_H
@@ -21,6 +22,7 @@ class ESP_Uart {
   uint16_t tx_buff; //tx buffer size
   uint16_t rx_buff; //rx buffer size
   uint32_t baud_rate;
+  uint8_t uart_mode; //0 = normal, 1 = direct r/w
   char* rx_read_data; //Pointer to the data just read
   uint16_t rx_read_len; //Size of rx_read_data
   uint8_t rx_read_processed; //read status, 0 when new, 255 when fully processed.

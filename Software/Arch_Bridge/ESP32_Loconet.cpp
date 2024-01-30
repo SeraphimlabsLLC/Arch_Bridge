@@ -28,6 +28,7 @@ extern uint64_t time_us;
 
 void LN_init(){//Initialize Loconet objects
   LN_UART //Initialize uart 
+  Loconet.LN_port.uart_mode = 0; //Change to 1 to use uart fast write
   return;
 }
 
