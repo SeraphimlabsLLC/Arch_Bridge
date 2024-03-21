@@ -18,3 +18,8 @@ PCB revision to incorporate these changes.
 Rev 06A: 
 Changed CB1 to through hole for field installation. Removed from default bom and populate.
 
+Rev 11: 
+Found R15 would overheat if >12v was used.
+Changed R14 and R15 to be 2512 SMD resistors for 1w heat capacity, allowing vin up to 24v
+
+Also moved CB1 to be closer to vreg, and repositioned CB2 to be closer to ESP. Although optional, these bulk caps may be needed for stabilization.

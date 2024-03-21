@@ -21,7 +21,8 @@ ESP_Uart LN_port; //Loconet uart object
 LN_Class Loconet; //Loconet processing object
 volatile uint64_t LN_cd_edge = 0; //time_us of last edge received. 
 volatile bool LN_cd_hit = false; //true if the ISR saw ((rx_pin == 0) && (tx_pin == 1))
-volatile uint64_t LN_tx_start = 0; //Diag: Time how long from tx_send() to 1st edge
+extern volatile uint64_t uart_tx_delay_start;
+extern volatile uint64_t uart_tx_delay_stop;
 
 //extern DCCEX_Class dccex_port;
 extern uint64_t time_us;
@@ -72,15 +73,6 @@ void LN_Class::loop_process(){
     Serial.printf("LN CD true at timestamp %u \n", LN_cd_edge); 
     LN_cd_hit = false; 
   }
-
-//Diag: Check how long from tx_send() to 1st edge
-  if ((LN_tx_start > 0) && (tx_pending > -1)) {
-    uint64_t tx_delay = LN_tx_start - tx_packets[tx_pending]->last_start_time; 
-    Serial.printf ("LN_loop TX delay ");
-    Serial.printf ("%u", tx_delay); 
-    Serial.printf (" \n"); 
-    LN_tx_start = 0;     
-  }
     
   //Network should be ok to interact with: 
   uart_rx(); //Read uart data into the RX ring
@@ -113,13 +105,13 @@ uint8_t LN_Class::uart_rx(){
   LN_port.rx_read_data[i] = 0; 
   read_size = LN_port.uart_read(read_size); //populate rx_read_data and rx_data
   LN_port.rx_flush(); //Clear the uart after reading. 
-  if (read_size > 0){ //Data was actually moved, update the timer.
+/*  if (read_size > 0){ //Data was actually moved
     Serial.printf("uart_rx has bytes in rx_read_data: ");
     for (i = 0; i < read_size; i++) {
       Serial.printf("%x ", LN_port.rx_read_data[i]);
     }
     Serial.printf("\n");  
-  } 
+  } */
   LN_port.rx_read_len = read_size; //Just to be sure it is correct. 
   return read_size;
 }
@@ -634,15 +626,22 @@ uint8_t LN_Class::tx_loopback(){
 void IRAM_ATTR LN_CD_isr(){
 //volatile uint64_t LN_cd_time = 0; //time_us of last edge received. 
 //volatile bool LN_cd_hit = false; //true if the ISR saw ((rx_pin == 0) && (tx_pin == 1))
+ uint8_t i = 0; 
+
   LN_cd_edge = TIME_US; 
   if (gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin)) == 1) {
+    
+    //Not ideal to use a delay loop in an ISR, but give the line at least a little time.
+    while (TIME_US - LN_cd_edge <= 5) {
+      i++; //Just make work to waste a little time. 
+    }
     if (gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin)) == 0) {
       LN_cd_hit = true; //set flag that a collision was detected. 
-    }
+    }    
   } else { //Diagnostic: Measure how long from when data was buffered to when it actually starts
     if (gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin)) == 0) {
-      if (LN_tx_start == 0) {
-        LN_tx_start = TIME_US;
+      if ((uart_tx_delay_start != 0) && (uart_tx_delay_stop == 0))  {//Conditions are right to sample tx delay
+        uart_tx_delay_stop = LN_cd_edge;
       } 
     }
   }
@@ -737,7 +736,7 @@ void LN_Class::rx_req_sw(uint8_t rx_pkt){
   Serial.printf("Req switch addr %u direction %u, output %u \n", addr, (cmd & 0x20) >> 5, (cmd & 0x10) >> 4);
   #if DCCEX_TO_LN == true //Only send if allowed to. 
   if (((cmd & 0x10) >> 4) == true) { //only forward if output is on. 
-    dccex.tx_req_sw(addr, (cmd & 0x20) >> 5, (cmd & 0x10) >> 4);
+    dccex.tx_req_sw(addr + 1, (cmd & 0x20) >> 5, (cmd & 0x10) >> 4); //Addr + 1 so the displayed values agree with commanded
   }
   #endif
 
@@ -766,8 +765,12 @@ void LN_Class::rx_cab(){
   return;
 }
 void LN_Class::tx_cab_speed(uint16_t addr, uint8_t spd, bool dir){
+  /*  0x0 = STOP
+   *  0x1 = ESTOP
+   *  0x2-0x7F speed range */
   int8_t slotnum;
   uint8_t dirb = dir * 0x20; 
+
   slotnum = loco_select(uint8_t ((addr >> 7) & 0x7F), uint8_t (addr & 0x7F));
   slot_ptr[slotnum]->slot_data[2] = spd; //Update speed byte
   if (dir == true) { //Inverse of  bool(~(slot_ptr[slotnum]->slot_data[3]) & 0x20)); 
@@ -778,7 +781,7 @@ void LN_Class::tx_cab_speed(uint16_t addr, uint8_t spd, bool dir){
   slot_ptr[slotnum]->slot_data[1] | 0x20; //D5 to 11, IN_USE
   slot_ptr[slotnum]->next_refresh = 200000000; //200 seconds
   slot_ptr[slotnum]->last_refresh = TIME_US;
-  Serial.printf("LN_Class::tx_cab_speed cab %u upated with throttle info. Preparing Loconet notification \n", addr);
+  Serial.printf("LN_Class::tx_cab_speed cab %u updated with speed %u dir %u. Preparing Loconet notification \n", addr, spd, dir);
   
 //Loconet response: 
   uint8_t response_size = 4; //Packet is 4 bytes long

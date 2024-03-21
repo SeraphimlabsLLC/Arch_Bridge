@@ -6,6 +6,10 @@
 ESP_Uart tty; //normal serial port
 extern uint64_t time_us; //Shared time global
 
+//Measuring tx latency. 
+volatile uint64_t uart_tx_delay_start = 0;
+volatile uint64_t uart_tx_delay_stop = 0;
+
 void ESP_uart_init(){ //Set up uarts
  #ifdef TTY_CONFIG
    TTY_CONFIG 
@@ -69,14 +73,15 @@ void ESP_Uart::uart_write(const char* write_data, uint8_t write_len){ //Write th
   if (uart_num == 0) { //Don't write to uart0, the arduino Serial library manages that one
     return;
   }
- if (uart_mode == 0) { //ESP default driver mode
+// if (uart_mode == 0) { //ESP default driver mode
+   uart_tx_delay_start = TIME_US;
    uart_write_bytes(uart_num, write_data, write_len);
- }
- if (uart_mode == 1) { //Direct to FIFO write
+// }
+/* if (uart_mode == 1) { //Direct to FIFO write
    for (i = 0; i <= write_len; i++){
      REG_WRITE(UART_FIFO_REG(2), write_data[i]); 
    }
- }
+ } */
   
   return;
 }
@@ -134,6 +139,14 @@ uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of by
     rx_read_len = readlen; 
     return readlen;
   } else {
+    //Diag: Check how long from last uart_write() to 1st edge
+    if ((uart_tx_delay_start > 0) && (uart_tx_delay_stop > 0) && (uart_num == 1)) {
+    Serial.printf ("Loconet TX delay ");
+    Serial.printf ("%u", uart_tx_delay_stop - uart_tx_delay_start); 
+    Serial.printf (" \n"); 
+    uart_tx_delay_start = 0;
+    uart_tx_delay_stop = 0;     
+  }
     //Read using ESP Uart library
     //Serial.printf("Receiving bytes into rx_read_data pointer %u \n", rx_read_data);
     readlen = uart_read_bytes(uart_num, rx_read_data, readlen, 100); //Read up to rx_read bytes from uart_num tto rx_read_data with a 100 rt tick timeout
