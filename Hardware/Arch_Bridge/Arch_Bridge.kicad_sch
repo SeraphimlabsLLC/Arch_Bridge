@@ -6,8 +6,8 @@
 
   (title_block
     (title "DCC-EX Loconet Driver")
-    (date "2023-12-30")
-    (rev "10")
+    (date "2024-03-21")
+    (rev "11")
   )
 
   (lib_symbols
