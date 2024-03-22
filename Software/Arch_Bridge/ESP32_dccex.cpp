@@ -384,7 +384,8 @@ void DCCEX_Class::rx_cab(){
 
     #if LN_TO_DCCEX == true //Only send if allowed to. 
     Serial.printf("DCCEX_Class::rx_cab<l %u %u %u %u %u> \n", addr, reg, spd, dir, funct);
-      Loconet.tx_cab_speed(addr, spd, dir);
+      Loconet.tx_cab_dir(addr, dir);
+      Loconet.tx_cab_speed(addr, spd);
     #endif
   return; 
 }

@@ -125,7 +125,8 @@ class LN_Class {
 
   //Throttle functions
   void rx_cab(); 
-  void tx_cab_speed(uint16_t addr, uint8_t spd, bool dir);
+  void tx_cab_dir(uint16_t addr, bool dir);
+  void tx_cab_speed(uint16_t addr, uint8_t spd);
 
   int8_t slot_new(uint8_t index); //Check if a slot is empty and initialize it. 
   void slot_read(int8_t slotnum); //Handle slot reads

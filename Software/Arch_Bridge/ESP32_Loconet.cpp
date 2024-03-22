@@ -105,13 +105,13 @@ uint8_t LN_Class::uart_rx(){
   LN_port.rx_read_data[i] = 0; 
   read_size = LN_port.uart_read(read_size); //populate rx_read_data and rx_data
   LN_port.rx_flush(); //Clear the uart after reading. 
-/*  if (read_size > 0){ //Data was actually moved
+  if (read_size > 0){ //Data was actually moved
     Serial.printf("uart_rx has bytes in rx_read_data: ");
     for (i = 0; i < read_size; i++) {
       Serial.printf("%x ", LN_port.rx_read_data[i]);
     }
     Serial.printf("\n");  
-  } */
+  } 
   LN_port.rx_read_len = read_size; //Just to be sure it is correct. 
   return read_size;
 }
@@ -764,41 +764,71 @@ void LN_Class::rx_cab(){
 
   return;
 }
-void LN_Class::tx_cab_speed(uint16_t addr, uint8_t spd, bool dir){
+void LN_Class::tx_cab_speed(uint16_t addr, uint8_t spd){
   /*  0x0 = STOP
    *  0x1 = ESTOP
    *  0x2-0x7F speed range */
   int8_t slotnum;
-  uint8_t dirb = dir * 0x20; 
+  uint8_t response_size = 4; //Both response packets are 4 bytes long
+  uint8_t tx_index = tx_packet_getempty();
 
   slotnum = loco_select(uint8_t ((addr >> 7) & 0x7F), uint8_t (addr & 0x7F));
-  slot_ptr[slotnum]->slot_data[2] = spd; //Update speed byte
-  if (dir == true) { //Inverse of  bool(~(slot_ptr[slotnum]->slot_data[3]) & 0x20)); 
-    slot_ptr[slotnum]->slot_data[3] = slot_ptr[slotnum]->slot_data[3] & 0xDF; //Clear dir bit
-  } else {
-    slot_ptr[slotnum]->slot_data[3] = slot_ptr[slotnum]->slot_data[3] | 0x20; //Set dir bit
-  }
   slot_ptr[slotnum]->slot_data[1] | 0x20; //D5 to 11, IN_USE
   slot_ptr[slotnum]->next_refresh = 200000000; //200 seconds
   slot_ptr[slotnum]->last_refresh = TIME_US;
-  Serial.printf("LN_Class::tx_cab_speed cab %u updated with speed %u dir %u. Preparing Loconet notification \n", addr, spd, dir);
+
+  if (slot_ptr[slotnum]->slot_data[2] != spd) {
+    //Update slot data and send on Loconet. 
+    Serial.printf("LN_Class::tx_cab_speed cab %u updated with speed %u Preparing Loconet notification \n", addr, spd);
+    slot_ptr[slotnum]->slot_data[2] = spd; //Update speed byte
+
+    tx_packets[tx_index]->priority = LN_MAX_PRIORITY; 
+    tx_packets[tx_index]->data_len = response_size;
+    tx_packets[tx_index]->data_ptr[0] = 0xA0; //OPC_LOCO_SPD
+    tx_packets[tx_index]->data_ptr[1] = slotnum; 
+    tx_packets[tx_index]->data_ptr[2] = spd;
+    tx_packets[tx_index]->Make_Checksum(); //Populate checksum
+    tx_packets[tx_index]->state = 1; //Mark as pending packet
+    tx_packets[tx_index]->last_start_time = TIME_US;
+    Serial.printf("LN_Class::tx_cab_speed ready to send updated throttle info for cab %u \n", addr);
+    if (tx_pending == -1) { //Send now if possible. 
+      tx_send(tx_index);
+    } 
+  }
+  return;
+}
+void LN_Class::tx_cab_dir(uint16_t addr, bool dir){
+  int8_t slotnum;
+  uint8_t dirb = dir * 0x20; 
+  uint8_t response_size = 4; //response packets is 4 bytes long
+  uint8_t tx_index = 0; 
+  slotnum = loco_select(uint8_t ((addr >> 7) & 0x7F), uint8_t (addr & 0x7F));
   
-//Loconet response: 
-  uint8_t response_size = 4; //Packet is 4 bytes long
-  uint8_t tx_index = tx_packet_getempty();
+  slot_ptr[slotnum]->slot_data[1] | 0x20; //D5 to 11, IN_USE
+  slot_ptr[slotnum]->next_refresh = 200000000; //200 seconds
+  slot_ptr[slotnum]->last_refresh = TIME_US;
+  if (dirb == (slot_ptr[slotnum]->slot_data[3]) & 0x20){ //Refresh slot only, no need to update LN. 
+    return; 
+  }
+
+  if (dirb == 0x20) {
+    slot_ptr[slotnum]->slot_data[3] = slot_ptr[slotnum]->slot_data[3] | 0x20; //Set dir bit
+  } else {    
+    slot_ptr[slotnum]->slot_data[3] = slot_ptr[slotnum]->slot_data[3] & 0xDF; //Clear dir bit
+  }
   tx_packets[tx_index]->priority = LN_MAX_PRIORITY; 
   tx_packets[tx_index]->data_len = response_size;
-  tx_packets[tx_index]->data_ptr[0] = 0xA0; //OPC_LOCO_SPD
+  tx_packets[tx_index]->data_ptr[0] = 0xA1; //OPC_LOCO_DIRF
   tx_packets[tx_index]->data_ptr[1] = slotnum; 
-  tx_packets[tx_index]->data_ptr[2] = spd;
+  tx_packets[tx_index]->data_ptr[2] = slot_ptr[slotnum]->slot_data[3];
   tx_packets[tx_index]->Make_Checksum(); //Populate checksum
   tx_packets[tx_index]->state = 1; //Mark as pending packet
   tx_packets[tx_index]->last_start_time = TIME_US;
-  Serial.printf("LN_Class::tx_cab_speed ready to send updated throttle info for cab %u \n", addr);
+  Serial.printf("LN_Class::tx_cab_dir ready to send updated throttle info for cab %u \n", addr);
   if (tx_pending == -1) { //Send now if possible. 
     tx_send(tx_index);
   } 
-  return;
+  return;  
 }
 
 void LN_Class::send_long_ack(uint8_t opcode, uint8_t response) {
