@@ -28,19 +28,21 @@ enum dccex_power_mode {OFF = 0, MAIN = 1, PROG = 1, DC = 2, DCX = 3}; //DCCEX tr
 enum accessory_type {none = 0, turnout = 1, sensor = 2, signals = 3};
 class Accessory_Device{
   public:
-  int16_t addr; //DCC address, is limited to 14 bits on Loconet
-  uint16_t ID; //DCC-EX turnout or sensor ID
-  uint8_t state; 
+  uint16_t ID; //DCC-EX turnout or sensor ID, 0-32767
   accessory_type type; 
+  int16_t addr; //DCC address, is limited to 14 bits on Loconet. -1 if not accessible by dcc
+  uint8_t state; 
   //bit 0 = output 0/1, bit 1 = direction 0/1. RCN_213 has direction 1 as closed and 0 as thrown. 
-  uint8_t source; //Where it was learned from: 0 = empty, 1 = DCC, 2 = Loconet, 3 = DCCEX
-  uint64_t last_cmd_us; //Time of last action  
+  uint8_t learned_from; //Where it was learned from: 0 = empty, 1 = DCC, 2 = Loconet, 3 = DCCEX
+  uint64_t last_cmd_us; //Time of last action 
+  uint64_t reminder_us; //Take automatic action in uS, such as a turnout having its output switched off.  
 };
 
 class DCCEX_Class {
   public:
   ESP_Uart dccex_port; //uart access
   Accessory_Device* accessory[MAX_ACCESSORIES];
+  uint16_t accessory_count = 0; 
   uint8_t rx_read_processed;
   uint64_t rx_last_us; 
   //uint8_t rx_read_len;
@@ -64,9 +66,9 @@ class DCCEX_Class {
   void rx_req_sw(); //Received switch command
   void tx_req_sw(uint16_t addr, bool dir, bool state); //Send switch command
   uint16_t find_sw(uint16_t addr); 
-  int16_t acc_get_new( uint16_t index); //Check if an accessory is empty and initialize it. 
+  int16_t acc_get_new(); //Initialize a new accessory slot
   int16_t acc_search_id(uint16_t id, accessory_type type); //Find an accessory by its DCCEX ID and type
-  int16_t acc_search_addr(uint16_t id, accessory_type type); //Find an accessory by its DCC Address and type
+  int16_t acc_search_dcc_addr(uint16_t id, accessory_type type); //Find an accessory by its DCC Address and type
 
   //Throttle functions
   void rx_cab(); 

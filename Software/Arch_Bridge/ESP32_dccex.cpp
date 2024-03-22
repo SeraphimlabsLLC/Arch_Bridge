@@ -336,7 +336,8 @@ void DCCEX_Class::rx_req_sw(){ //Received switch command
    dir = (data_pkt[i] - 48);
   Serial.printf("DCCEX commanded turnout %u to state %u \n", addr, dir); 
   #if LN_TO_DCCEX == true //Only send if allowed to. 
-  Loconet.tx_req_sw(addr, dir, 1); //State defaults to 1 for now. It may be necessary to add a delay off that sends a 2nd packet with state 0. 
+  Loconet.tx_req_sw(addr - 1, dir, 1); //State defaults to 1 for now. It may be necessary to add a delay off that sends a 2nd packet with state 0.
+   
   #endif
   return; 
 }
@@ -440,9 +441,9 @@ int16_t DCCEX_Class::acc_search_id(uint16_t id, accessory_type type){ //Find an 
   }
   return -1;
 }
-int16_t DCCEX_Class::acc_search_addr(uint16_t addr, accessory_type type){ //Find an accessory by its DCC Address
+int16_t DCCEX_Class::acc_search_dcc_addr(uint16_t addr, accessory_type type){ //Find an accessory by its DCC Address
   int16_t i; 
-  for (i = 0; i < MAX_ACCESSORIES; i++) {
+  for (i = 0; i < accessory_count; i++) {
     if (!(accessory[i])){ 
       continue; 
     }
@@ -453,8 +454,13 @@ int16_t DCCEX_Class::acc_search_addr(uint16_t addr, accessory_type type){ //Find
   return -1; 
 }
 
-int16_t DCCEX_Class::acc_get_new(uint16_t index){
-  if (!(accessory[index])){
+int16_t DCCEX_Class::acc_get_new(){
+    int16_t index; 
+    index = accessory_count + 1; 
+    if (index > MAX_ACCESSORIES) {
+      Serial.printf("Out of available accessory slots \n");
+      return -1;
+    }
     accessory[index] = new Accessory_Device; 
     if (!(accessory[index])){
       Serial.printf("Unable to allocate accessory slot. \n"); 
@@ -462,9 +468,10 @@ int16_t DCCEX_Class::acc_get_new(uint16_t index){
     }
     accessory[index]->addr = -1; //DCC address, -1 means not set yet.
     accessory[index]->state = 0; //Empty 
-    accessory[index]->source = 0; //Where it was learned from: 0 = empty, 1 = DCC, 2 = Loconet, 3 = DCCEX
+    accessory[index]->type = none; //no type asssigned yet. 
+    accessory[index]->learned_from = 0; //Where it was learned from: 0 = empty, 1 = DCC, 2 = Loconet, 3 = DCCEX
     accessory[index]->last_cmd_us = 0; //Time of last action  
-  }
-
+    accessory[index]->reminder_us = 0; //Reminders off by default
+    accessory_count = index; 
   return index;
 }

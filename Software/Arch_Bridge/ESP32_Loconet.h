@@ -38,10 +38,6 @@
 #define LN_SENSOR 2
 #define LN_THROTTLE 4
 
-//Constants that shouldn't be changed.
-#define LN_BITLENGTH_US 60 
-#define LN_COL_BACKOFF 20
-
 //typedef enum LN_Priority_min {Master = 0, Sensor = 2, Throttle = 6;
 //#if LN_PRIORITY == MASTER 
   #define LN_MAX_PRIORITY 0
@@ -113,18 +109,19 @@ class LN_Class {
   uint64_t LN_loop_timer; //Time since last loop_process
   ESP_Uart LN_port; //Class inside a class
   LN_netstate netstate; //Network operating condition
-  uint64_t netstate_time; //time of last netstate change
+  uint64_t signal_time; //time of last netstate change
 //  uint64_t rx_last_us; //time in startup us of last byte received  
   uint8_t tx_pkt_len; //length of last tx packet
  
   void loop_process(); //Process time based data
 
   //Turnout handlers 
-  void rx_req_sw(uint8_t rx_pkt); // 0xB0 request switch
-  void tx_req_sw(uint16_t addr, bool dir, bool state); //Send 0xB0
+  void rx_req_sw(uint8_t rx_pkt); //received 0xB0 request switch
+  void tx_req_sw(uint16_t addr, bool dir, bool state); //Send 0xB0 request switch
+  void tx_del_sw(uint16_t addr, bool dir, bool state, uint32_t ontime); //Invokes tx_req_sw with a reminder to send followup off state
 
   //Throttle functions
-  void rx_cab(); 
+  void rx_cab();  
   void tx_cab_dir(uint16_t addr, bool dir);
   void tx_cab_speed(uint16_t addr, uint8_t spd);
 

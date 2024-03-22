@@ -21,8 +21,8 @@ ESP_Uart LN_port; //Loconet uart object
 LN_Class Loconet; //Loconet processing object
 volatile uint64_t LN_cd_edge = 0; //time_us of last edge received. 
 volatile bool LN_cd_hit = false; //true if the ISR saw ((rx_pin == 0) && (tx_pin == 1))
-extern volatile uint64_t uart_tx_delay_start;
-extern volatile uint64_t uart_tx_delay_stop;
+//extern volatile uint64_t uart_tx_delay_start;
+//extern volatile uint64_t uart_tx_delay_stop;
 
 //extern DCCEX_Class dccex_port;
 extern uint64_t time_us;
@@ -44,21 +44,13 @@ void LN_Class::loop_process(){
 //  }
 //  LN_loop_timer = time_us; //Update last loop time
 //  uint8_t i = 0;
-  //Check for loss of master connection. Will reset the link if rx_pin is 0 and has not changed in 100mS. 
-  if ((gpio_get_level(LN_port.rx_pin) == 0) && ((TIME_US - LN_cd_edge) > 100000)) {
-       netstate_time = TIME_US;
-      if (netstate != disconnected) { 
-        netstate = disconnected;
-        Serial.printf("Loconet lost connection to master. Resetting link state. \n"); 
-      }
-      return; 
-  }
+ 
   if ((gpio_get_level(LN_port.rx_pin) == 1) && ((netstate == startup) || (netstate == disconnected))){
     //During startup interval, read the uart to keep it clear but don't process it. 
      uart_rx();
      LN_port.rx_read_processed = 255; //Mark as fully processed so it gets discarded.
-    if (((TIME_US - netstate_time) > 250000)) { 
-      netstate_time = TIME_US; 
+    if (((TIME_US - signal_time) > 250000)) { 
+      signal_time = TIME_US; 
       LN_port.rx_flush();
       LN_port.tx_flush();
       LN_cd_hit = false;
@@ -67,6 +59,21 @@ void LN_Class::loop_process(){
       netstate = active;
     }
     return;
+  }
+  
+  //Check for loss of master connection. Will reset the link if rx_pin is 0 and has not changed in 100mS. 
+  if (gpio_get_level(LN_port.rx_pin) == 0) {
+    if (TIME_US - signal_time > 100000) {
+      if (netstate != disconnected) { 
+        netstate = disconnected;
+        Serial.printf("Loconet lost connection to master. Resetting link state. \n"); 
+      }
+      return; 
+    }
+  } else { //Network is up and line is 1, update signal_time
+    if (netstate == active) {
+      signal_time = TIME_US; 
+    }
   }
   
   if ((LN_cd_hit == true) && (tx_pending > -1)) {
@@ -105,13 +112,13 @@ uint8_t LN_Class::uart_rx(){
   LN_port.rx_read_data[i] = 0; 
   read_size = LN_port.uart_read(read_size); //populate rx_read_data and rx_data
   LN_port.rx_flush(); //Clear the uart after reading. 
-  if (read_size > 0){ //Data was actually moved
+/*  if (read_size > 0){ //Data was actually moved
     Serial.printf("uart_rx has bytes in rx_read_data: ");
     for (i = 0; i < read_size; i++) {
       Serial.printf("%x ", LN_port.rx_read_data[i]);
     }
     Serial.printf("\n");  
-  } 
+  } */
   LN_port.rx_read_len = read_size; //Just to be sure it is correct. 
   return read_size;
 }
@@ -406,7 +413,7 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
       //slot_read(slot_read);
       break;
     case 0xED: //Send Immeadiate Packet
-      send_long_ack(0xED, 0);
+      send_long_ack(0xED, 0); //Busy response
       break; 
     case 0xEF: //Slot write data
     
@@ -441,7 +448,7 @@ void LN_Class::tx_queue(){ //Try again to send queued packets on each loop cycle
           break; 
         case 1: //Pending. 
           if (tx_packets[tx_next_check]->priority < priority) {
-            Serial.printf("TX_Q: Try sending packet %i \n", tx_next_check);
+            //Serial.printf("TX_Q: Try sending packet %i \n", tx_next_check);
             priority = tx_packets[tx_next_check]->priority;
             tx_next_send = tx_next_check;
           }
@@ -528,7 +535,7 @@ void LN_Class::tx_send(uint8_t txptr){
   }
   
   if ((time_us - tx_packets[txptr]->last_start_time) < (tx_pkt_len * LN_BITLENGTH_US * 8)) {//There is likely data already being sent. Don't add more.
-    Serial.printf("Buffer should still have data, send wait \n");
+  //  Serial.printf("LN_TX Buffer should still have data, send wait \n");
     return;    
   }
 
@@ -554,17 +561,18 @@ void LN_Class::tx_send(uint8_t txptr){
     tx_pkt_len = tx_packets[txptr]->data_len; //Track how much data is to be sent for overrun prevention.
     if (tx_packets[txptr]->state == 2) { //Only send if it isn't in state attempting. 
       char writedata[tx_pkt_len]; 
-      Serial.printf("Transmitting %u: ", tx_pending);
+/*      Serial.printf("Transmitting %u: ", tx_pending);
       while (i < tx_pkt_len){ 
         writedata[i] = tx_packets[txptr]->data_ptr[i];
         Serial.printf("%x ", tx_packets[txptr]->data_ptr[i]);
         i++;
      }
-      Serial.printf("\n"); 
+      Serial.printf("\n"); */
       tx_packets[txptr]->last_start_time = time_us;  
       
       //LN_port.uart_write(writedata, tx_pkt_len);
       LN_port.uart_write(tx_packets[txptr]->data_ptr, tx_pkt_len);
+      LN_cd_hit = false; //Reset the CD flag     
       tx_packets[txptr]->state = 3; //sent 
     }
   } 
@@ -627,24 +635,19 @@ void IRAM_ATTR LN_CD_isr(){
 //volatile uint64_t LN_cd_time = 0; //time_us of last edge received. 
 //volatile bool LN_cd_hit = false; //true if the ISR saw ((rx_pin == 0) && (tx_pin == 1))
  uint8_t i = 0; 
-
+  if (TIME_US - LN_cd_edge > 120) 
   LN_cd_edge = TIME_US; 
   if (gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin)) == 1) {
-    
-    //Not ideal to use a delay loop in an ISR, but give the line at least a little time.
-    while (TIME_US - LN_cd_edge <= 5) {
-      i++; //Just make work to waste a little time. 
-    }
     if (gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin)) == 0) {
       LN_cd_hit = true; //set flag that a collision was detected. 
     }    
-  } else { //Diagnostic: Measure how long from when data was buffered to when it actually starts
-    if (gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin)) == 0) {
+  } /*else { //Diagnostic: Measure how long from when data was buffered to when it actually starts
+      if (gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin)) == 0) {
       if ((uart_tx_delay_start != 0) && (uart_tx_delay_stop == 0))  {//Conditions are right to sample tx delay
         uart_tx_delay_stop = LN_cd_edge;
       } 
     }
-  }
+  } */
 
   return; 
 }
@@ -731,7 +734,7 @@ void LN_Class::tx_packet_del(uint8_t index){ //Delete a packet after confirmatio
 void LN_Class::rx_req_sw(uint8_t rx_pkt){
   uint16_t addr = 0; 
   uint8_t cmd = 0; 
-  addr = (((rx_packets[rx_pkt]->data_ptr[2]) & 0x0F) << 8) | (rx_packets[rx_pkt]->data_ptr[1] & 0x7F);
+  addr = (((rx_packets[rx_pkt]->data_ptr[2]) & 0x0F) << 7) | (rx_packets[rx_pkt]->data_ptr[1] & 0x7F);
   cmd = ((rx_packets[rx_pkt]->data_ptr[2]) & 0xF0);
   Serial.printf("Req switch addr %u direction %u, output %u \n", addr, (cmd & 0x20) >> 5, (cmd & 0x10) >> 4);
   #if DCCEX_TO_LN == true //Only send if allowed to. 
@@ -744,7 +747,9 @@ void LN_Class::rx_req_sw(uint8_t rx_pkt){
 }
 
 void LN_Class::tx_req_sw(uint16_t addr, bool dir, bool state){
-  
+  if (addr > 2043) { //Address not valid on Loconet. Don't forward it. 
+    return; 
+  }
   uint8_t tx_index; 
   uint8_t sw1 = addr & 0x7F; //Truncate to addr bits 0-6
   uint8_t sw2 = ((addr >> 8) & 0x0F) | (0x10 * state) | (0x20 * dir); //addr bits 7-10 | (state * 16) | (dir * 32)
@@ -764,6 +769,7 @@ void LN_Class::rx_cab(){
 
   return;
 }
+
 void LN_Class::tx_cab_speed(uint16_t addr, uint8_t spd){
   /*  0x0 = STOP
    *  0x1 = ESTOP
@@ -773,14 +779,12 @@ void LN_Class::tx_cab_speed(uint16_t addr, uint8_t spd){
   uint8_t tx_index = tx_packet_getempty();
 
   slotnum = loco_select(uint8_t ((addr >> 7) & 0x7F), uint8_t (addr & 0x7F));
-  slot_ptr[slotnum]->slot_data[1] | 0x20; //D5 to 11, IN_USE
-  slot_ptr[slotnum]->next_refresh = 200000000; //200 seconds
-  slot_ptr[slotnum]->last_refresh = TIME_US;
 
-  if (slot_ptr[slotnum]->slot_data[2] != spd) {
-    //Update slot data and send on Loconet. 
-    Serial.printf("LN_Class::tx_cab_speed cab %u updated with speed %u Preparing Loconet notification \n", addr, spd);
+  if ((slot_ptr[slotnum]->slot_data[2] != spd) || ((TIME_US - slot_ptr[slotnum]->last_refresh) > 100000)) {
+    //Slot data changed or was more than 100ms old, re-send. 
+    slot_ptr[slotnum]->slot_data[0] | 0x30; //Set slot busy + slot active 
     slot_ptr[slotnum]->slot_data[2] = spd; //Update speed byte
+    Serial.printf("LN_Class::tx_cab_speed cab %u updated with speed %u Preparing Loconet notification \n", addr, spd);
 
     tx_packets[tx_index]->priority = LN_MAX_PRIORITY; 
     tx_packets[tx_index]->data_len = response_size;
@@ -795,39 +799,43 @@ void LN_Class::tx_cab_speed(uint16_t addr, uint8_t spd){
       tx_send(tx_index);
     } 
   }
+  slot_ptr[slotnum]->next_refresh = 100000000; //100 seconds
+  slot_ptr[slotnum]->last_refresh = TIME_US;
   return;
 }
 void LN_Class::tx_cab_dir(uint16_t addr, bool dir){
   int8_t slotnum;
-  uint8_t dirb = dir * 0x20; 
+  uint8_t dirf = dir * 0x20; 
   uint8_t response_size = 4; //response packets is 4 bytes long
   uint8_t tx_index = 0; 
   slotnum = loco_select(uint8_t ((addr >> 7) & 0x7F), uint8_t (addr & 0x7F));
-  
-  slot_ptr[slotnum]->slot_data[1] | 0x20; //D5 to 11, IN_USE
+
+  if ((slot_ptr[slotnum]->slot_data[3] != dirf) || ((TIME_US - slot_ptr[slotnum]->last_refresh) > 100000)) {
+    //Slot data changed or was more than 100ms old, re-send. 
+    slot_ptr[slotnum]->slot_data[0] | 0x30; //Set slot busy + slot active
+    if (dirf == (slot_ptr[slotnum]->slot_data[3]) & 0x20){ //Refresh slot only, no need to update LN. 
+      return; 
+    }
+    if (dirf == 0x20) {
+      slot_ptr[slotnum]->slot_data[3] = slot_ptr[slotnum]->slot_data[3] | 0x20; //Set dir bit
+    } else {    
+      slot_ptr[slotnum]->slot_data[3] = slot_ptr[slotnum]->slot_data[3] & 0xDF; //Clear dir bit
+    }
+    tx_packets[tx_index]->priority = LN_MAX_PRIORITY; 
+    tx_packets[tx_index]->data_len = response_size;
+    tx_packets[tx_index]->data_ptr[0] = 0xA1; //OPC_LOCO_DIRF
+    tx_packets[tx_index]->data_ptr[1] = slotnum; 
+    tx_packets[tx_index]->data_ptr[2] = slot_ptr[slotnum]->slot_data[3];
+    tx_packets[tx_index]->Make_Checksum(); //Populate checksum
+    tx_packets[tx_index]->state = 1; //Mark as pending packet
+    tx_packets[tx_index]->last_start_time = TIME_US;
+    Serial.printf("LN_Class::tx_cab_dir ready to send updated throttle info for cab %u \n", addr);
+    if (tx_pending == -1) { //Send now if possible. 
+      tx_send(tx_index);
+    }
+  } 
   slot_ptr[slotnum]->next_refresh = 200000000; //200 seconds
   slot_ptr[slotnum]->last_refresh = TIME_US;
-  if (dirb == (slot_ptr[slotnum]->slot_data[3]) & 0x20){ //Refresh slot only, no need to update LN. 
-    return; 
-  }
-
-  if (dirb == 0x20) {
-    slot_ptr[slotnum]->slot_data[3] = slot_ptr[slotnum]->slot_data[3] | 0x20; //Set dir bit
-  } else {    
-    slot_ptr[slotnum]->slot_data[3] = slot_ptr[slotnum]->slot_data[3] & 0xDF; //Clear dir bit
-  }
-  tx_packets[tx_index]->priority = LN_MAX_PRIORITY; 
-  tx_packets[tx_index]->data_len = response_size;
-  tx_packets[tx_index]->data_ptr[0] = 0xA1; //OPC_LOCO_DIRF
-  tx_packets[tx_index]->data_ptr[1] = slotnum; 
-  tx_packets[tx_index]->data_ptr[2] = slot_ptr[slotnum]->slot_data[3];
-  tx_packets[tx_index]->Make_Checksum(); //Populate checksum
-  tx_packets[tx_index]->state = 1; //Mark as pending packet
-  tx_packets[tx_index]->last_start_time = TIME_US;
-  Serial.printf("LN_Class::tx_cab_dir ready to send updated throttle info for cab %u \n", addr);
-  if (tx_pending == -1) { //Send now if possible. 
-    tx_send(tx_index);
-  } 
   return;  
 }
 
@@ -1038,6 +1046,9 @@ int8_t LN_Class::slot_write(int8_t slotnum, uint8_t rx_pkt){ //Handle slot write
   }
   if (slotnum == 123) { //Set fast clock
     slot_fastclock_set(rx_pkt); 
+  }
+  if (slotnum == 124) { //Programming session
+    ack = 127; //Not implemented
   }
   return ack;
 }
