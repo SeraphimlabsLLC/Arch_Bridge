@@ -177,5 +177,6 @@ void ESP_Uart::rx_flush(){ //Reset the rx buffer to 0
 }
 
 void ESP_Uart::tx_flush() { //Reset the tx buffer
+  
   return;
 }

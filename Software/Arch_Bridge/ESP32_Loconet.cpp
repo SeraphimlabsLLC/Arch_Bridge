@@ -78,6 +78,9 @@ void LN_Class::loop_process(){
   
   if ((LN_cd_hit == true) && (tx_pending > -1)) {
     Serial.printf("LN CD true at timestamp %u \n", LN_cd_edge); 
+//    LN_port.rx_flush();
+//    LN_port.tx_flush();
+    
     LN_cd_hit = false; 
   }
     
@@ -609,7 +612,7 @@ uint8_t LN_Class::tx_loopback(){
  
   if (delta == 0) {//No differences in the data given
     if (rx_packets[rx_pending]->rx_count == tx_packets[tx_pending]->data_len) { //Packet is complete and intact. 
-        Serial.printf("Transmission of packet %d confirmed in %d \n", tx_pending, rx_pending);
+//        Serial.printf("Transmission of packet %d confirmed in %d \n", tx_pending, rx_pending);
         tx_packets[tx_pending]->state = 5; //Mark TX complete
         tx_packets[tx_pending]->last_start_time = TIME_US; //Time it was set to this state.  
         tx_pending = -1;        
@@ -618,7 +621,7 @@ uint8_t LN_Class::tx_loopback(){
     }
     return delta;
   } else { //Collision. Transmit break, drop from rx_packet, and decrement tx_attempts to drop if stale.  
-    Serial.printf("Collision detected, %u differences found. \n", delta);
+//    Serial.printf("Collision detected, %u differences found. \n", delta);
     transmit_break();
     tx_packets[tx_pending]->tx_attempts--; 
     tx_packets [tx_pending]->state = 4; 
@@ -1161,7 +1164,7 @@ void LN_Class::slot_fastclock_get(){
   slot_ptr[slotnum]->slot_data[2] = minsh; //127 - Fastclock.minutes_rem_uS / 472441; //frac_minutes_us is the remaining uS after calculating minutes. FRAC_MINS_H, 0-127 tick count
   slot_ptr[slotnum]->slot_data[1] = minsl; //127 - (Fastclock.frac_minutes_uS - (slot_ptr[123]->slot_data[2] * 472441)) / 3872; //FRAC_MINS_L, 0-127 tick count
   slot_ptr[slotnum]->slot_data[0] = Fastclock.set_rate; //Clock multiplier
-  Serial.printf("Loconet: Fastclock slot checked, minutes %u, minsh %u, minsl %u \n", slot_ptr[slotnum]->slot_data[3], slot_ptr[slotnum]->slot_data[2], slot_ptr[slotnum]->slot_data[1]);  
+//  Serial.printf("Loconet: Fastclock slot checked, minutes %u, minsh %u, minsl %u \n", slot_ptr[slotnum]->slot_data[3], slot_ptr[slotnum]->slot_data[2], slot_ptr[slotnum]->slot_data[1]);  
   return; 
 }
 
