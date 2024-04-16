@@ -20,10 +20,10 @@ Rev 06 changes label and pinout. Did not bring CTS or RTS.
 DCC-EX TTY should be on uart2 since LN uses 1. The CS doesn't want to deal with debug and could crash.
 Rev 06 changes label and pinout.
 
-Falstead Simulation: 
+Falstead Simulation:
 https://www.falstad.com/circuit/circuitjs.html?ctz=CQAgjCAMB0l3BWcMBMcUHYMGZIA4UA2ATmIxABYkxIQFaEBTAWjDACgAnKcQ22lCgo8KkdgHMeg4QNE8xAJR7YU8tXLApoeNTATsAziBW9aJ6WoBmAQwA2BxuwDuUocdUWxL2mD7vTUM48vvzgKDrYXDzEhMqqAmLczITCFsnCISIYXiDp-mbx7AAuuSngmsEVqqwgGNAkCBQopIIYeL5gOswwONiEfU1C-QSQEGggACaMNgCutkVBeZ4gnuzYwgBejAB2jJzMCNAQx9AYYBTYCOFgxNfwKCzkArDwr2-4wofH7BulGRV5cwgLa7fZfYrlVRsKEYWLQla5CAwc7YPB8ISQDDhUQYMi5GCEfq3NE3IjES5XcqTabWOYLbhgWEgGLgJkmAR4DBRRlwvw8lZuBiibkVTLw5a4OA-SEy+FAkF7A5HIL8iziwUq0V80WilVMzQ6fmZSIufkmOWFJRmmGxUK0DRaHR26D6SSqtyquT8PW8hKGvw5d2pfACmSGFYhzJoHTLCA2eyOFx5TLJ3VAA
 
 PCB Rev 10: 
-Revised VIN to 5v power supply using MLCC instead of Electrolytic for smoother output and smaller footprint. 
+Revised VIN to 5v power supply using MLCC instead of Electrolytic for smoother output and smaller footprint.
 
-
+Rev 14:

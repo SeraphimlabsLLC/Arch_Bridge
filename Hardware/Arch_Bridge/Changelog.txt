@@ -24,8 +24,15 @@ Changed R14 and R15 to be 2512 SMD resistors for 1w heat capacity, allowing vin 
 
 Also moved CB1 to be closer to vreg, and repositioned CB2 to be closer to ESP. Although optional, these bulk caps may be needed for stabilization.
 
-Rev 12: 
+Rev 12:
 Changed Q1 to MMBT3904 in SOT23
 Changed Q3 to MMBT3906 in SOT23
-Added D10, a 12v zener diode to limit Loconet Master current source voltage. May change to a 13v zener to allow a little more margin.
-Changed D3 and D5 to SMD instead of THT. 
+Added D10, a 12v zener diode to limit Loconet Master current source voltage. May change to a 13v zener to allow a little more driving margin.
+Changed D3 and D5 to SMD instead of THT.
+
+Rev 14:
+Restructured H bridge logic gating to run on 3.3v, revised layout for better board space usage.
+Loconet RX and TX using ICs U3, U4, and U5 are still 5v. 
+Level shifters for DCC driving, CONSOLE1, and COM2 now have independent IOREF inputs
+Put CB1 back to SMD and included in BOM.
+
