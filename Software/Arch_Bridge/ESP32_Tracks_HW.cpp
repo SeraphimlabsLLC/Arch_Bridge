@@ -258,17 +258,16 @@ void TrackChannel::adc_read() { //Check output current, change state to -int if 
 
 uint8_t TrackChannel::CheckEnable(){ //Verify power mode and state, then set enable. Arch_Bridge devices also read enable_in_pin
   uint8_t enable_in = 1; //default value for enable in
-  if ((powerstate <= 0) || (powermode <= 0)){ 
-    //Always turn enable_out off if state is overloaded or off or powemode is off. 
-    enable_in = 0;  
-    return enable_in; 
-  }
   #if BOARD_TYPE == ARCH_BRIDGE //Enable In pin is only used on Arch Bridge
     if ((enable_in_pin > 0) && (powermode == 1)){ //If enable_in_pin is configured and powermode = DCC EXT, read and update enable_in_pin
       enable_in = enable_in & gpio_get_level(enable_in_pin);
-      //Serial.printf("Enable In is %u \n", enable_in);
+      //Serial.printf("DCC: Enable In is %u \n", enable_in);
     }
   #endif
+  if ((powerstate <= 0) || (powermode <= 0)){ 
+    //Always turn enable_out off if state is overloaded or off or powemode is off. 
+    enable_in = 0;   
+  }
     gpio_set_level(enable_out_pin, enable_in); 
   return enable_in;
 }
