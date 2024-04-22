@@ -159,7 +159,6 @@ void LN_Class::rx_scan(){ //Scan received data for a valid frame
     //Serial.printf("RX_Scan Processing byte %x from packet %u. ", LN_port.rx_read_data[i], rx_pending);
     //Serial.printf("RX_Scan Time remaining (uS): %u \n", time_remain);
     if ((time_us - rx_packets[rx_pending]->last_start_time) > 15000) { //Packets must be fully received within 15mS of opcode detect
-      //show_rx_packet(rx_pending); //Print packet contents. 
       //Serial.printf("RX Timeout, dropping %u bytes from slot %u \n", rx_packets[rx_pending]->rx_count, rx_pending);
       rx_packets[rx_pending]->state = 4; //Set state to failed
       rx_packets[rx_pending]->last_start_time = time_us;
@@ -283,6 +282,7 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
   uint8_t i = 0;
   int8_t slotnum= -1; //Used for slot processing. 
   rx_packets[rx_pkt]->state = 5;
+  show_rx_packet(rx_pkt); //display packet for debug
   switch (opcode) {
     
     //2 byte opcodes:
@@ -383,6 +383,9 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
     case 0xBB: //Request SLOT DATA/status block
       slotnum = rx_packets[rx_pkt]->data_ptr[1];
       Serial.printf("Throttle requesting slot %u data \n", slotnum);
+      if (slotnum > 120) {
+        show_rx_packet(rx_pkt); 
+      }
       slot_read(slotnum); //Read slot data out to Loconet  
       break; 
     case 0xBC: //REQ state of SWITCH. LACK response 7F for ok. 
@@ -506,7 +509,8 @@ void LN_Class::tx_queue(){ //Try again to send queued packets on each loop cycle
             }
           }
           break;  
-        case 5: //Success? Either way we don't need it anymore. 
+        case 5: //Success? Either way we don't need it anymore.
+          show_tx_packet(tx_next_check); 
           tx_packets[tx_next_check]->reset_packet(); 
           if (tx_next_check == tx_pending) { //This should never be needed, but just in case. 
               tx_pending = -1;
@@ -861,9 +865,20 @@ void LN_Class::send_long_ack(uint8_t opcode, uint8_t response) {
 void LN_Class::show_rx_packet(uint8_t index) { //Display a packet's contents
    uint8_t i = 0; 
    uint8_t pkt_len = rx_packets[index]->rx_count; 
-   Serial.printf("Show_rx_packet: ");
+   Serial.printf("Loconet RX Packet: ");
    while (i < pkt_len) {
     Serial.printf("%x ", rx_packets[index]->data_ptr[i]); 
+    i++;
+   }
+   Serial.printf(" \n");
+   return; 
+}
+void LN_Class::show_tx_packet(uint8_t index) { //Display a packet's contents
+   uint8_t i = 0; 
+   uint8_t pkt_len = tx_packets[index]->data_len; 
+   Serial.printf("Loconet TX Packet: ");
+   while (i < pkt_len) {
+    Serial.printf("%x ", tx_packets[index]->data_ptr[i]); 
     i++;
    }
    Serial.printf(" \n");
@@ -1004,6 +1019,10 @@ void LN_Class::slot_read(int8_t slotnum){ //Handle slot reads
   if (slotnum == 124) { //Programmer not supported. 
     //Serial.printf("Loconet Programmer not supported. \n"); 
     send_long_ack(0x7F, 0x7F); 
+    return; 
+  }
+  if (slotnum == 127) { //Unknown reserved, possibly system?
+    Serial.printf("Loconet: Unknown slot 127 requested. \n"); 
     return; 
   }
   //Loconet response: 

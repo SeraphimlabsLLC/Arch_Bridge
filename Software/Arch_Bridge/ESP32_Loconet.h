@@ -150,7 +150,7 @@ class LN_Class {
 
   const uint8_t slot_hours = 104; 
   uint8_t slot_minutes = 67; //DCS100 mode. Use 68 for others.   
-  LN_Slot_data* slot_ptr[127]; //Stores pointers for accessing slot data.
+  LN_Slot_data* slot_ptr[128]; //Stores pointers for accessing slot data. Must be 128 for range 0-127
   char LN_TRK; //Byte for track status flags, shared between all slots
   
   uint8_t uart_rx(); //Receive data from uart to rx ring
@@ -163,9 +163,10 @@ class LN_Class {
   uint8_t tx_loopback(); //Check if the current rx_packet matches the tx_packet. If it does, drop both from their queues. 
   
   uint8_t rx_packet_getempty(); //Get the next available rx_packet handle, creating one if necessary.
-  void show_rx_packet(uint8_t index); //Print contents of a packet. 
+  void show_rx_packet(uint8_t index); //Print contents of a received packet. 
   void rx_packet_del(uint8_t index); //Delete a packet
   uint8_t tx_packet_getempty(); //Get the next available rx_packet handle, creating one if necessary
+  void show_tx_packet(uint8_t index); ////Print contents of a transmitted packet
   void tx_packet_del(uint8_t index); //Delete a packet
 
   void transmit_break();

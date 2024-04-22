@@ -268,9 +268,11 @@ void DCCEX_Class::rx_power_manager(){
         }
       if (data_pkt[2] == '1'){ 
         DCCSigs[i].StateChange(1);
+        Serial.printf("DCCEX : Turning on power to track %c \n" , i);
         }
       if (data_pkt[2] == '0') {
-        DCCSigs[i].StateChange(0);  
+        DCCSigs[i].StateChange(0);
+        Serial.printf("DCCEX : Turning off power to track %c \n" , i);  
       }
       break; //Exit the loop early since we found what we needed. 
     }
