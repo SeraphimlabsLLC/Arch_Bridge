@@ -35,4 +35,6 @@ Restructured H bridge logic gating to run on 3.3v, revised layout for better boa
 Loconet RX and TX using ICs U3, U4, and U5 are still 5v. 
 Level shifters for DCC driving, CONSOLE1, and COM2 now have independent IOREF inputs
 Put CB1 back to SMD and included in BOM.
+Added voltage divider to monitor Railsync H bridge voltage and warn if below 7v. H bridge UVLO trips at 4v. 
+Added C15 to prevent fluctuations in the Railsync H bridge. 
 

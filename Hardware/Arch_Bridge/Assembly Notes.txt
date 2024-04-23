@@ -25,5 +25,6 @@ https://www.falstad.com/circuit/circuitjs.html?ctz=CQAgjCAMB0l3BWcMBMcUHYMGZIA4U
 
 PCB Rev 10: 
 Revised VIN to 5v power supply using MLCC instead of Electrolytic for smoother output and smaller footprint.
+Found that the H bridges shut down in UVLO trip if the input voltage to them is under 4v. 
 
 Rev 14:
