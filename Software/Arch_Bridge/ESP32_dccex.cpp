@@ -110,6 +110,10 @@ void DCCEX_Class::rx_scan(){ //Scan ring buffer data for an opcode and return it
       data_pkt[data_len] = dccex_port.rx_read_data[i];
       Serial.printf("%c", dccex_port.rx_read_data[i] );
       data_len++;
+      
+      if (data_len > 255) { //Would exceed buffer size. Discard malformed packet. 
+        rx_state = 0;
+      }
 
       if (dccex_port.rx_read_data[i] == '>') { //stop recording data. Reset for next packet.
         rx_state = 2; //RX complete, ready to process  
