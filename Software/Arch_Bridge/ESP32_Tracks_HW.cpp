@@ -111,7 +111,8 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
       //Serial.printf ("Configuring Enable In pin to %u \n", uint8_t (enable_in_pin));
       gpio_reset_pin(enable_in_pin);
       gpio_set_direction(enable_in_pin, GPIO_MODE_OUTPUT);
-      gpio_set_level(enable_in_pin, 1); //Default to DC mode ON so that a Railsync signal is not passed until set to a DCC mode.  
+      gpio_set_level(enable_in_pin, 1); //Default to DC mode ON so that a Railsync signal is not passed until set to a DCC mode. 
+    } 
     #endif
     
     adc1_config_channel_atten(adc_channel,ADC_ATTEN_11db);//config attenuation
