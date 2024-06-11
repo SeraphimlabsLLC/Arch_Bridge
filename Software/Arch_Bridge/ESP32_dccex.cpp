@@ -6,6 +6,10 @@
   #include "ESP32_uart.h"
 #endif
 
+#ifndef ESP32_ADC_H
+  #include "ESP32_adc.h"
+#endif
+
 #ifndef ESP32_TRACKS_HW_H
   #include "ESP32_Tracks_HW.h"
 #endif
@@ -33,6 +37,7 @@ extern uint64_t time_us;
 extern TrackChannel DCCSigs[];
 extern uint8_t max_tracks;
 extern dccrx dcc; 
+extern ADC_Handler adc_one[];
 
 void DCCEX_Class::loop_process(){
   if (state == 0) { //Startup
@@ -142,7 +147,8 @@ void DCCEX_Class::rx_decode(){
 
     case 'c': //Display currents
     for (i = 0; i < max_tracks; i++) {
-      val = (DCCSigs[i].adc_smooth_ticks)/ (DCCSigs[i].adc_scale / 1000); //scaled mA
+      uint8_t adc_index = DCCSigs[i].adc_index; 
+      val = (adc_one[adc_index].smooth_ticks)/(DCCSigs[i].adc_ticks_scale / 1000); //scaled mA
       Serial.printf("Track %c ADC analog value = %u milliamps, mode %u \n", DCCSigs[i].trackID, val, DCCSigs[i].powermode);
     }
     break; 

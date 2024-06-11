@@ -1021,8 +1021,8 @@ void LN_Class::slot_read(int8_t slotnum){ //Handle slot reads
     send_long_ack(0x7F, 0x7F); 
     return; 
   }
-  if (slotnum == 127) { //Unknown reserved, possibly system?
-    Serial.printf("Loconet: Unknown slot 127 requested. \n"); 
+  if (slotnum == 127) { //Read CS opsw data
+    slot_opsw_get(); 
     return; 
   }
   //Loconet response: 
@@ -1185,6 +1185,15 @@ void LN_Class::slot_fastclock_get(){
   slot_ptr[slotnum]->slot_data[0] = Fastclock.set_rate; //Clock multiplier
 //  Serial.printf("Loconet: Fastclock slot checked, minutes %u, minsh %u, minsl %u \n", slot_ptr[slotnum]->slot_data[3], slot_ptr[slotnum]->slot_data[2], slot_ptr[slotnum]->slot_data[1]);  
   return; 
+}
+
+void LN_Class::slot_opsw_set(uint8_t rx_pkt){ //Write CS opsw data
+  Serial.printf("Loconet: CS opsw data written \n"); 
+   return;
+}
+void LN_Class::slot_opsw_get(){//Read CS opsw data
+  Serial.printf("Loconet: CS opsw data read \n"); 
+  return;
 }
 
 int8_t LN_Class::slot_new(uint8_t slotnum) { //Initialize empty slots

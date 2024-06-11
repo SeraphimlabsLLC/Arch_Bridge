@@ -53,8 +53,8 @@ uint8_t Rmtdcc::rmt_rx() {
     return 0; 
    }
    
-   if (rx_data_size > 0) {
-     Serial.printf("rmt_rx_data contained %u items \n", rx_data_size); 
+   if (*rx_data_size > 0) { //* is dereference, to get the value contained in the pointer
+     Serial.printf("rmt_rx_data contained %u items \n", *rx_data_size); 
    }
 
    //Direct RMT RX read

@@ -2,6 +2,10 @@
 #pragma once
 #define ESP32_TRACKS_HW_H
 
+#ifndef ESP32_ADC_H
+  #include "ESP32_adc.h"
+#endif
+
 //#ifndef ESP32_RMTDCC_HW_H
 //  #include "ESP32_rmtdcc.h"
 //#endif
@@ -19,7 +23,6 @@
 #include "Arduino.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
-#include "driver/adc.h"
 
 /*Track Configurations
  * Format: Enable Out pin, Enable In/DC mode pin, rev/sig pin, brake pin, adc pin, adc ticks per amp x1000, adc zero offset x 1000, adc trip ticks x1000
@@ -47,7 +50,6 @@ bool MasterEnable();
   #define MASTER_EN 15 //GPIO15
   #define MASTER_EN_DEGLITCH 4 //uSec required between readings. Must have 2 of the same value to change state.
   #define DIR_MONITOR 38 //GPIO38, Dir Monitor 
-  #define ADC_MIN_OFFSET 60 //ADC is inaccurate at low values.
   void IRAM_ATTR Master_en_ISR(); //Pin change interrupt on MASTER_EN 
 #endif
 
@@ -58,14 +60,8 @@ bool MasterEnable();
   #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 1693480, -65000, 3650000, 'D');
   #define MASTER_EN 3 //Is an Output Enable instead of an input
   #define DIR_MONITOR 9 //GPIO9, railsync input. 
-  #define ADC_MIN_OFFSET 60 //ADC is inaccurate at low values.
   //Arch_Bridge boards do not generate a DIR_OVERRIDE, but the TX RMT can be attached to individual track REV pins.  
 #endif
-
-//ADC Settings:
-#define OL_COOLDOWN 5000 //Time in mS that the power should be off when overload detected. 
-#define ADC_DMAX 4095 //4095 in single shot, 8191 in continuous
-#define ADC_VMAX 3.1 //Max readable voltage is actually 3.1v using mode ADC_ATTEN_DB_11  
 
 class TrackChannel {
   //Very similar to DCC-EX class MotorDriver, but no dual signal support. 
@@ -75,19 +71,13 @@ class TrackChannel {
     int16_t cabaddr; //DCC addresss used for DC mode
     int8_t powerstate; //0 = off, 1 = on_forward, 2 = on_reverse - indicates overloaded 
     uint8_t powermode; //0 = none, 1 = EXT, 2 = DCC_Internal, 3 = DC, 4 = DCX. Future: Mode for generating PROG? 
-    int32_t adc_base_ticks; //value read from ADC when output is off for calc reference.
-    int32_t adc_previous_ticks; //value read on prior scan
-    int32_t adc_current_ticks; //value read on most recent scan
-    int32_t adc_smooth_ticks; // =(adc_smooth_ticks * 15 + adc_current_ticks) / 16
-    int32_t adc_overload_trip; //Pre-calculate trip threshold in adc ticks
-    int32_t adc_scale; //ADC ticks per amp * 1000. This can be higher than the adc max value if the hardware is <1A max. 
-    int16_t adc_offset; //ADC offset in ticks * 1000. 
+    uint8_t adc_index; //ADC index used for this channel
+    int32_t adc_ticks_scale; //ADC ticks per amp * 1000. This can be higher than the adc max value if the hardware is <1A max. 
 
     gpio_num_t enable_out_pin;
     gpio_num_t enable_in_pin; //Enable_in on ArchBridge, DC mode select on Dynamo
     gpio_num_t reverse_pin;
     gpio_num_t brake_pin;
-    adc1_channel_t adc_channel;
 
     void SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pin, uint8_t brk_pin, uint8_t adcpin, uint32_t adcscale, int32_t adcoffset, uint32_t adc_ol_trip, char track); 
     void ModeChange (int8_t newmode);

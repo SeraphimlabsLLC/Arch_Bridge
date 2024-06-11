@@ -131,7 +131,9 @@ class LN_Class {
   int8_t slot_move(int8_t slot_src, int8_t slot_dest); //Handle slot moves
   void slot_fastclock_set(uint8_t rx_pkt);
   void slot_fastclock_get();
-
+  void slot_opsw_set(uint8_t rx_pkt); 
+  void slot_opsw_get(); 
+  
   int8_t loco_select(uint8_t high_addr, uint8_t low_addr); //Return the slot managing this locomotive, or assign one if new. 
   
   LN_Class(); //Constructor

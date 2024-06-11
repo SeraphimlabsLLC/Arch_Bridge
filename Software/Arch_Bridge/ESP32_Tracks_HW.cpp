@@ -1,12 +1,18 @@
 #ifndef ESP32_TRACKS_HW_H
   #include "ESP32_Tracks_HW.h"
 #endif
+
+#ifndef ESP32_ADC_H
+  #include "ESP32_adc.h"
+#endif
+
 //#ifndef ESP32_RMTDCC_HW_H
 //  #include "ESP32_rmtdcc.h"
 //#endif
 
 //TrackChannel(enable_out_pin, enable_in_pin, uint8_t reverse_pin, brake_pin, adc_channel, adcscale, adc_overload_trip)
 TrackChannel DCCSigs[MAX_TRACKS]; //Define track channel objects with empty values.
+
 //extern Rmtdcc dcc; //DCC on RMT
 
 uint8_t max_tracks = 0; //Will count tracks as they are initialized. 
@@ -15,9 +21,10 @@ volatile uint64_t Master_en_chk_time = 0; //Store when it was checked last.
 volatile bool Master_en_deglitch = false; //Interim value
 extern bool dcc_ok; //A valid DCC signal is present. 
 extern uint64_t time_us; //Reuse time_us from main
+extern uint8_t adc_active_count; 
+extern ADC_Handler adc_one[];
 
-
-void Tracks_Init(){ //Populates track class with values including ADC
+void Tracks_Init(){ //Populates track class with values. ADC moved to ADC_Init().
   
   
 #if BOARD_TYPE == DYNAMO //If this is a Dynamo type booster, define these overall control pins.
@@ -46,8 +53,8 @@ void Tracks_Init(){ //Populates track class with values including ADC
   dcc.rmt_tx_init(); //Initialize DIR_OVERRIDE for DCC generation
 #endif*/
   
-  adc1_config_width(ADC_WIDTH_12Bit);//config adc1 width
-  
+//  adc1_config_width(ADC_WIDTH_12Bit);//config adc1 width, ESP-IDF 4.4 call
+
   TRACK_1 //each track definition subsitites the complete function call to DCCSigs::SetupHW 
   #ifdef TRACK_2
   TRACK_2
@@ -90,10 +97,6 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
     enable_in_pin = gpio_num_t(en_in_pin);
     reverse_pin = gpio_num_t(rev_pin);
     brake_pin = gpio_num_t(brk_pin);
-    adc_channel = adc1_channel_t (adcpin - 1);
-    adc_scale = adcscale;
-    adc_offset = adcoffset; 
-    adc_overload_trip = adc_ol_trip;
     //Configure Enable Out
     gpio_reset_pin(gpio_num_t(enable_out_pin)); //Always configure enable_out_pin
     gpio_set_direction(gpio_num_t(enable_out_pin), GPIO_MODE_OUTPUT_OD); //Open Drain output, level shifters have integral pull-up
@@ -114,12 +117,15 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
       gpio_set_level(enable_in_pin, 1); //Default to DC mode ON so that a Railsync signal is not passed until set to a DCC mode. 
     } 
     #endif
-    
-    adc1_config_channel_atten(adc_channel,ADC_ATTEN_11db);//config attenuation
-    adc_current_ticks = adc_previous_ticks = adc_base_ticks = 0; //Set all 3 ADC values to 0 initially
+
+    //Configure ADC
+    adc_active_count++; //How many ADC channels are active right now
+    adc_index = adc_active_count;
+    adc_one[adc_index].adc_channel_config(adcpin, adcoffset);
+    adc_ticks_scale = adcscale;
     ModeChange(0); //set power mode none, which will also set power state off.
     adc_read(); //actually read the ADC
-    adc_base_ticks = adc_current_ticks; //Copy the zero output ticks to adc_base_ticks
+    adc_one[adc_index].base_ticks = adc_one[adc_index].current_ticks; //Copy the zero output ticks to base_ticks
     return;
 }
 
@@ -230,20 +236,12 @@ void TrackChannel::StateChange(int8_t newstate){
 }
 
 void TrackChannel::adc_read() { //Check output current, change state to -int if overloaded. Turn back on if cooldown was reached. 
-  uint16_t adcraw = 0;
-  adc_previous_ticks = adc_current_ticks; //update value read on prior scan
-  //ADC runs at a max of 5MHz, and needs 25 clock cycles to complete. Effectively 200khz or 5usec minimum. 
-  adcraw = adc1_get_raw(adc1_channel_t (adc_channel));
-  adc_current_ticks = adcraw * 1000 + adc_offset; //Calculation scale changed from 1000000 to 1000 to better fit int32_t and save some ram. 
-  if (adc_current_ticks < 0){ //adc_offset was negative, and would result in a negative ticks. Just set it to 0. 
-    adc_current_ticks = 0; 
-  }
-  adc_smooth_ticks = ((adc_smooth_ticks * 15) + adc_current_ticks) / 16;
+  adc_one[adc_index].adc_read(); 
   if ((powerstate > 0) && (powermode > 0)) { //Power should be on, enforce limit. 
-    if (adc_current_ticks > adc_overload_trip) {
+    if (adc_one[adc_index].current_ticks > adc_one[adc_index].overload_ticks) {
       //if (TIME_US - overload_cooldown > (OL_COOLDOWN * 1000)) { //Only warn when it initially trips, not if it remains. 
-        Serial.printf("ADC scale %u ticks * 1000 per A \n", adc_scale); 
-        Serial.printf("ADC detected overload on %c at %i mA, threshold %i mA \n",trackID, (adc_current_ticks / (adc_scale/1000)), (adc_overload_trip / (adc_scale / 1000)));
+        Serial.printf("ADC scale %u ticks * 1000 per A \n", adc_ticks_scale); 
+        Serial.printf("ADC detected overload on %c at %i mA, threshold %i mA \n",trackID, (adc_one[adc_index].current_ticks / (adc_ticks_scale/1000)), (adc_one[adc_index].overload_ticks / (adc_ticks_scale / 1000)));
       //}
        overload_cooldown = TIME_US;
       StateChange(powerstate * -1); //Set power state overload by making mode negative. 

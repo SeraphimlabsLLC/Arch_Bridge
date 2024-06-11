@@ -10,7 +10,9 @@
 #ifndef ESP32_UART_H
   #include "ESP32_uart.h"
 #endif
-
+#ifndef ESP32_ADC_H
+  #include "ESP32_adc.h"
+#endif
 /*#ifndef ESP32_RMTDCC_H
   #include "ESP32_rmtdcc.h"
 #endif */
@@ -71,6 +73,8 @@ void setup() {
     LN_init(); //Initialize Loconet
     Fastclock_setup(FCLK_ACTIVE); //Check fastclock settings and start it      
   #endif
+  
+  ADC_Setup_Commit(); //Run last in setup() to commit the ADC config built up by everything else and start the sampler
 Serial.print("Setup Complete \n");  
 }
 
