@@ -7,6 +7,8 @@
 #include "esp_adc/adc_continuous.h"
 //#include <soc/sens_reg.h>
 //#include <soc/sens_struct.h>
+#include <list>
+using namespace std;
 
 uint8_t adc_active_count = 0; 
 volatile bool ADC_result_ready = false; 
@@ -62,19 +64,41 @@ void ADC_Setup_Commit() { //Run last in Setup() to commit the selected ADC confi
     .atten = ADC_ATTEN_DB_12,
   };
 */
+
+//adc_active_count at this point should contain the configured number of channels
+  adc_continuous_handle_cfg_t adc_unit_one_config = {
+    .max_store_buf_size = adc_active_count * 128,
+    .conv_frame_size = adc_active_count,
+  };
+ESP_ERROR_CHECK(adc_continuous_new_handle(&adc_unit_one_config, &adc_unit_one)); //Initialize ADC1 continuous mode driver
+
+  adc_continuous_config_t adc1_channel_config = {
+    .pattern_num = adc_active_count,
+    .sample_freq_hz = 80000,
+    .conv_mode = ADC_CONV_SINGLE_UNIT_1,
+    .format = ADC_DIGI_OUTPUT_FORMAT_TYPE1,
+  };
+
+  adc_digi_pattern_config_t channel_pattern[adc_active_count] = {0};
   for (i = 0; i <= adc_active_count; i++) {
-//    ESP_ERROR_CHECK(adc_oneshot_config_channel(adc_unit_one, adc_one[i].hw_channel, &channel_config));
-  }
+    channel_pattern[i].atten = 12; 
+    channel_pattern[i].channel = adc_one[i].hw_channel;
+    channel_pattern[i].unit = 1; 
+    channel_pattern[i].bit_width = 12; 
+} 
+    adc1_channel_config.adc_pattern = channel_pattern;
+  ESP_ERROR_CHECK(adc_continuous_config(adc_unit_one, &adc1_channel_config));
+    
+  
   return; 
 }
 
 void IRAM_ATTR ADC_Done_ISR(){
-uint8_t adc_active_count; 
+/*uint8_t adc_active_count; 
 volatile bool ADC_result_ready = false; 
 volatile uint16_t ADC_result = 0; 
-volatile uint8_t adc_currently_reading = 0; 
+volatile uint8_t adc_currently_reading = 0;*/ 
 ADC_result_ready = true; 
-
 
   return;
 }

@@ -23,7 +23,7 @@
 #define ADC_VMAX 3.1 //Max readable voltage is actually 3.1v using mode ADC_ATTEN_DB_11  
 #define ADC_MIN_OFFSET 60 //ADC is inaccurate at low values.
 
-//Number of slots to use: 
+//Number of ADC slots to use: 
 #if BOARD_TYPE == DYNAMO
   #define ADC_SLOTS 4
 #endif
@@ -40,7 +40,7 @@ class ADC_Handler {
     int32_t overload_ticks; //Pre-calculate trip threshold in adc ticks
     int16_t offset_ticks; //ADC offset in ticks * 1000.     
     uint8_t hw_unit;
-    adc_channel_t hw_channel;
+    uint8_t hw_channel;
     void adc_channel_config(uint8_t adcpin, int16_t offset); 
     void adc_read();
     void adc_loop();
