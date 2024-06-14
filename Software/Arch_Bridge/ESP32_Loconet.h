@@ -151,7 +151,7 @@ class LN_Class {
   volatile int8_t tx_pending; //Index of which packet is actively sending. Set to -1 if none. 
 
   const uint8_t slot_hours = 104; 
-  uint8_t slot_minutes = 67; //DCS100 mode. Use 68 for others.   
+  uint8_t slot_minutes = 68; //DCS100 mode. Use 68 for others.   
   LN_Slot_data* slot_ptr[128]; //Stores pointers for accessing slot data. Must be 128 for range 0-127
   char LN_TRK; //Byte for track status flags, shared between all slots
   

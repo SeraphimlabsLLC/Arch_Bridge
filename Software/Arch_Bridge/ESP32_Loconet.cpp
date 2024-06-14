@@ -1023,7 +1023,6 @@ void LN_Class::slot_read(int8_t slotnum){ //Handle slot reads
   }
   if (slotnum == 127) { //Read CS opsw data
     slot_opsw_get(); 
-    return; 
   }
   //Loconet response: 
   response_size = 14; //Packet is 14 bytes long, should be 0x0E
@@ -1071,6 +1070,9 @@ int8_t LN_Class::slot_write(int8_t slotnum, uint8_t rx_pkt){ //Handle slot write
   }
   if (slotnum == 124) { //Programming session
     ack = 127; //Not implemented
+  }
+  if (slotnum == 127) { //Command Station OPSW settings
+    slot_opsw_set(rx_pkt);  //Save opsw changes 
   }
   return ack;
 }
@@ -1188,32 +1190,67 @@ void LN_Class::slot_fastclock_get(){
 }
 
 void LN_Class::slot_opsw_set(uint8_t rx_pkt){ //Write CS opsw data
+  int i = 0; 
+    for (i = 0; i < 10; i++) {
+      slot_ptr[127]->slot_data[i] = rx_packets[rx_pkt]->data_ptr[i + 3]; //Copy values from slot_data
+    }
+   Serial.printf("Loconet: opsw byte 0 has value %x \n", slot_ptr[127]->slot_data[0]);
+   Serial.printf("Loconet: opsw byte 5 has value %x \n", slot_ptr[127]->slot_data[5]);
+//   if ((slot_ptr[127]->slot_data[5] & 0x40) == 0x40) { //OPSW 39 memory reset active
+//    slot_new(127); //Reinitialize slot 127 
+//    Serial.printf("Loconet: CS opsw data reset to defaults \n"); 
+//   }
+  //Opsw bit locking, prevent incompatible/unsupported options from being selected
+  slot_ptr[127]->slot_data[5] & 0x07; //opsw 36 - 39 are memory resets. When not impemented, keep them set to off. 
+  slot_ptr[127]->slot_data[2] & 0x77; //opsw 20 address 0 not allowed. opsw 21-23 are step modes,
+  
+  //TODO: Save slot 127 data to eeprom or filesystem
   Serial.printf("Loconet: CS opsw data written \n"); 
    return;
 }
+
 void LN_Class::slot_opsw_get(){//Read CS opsw data
+  //TODO: Read slot 127 data from eeprom or filesystem
+  Serial.printf("Loconet: opsw byte 0 has value %x \n", slot_ptr[127]->slot_data[0]);
   Serial.printf("Loconet: CS opsw data read \n"); 
   return;
 }
 
 int8_t LN_Class::slot_new(uint8_t slotnum) { //Initialize empty slots
-  if (!(slot_ptr[slotnum])){
+  if (!(slot_ptr[slotnum])){ //Only create it when it doesn't already exist
     //Serial.printf("Initializing Loconet slot %u \n", slotnum);
     slot_ptr[slotnum] = new LN_Slot_data; 
     if (!(slot_ptr[slotnum])){
       Serial.printf("Failure allocating slot %u \n", index);
       return -1; 
-    }  
-    slot_ptr[slotnum] -> slot_data[0] = 0; //Slot status set to free.
-    slot_ptr[slotnum]->last_refresh = TIME_US;
-    slot_ptr[slotnum]->next_refresh = 200000000; //Expect refresh within 200 seconds 
-  }
-  //Implement special slot initialization
+    }
+  }  
+  slot_ptr[slotnum] -> slot_data[0] = 0; //Slot status set to free.
+  slot_ptr[slotnum]->last_refresh = TIME_US;
+  slot_ptr[slotnum]->next_refresh = 200000000; //Expect refresh within 200 seconds 
+    
+  //Implement special slot initialization / stored value reset
   if (slotnum == 123) { //Fast Clock
     slot_ptr[slotnum]->last_refresh = 0; //last refresh of 0 forces initial load quickly.   
     slot_ptr[slotnum]->next_refresh = 90000000; //Fastclock sends pings around every 80-100 seconds instead of receiving within 200. 
     slot_ptr[slotnum]->slot_data[9] = 0x70; //ID2, 0x7x = PC
     slot_ptr[slotnum]->slot_data[8] = 0x7F; //ID1, 0x7F = PC
+  }
+  if (slotnum == 127) { //OPSW slot
+    //Placeholder: JMRI gave a DCS100 OPSW write as Loconet RX Packet: ef e 7f 10 0 8 0 6 0 8 0 0 0 77 
+    slot_ptr[slotnum]->slot_data[0] = 0x10; //0x02 = opsw 2, booster only. 0x010 = opsw 5, CS Master mode
+    slot_ptr[slotnum]->slot_data[1] = 0x00;
+    slot_ptr[slotnum]->slot_data[2] = 0x08;  
+    //Byte 02 opsw 20, Address 0 stretching. Forced off. opsw 21-23 fx and step mode. 0x10 on for FX enabled. 
+    slot_ptr[slotnum]->slot_data[3] = 0x00;  //0x02 is opsw 26 C, enable routes
+    slot_ptr[slotnum]->slot_data[4] = 0x06; //0x01 = opsw 25 disable alias, 0x02 = opsw 26 enable routes, 0x04 = opsw 27 bushby bit
+    slot_ptr[slotnum]->slot_data[5] = 0x00;  
+    //Byte 05: opsw36 consist reset = 0x08, opsw37 route reset = 0x10, opsw38 roster reset = 0x20
+    //opsw39 all memory reset = 0x40
+    slot_ptr[slotnum]->slot_data[6] = 0x08;  //0x08 = opsw 44 C, 120 slots
+    slot_ptr[slotnum]->slot_data[7] = 0x00;
+    slot_ptr[slotnum]->slot_data[8] = 0x00;
+    slot_ptr[slotnum]->slot_data[9] = 0x00;
   }
   return slotnum;
 }
