@@ -48,4 +48,4 @@ class ADC_Handler {
 
 void ADC_Setup_Commit(); //Configure ADC unit 1 for 12 bits + all configured channels
 void ADC_loop(); //ADC polling loop
-void IRAM_ATTR ADC_Done_ISR(); //Conversion complete ISR callback
+void IRAM_ATTR ADC_Ready_ISR(); //Conversion complete ISR callback

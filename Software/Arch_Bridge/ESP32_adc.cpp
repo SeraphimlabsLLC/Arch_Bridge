@@ -87,13 +87,17 @@ ESP_ERROR_CHECK(adc_continuous_new_handle(&adc_unit_one_config, &adc_unit_one));
     channel_pattern[i].bit_width = 12; 
 } 
     adc1_channel_config.adc_pattern = channel_pattern;
-  ESP_ERROR_CHECK(adc_continuous_config(adc_unit_one, &adc1_channel_config));
-    
+ // ESP_ERROR_CHECK(adc_continuous_config(adc_unit_one, &adc1_channel_config));
+ //  adc_continuous_evt_cbs_t ISR_callbacks; 
+ //  ISR_callbacks.on_conv_done = ADC_Ready_ISR;
+//  ESP_ERROR_CHECK(adc_continuous_register_event_callbacks(adc_unit_one, &ISR_callbacks, NULL));
+ //   ESP_ERROR_CHECK(adc_continuous_start(adc_unit_one));
+  
   
   return; 
 }
 
-void IRAM_ATTR ADC_Done_ISR(){
+void IRAM_ATTR ADC_Ready_ISR(){
 /*uint8_t adc_active_count; 
 volatile bool ADC_result_ready = false; 
 volatile uint16_t ADC_result = 0; 
