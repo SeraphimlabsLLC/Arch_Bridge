@@ -51,7 +51,6 @@ void ADC_Handler::adc_read(){
 }
 
 void ADC_Setup_Commit() { //Run last in Setup() to commit the selected ADC configuration. 
-  /*
   uint8_t i = 0; 
 /*  adc_oneshot_unit_init_cfg_t init_config = {
     .unit_id = ADC_UNIT_1,
@@ -64,7 +63,7 @@ void ADC_Setup_Commit() { //Run last in Setup() to commit the selected ADC confi
     .bitwidth = ADC_BITWIDTH_12,
     .atten = ADC_ATTEN_DB_12,
   };
-
+*/
 
 //adc_active_count at this point should contain the configured number of channels
   adc_continuous_handle_cfg_t adc_unit_one_config = {
@@ -88,13 +87,12 @@ ESP_ERROR_CHECK(adc_continuous_new_handle(&adc_unit_one_config, &adc_unit_one));
     channel_pattern[i].bit_width = 12; 
 } 
     adc1_channel_config.adc_pattern = channel_pattern;
- // ESP_ERROR_CHECK(adc_continuous_config(adc_unit_one, &adc1_channel_config));
- //  adc_continuous_evt_cbs_t ISR_callbacks; 
- //  ISR_callbacks.on_conv_done = ADC_Ready_ISR;
+  ESP_ERROR_CHECK(adc_continuous_config(adc_unit_one, &adc1_channel_config));
+  adc_continuous_evt_cbs_t ISR_callbacks; 
+//  ISR_callbacks.on_conv_done = ADC_Ready_ISR;
 //  ESP_ERROR_CHECK(adc_continuous_register_event_callbacks(adc_unit_one, &ISR_callbacks, NULL));
- //   ESP_ERROR_CHECK(adc_continuous_start(adc_unit_one));
-  
-  */
+  ESP_ERROR_CHECK(adc_continuous_start(adc_unit_one));
+ 
   return; 
 }
 
