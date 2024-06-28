@@ -1030,12 +1030,13 @@ void LN_Class::slot_read(int8_t slotnum){ //Handle slot reads
   tx_packets[tx_index]->state = 1;
   tx_packets[tx_index]->priority = LN_MAX_PRIORITY; 
   tx_packets[tx_index]->data_len = response_size;
-  //Serial.printf("Preparing Loconet reply data \n");
+  //Serial.printf("Loconet: slot reply data: ");
   i = 0;
   for (i = 0; i < 10; i++) {
     tx_packets[tx_index]->data_ptr[i + 3] = slot_ptr[slotnum]->slot_data[i]; //Copy values from slot_low_data
-
+    //Serial.printf("%x ", slot_ptr[slotnum]->slot_data[i]);
   }
+  //Serial.printf(" \n");
   tx_packets[tx_index]->data_ptr[0] = 0xE7; //OPC_SL_RD_DATA
   tx_packets[tx_index]->data_ptr[1] = response_size; 
   tx_packets[tx_index]->data_ptr[2] = slotnum;
@@ -1073,6 +1074,7 @@ int8_t LN_Class::slot_write(int8_t slotnum, uint8_t rx_pkt){ //Handle slot write
   }
   if (slotnum == 127) { //Command Station OPSW settings
     slot_opsw_set(rx_pkt);  //Save opsw changes 
+    ack = 0x6f; 
   }
   return ack;
 }
@@ -1191,15 +1193,16 @@ void LN_Class::slot_fastclock_get(){
 
 void LN_Class::slot_opsw_set(uint8_t rx_pkt){ //Write CS opsw data
   int i = 0; 
+    //Serial.printf("Loconet: Saving opsw packet: ");
     for (i = 0; i < 10; i++) {
       slot_ptr[127]->slot_data[i] = rx_packets[rx_pkt]->data_ptr[i + 3]; //Copy values from slot_data
+      //Serial.printf("%x ", slot_ptr[127]->slot_data[i]);
     }
-   Serial.printf("Loconet: opsw byte 0 has value %x \n", slot_ptr[127]->slot_data[0]);
-   Serial.printf("Loconet: opsw byte 5 has value %x \n", slot_ptr[127]->slot_data[5]);
-//   if ((slot_ptr[127]->slot_data[5] & 0x40) == 0x40) { //OPSW 39 memory reset active
-//    slot_new(127); //Reinitialize slot 127 
-//    Serial.printf("Loconet: CS opsw data reset to defaults \n"); 
-//   }
+   //Serial.printf(" \n");
+   if ((slot_ptr[127]->slot_data[5] & 0x40) == 0x40) { //OPSW 39 memory reset active
+    slot_new(127); //Reinitialize slot 127 
+    Serial.printf("Loconet: CS opsw data reset to defaults \n"); 
+   }
   //Opsw bit locking, prevent incompatible/unsupported options from being selected
   slot_ptr[127]->slot_data[5] & 0x07; //opsw 36 - 39 are memory resets. When not impemented, keep them set to off. 
   slot_ptr[127]->slot_data[2] & 0x77; //opsw 20 address 0 not allowed. opsw 21-23 are step modes,
