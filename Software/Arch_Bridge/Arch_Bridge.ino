@@ -66,7 +66,7 @@ void setup() {
   ESP_uart_init(); //Initialize tty
   dccex_init(); //Initialize DCCEX parser
   dccrx_init(); //Initialize DCC signal audit
-  attachInterrupt(9, dir_monitor_isr, CHANGE);
+  attachInterrupt(8, dir_monitor_isr, CHANGE);
   Tracks_Init();  //Initialize GPIO
 
   #if BOARD_TYPE == ARCH_BRIDGE

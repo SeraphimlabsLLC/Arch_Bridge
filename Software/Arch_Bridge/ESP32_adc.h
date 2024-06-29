@@ -34,14 +34,15 @@
 class ADC_Handler {
     public:
     int32_t base_ticks; //value read from ADC when output is off for calc reference.
-    int32_t previous_ticks; //value read on prior scan
     int32_t current_ticks; //value read on most recent scan
+    int32_t previous_ticks; //value read on prior scan
     int32_t smooth_ticks; // =(adc_smooth_ticks * 15 + adc_current_ticks) / 16
     int32_t overload_ticks; //Pre-calculate trip threshold in adc ticks
-    int16_t offset_ticks; //ADC offset in ticks * 1000.     
-    uint8_t hw_unit;
-    uint8_t hw_channel;
-    void adc_channel_config(uint8_t adcpin, int16_t offset); 
+    int16_t offset_ticks; //ADC offset in ticks * 1000. 
+    uint8_t assigned_slot; //Index of current and overload ticks for the values we want.     
+//    uint8_t hw_unit;
+    uint8_t hw_channel; 
+    uint8_t adc_channel_config(uint8_t adc_ch, int16_t offset, int32_t adc_ol_trip); 
     void adc_read();
     void adc_loop();
 };
@@ -49,3 +50,4 @@ class ADC_Handler {
 void ADC_Setup_Commit(); //Configure ADC unit 1 for 12 bits + all configured channels
 void ADC_loop(); //ADC polling loop
 void IRAM_ATTR ADC_Ready_ISR(); //Conversion complete ISR callback
+void IRAM_ATTR ADC_Full_ISR(); //ADC memory full. Flush it. 

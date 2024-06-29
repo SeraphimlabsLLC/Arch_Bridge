@@ -27,11 +27,16 @@
 #define LN_UART Loconet.LN_port.uart_init(1, 17, 18, 16666, 255, 255);
 #define LN_COLL_PIN 8 //GPIO pin for hardware CD
 
+//Constants that shouldn't be changed.
 #define LN_LOOP_DELAY_US 0 //60uS * 8 bits
 
-//Constants that shouldn't be changed.
 #define LN_BITLENGTH_US 60 
 #define LN_COL_BACKOFF 20
+
+//Loconet Railsync ADC parameters
+#define LN_ADC_GPIO 9 //GPIO for Railsync load meter ADC input
+#define LN_ADC_OFFSET 0 //ADC zero offset
+#define LN_ADC_OL 3650000 //Railsync overload threshold in ADC ticks x 1000;
 
 //TODO: Change this to use an enum or class and assign min priority by opcode
 #define LN_MASTER 1
@@ -135,10 +140,14 @@ class LN_Class {
   void slot_opsw_get(); 
   
   int8_t loco_select(uint8_t high_addr, uint8_t low_addr); //Return the slot managing this locomotive, or assign one if new. 
+
+  //Railsync ADC
+  uint8_t ln_adc_index;
   
   LN_Class(); //Constructor
 
   private:
+  
   uint64_t last_time_us;
   
   LN_Packet* rx_packets[LN_RX_Q]; //Pointers to RX packets

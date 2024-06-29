@@ -28,9 +28,7 @@
  * Format: Enable Out pin, Enable In/DC mode pin, rev/sig pin, brake pin, adc pin, adc ticks per amp x1000, adc zero offset x 1000, adc trip ticks x1000
  * adc ticks per amp is calculated to match the hardware. 
  * adc trip ticks is calculated to where the hardware must shut off. Max is 4095 * 1000. 
- * 
- * Loconet hardware configuration
- * Format: uart#, mode, tx pin, rx pin, baud, txbuff, rxbuff, read size
+
  * 
  * RMT Hardware configuration
  * Format: 

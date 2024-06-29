@@ -17,6 +17,11 @@
   extern Fastclock_class Fastclock; 
 #endif
 
+#ifndef ESP32_ADC_H
+  #include "ESP32_adc.h"
+#endif
+ 
+
 ESP_Uart LN_port; //Loconet uart object
 LN_Class Loconet; //Loconet processing object
 volatile uint64_t LN_cd_edge = 0; //time_us of last edge received. 
@@ -27,9 +32,14 @@ volatile bool LN_cd_hit = false; //true if the ISR saw ((rx_pin == 0) && (tx_pin
 //extern DCCEX_Class dccex_port;
 extern uint64_t time_us;
 
+//extern ADC info
+extern ADC_Handler adc_one[ADC_SLOTS];
+ 
+
 void LN_init(){//Initialize Loconet objects
   LN_UART //Initialize uart 
   Loconet.LN_port.uart_mode = 0; //Change to 1 to use uart fast write
+  Loconet.ln_adc_index = adc_one[Loconet.ln_adc_index].adc_channel_config(LN_ADC_GPIO, LN_ADC_OFFSET, LN_ADC_OL);
   return;
 }
 

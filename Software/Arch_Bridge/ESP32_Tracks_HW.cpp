@@ -119,13 +119,13 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
     #endif
 
     //Configure ADC
-    adc_active_count++; //How many ADC channels are active right now
-    adc_index = adc_active_count;
-    adc_one[adc_index].adc_channel_config(adcpin, adcoffset);
-    adc_ticks_scale = adcscale;
-    ModeChange(0); //set power mode none, which will also set power state off.
-    adc_read(); //actually read the ADC
-    adc_one[adc_index].base_ticks = adc_one[adc_index].current_ticks; //Copy the zero output ticks to base_ticks
+    adc_index = adc_one[adc_index].adc_channel_config(adcpin, adcoffset, adc_ol_trip);
+    Serial.printf("Tracks: Track %c ADC GPIO %u on adc_indx %u \n", track, adcpin, adc_index); 
+    
+    //adc_ticks_scale = adcscale;
+    //ModeChange(0); //set power mode none, which will also set power state off.
+    //adc_read(); //actually read the ADC
+    //adc_one[adc_index].base_ticks = adc_one[adc_index].current_ticks; //Copy the zero output ticks to base_ticks
     return;
 }
 
