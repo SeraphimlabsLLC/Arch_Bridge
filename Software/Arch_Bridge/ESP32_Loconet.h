@@ -37,6 +37,7 @@
 #define LN_ADC_GPIO 9 //GPIO for Railsync load meter ADC input
 #define LN_ADC_OFFSET 0 //ADC zero offset
 #define LN_ADC_OL 3650000 //Railsync overload threshold in ADC ticks x 1000;
+#define LN_ADC_SCALE 160 //ticks per volt
 
 //TODO: Change this to use an enum or class and assign min priority by opcode
 #define LN_MASTER 1
@@ -143,6 +144,7 @@ class LN_Class {
 
   //Railsync ADC
   uint8_t ln_adc_index;
+  int32_t adc_ticks_scale; //ADC ticks per Volt
   
   LN_Class(); //Constructor
 

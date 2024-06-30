@@ -59,6 +59,7 @@ class DCCEX_Class {
   void rx_power_manager(); //Received track power command
 //  void tx_power_manager(); 
   void ddiag(); //Process diagnostic commands
+  void output_current(); //Display output currents
   void Fastclock_set();
   void Fastclock_get(); 
 
@@ -75,7 +76,7 @@ class DCCEX_Class {
   void tx_cab_speed(uint16_t addr, uint8_t spd, bool dir);
 
   private:
-  uint8_t state; //0 = startup, 1 = running
+  uint8_t state; //0 = startup, 1 = runnin
   uint64_t fastclock_ping;
   uint32_t fastclock_next;
   

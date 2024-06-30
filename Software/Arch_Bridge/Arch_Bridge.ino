@@ -79,6 +79,7 @@ Serial.print("Setup Complete \n");
 }
 
 void loop() {  
+ADC_loop(); //Process ADC data
 dccex_loop(); //Process serial input for DCCEX commands
 Tracks_Loop(); //Process and update tracks
 dccrx_loop(); //Process and update DCC packets

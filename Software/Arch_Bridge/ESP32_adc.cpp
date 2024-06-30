@@ -40,11 +40,13 @@ return;
 uint8_t ADC_Handler::adc_channel_config(uint8_t adc_ch, int16_t offset, int32_t adc_ol_trip){
   uint8_t index = adc_active_count; 
   adc_active_count++; //Increment it now so we don't forget.
+  adc_curent_ticks[index] = -65535; //set initial ticks value negative to show it hasn't been initialized yet. 
   adc_overload_ticks[index] = adc_ol_trip;
   adc_channel_map[index] = adc_ch;   
   hw_channel = adc_ch; 
   offset_ticks = offset;
   current_ticks = previous_ticks = base_ticks = 0; //Set all 3 ADC values to 0 initially
+  assigned_slot = index; //save which slot we are using. 
   Serial.printf("ADC1: Reserved slot %u for channel %u, backup in %u \n", index, adc_channel_map[index], hw_channel); 
   return index;
 }
@@ -54,7 +56,8 @@ void ADC_Handler::adc_read(){
   previous_ticks = current_ticks; //update value read on prior scan
   //ADC runs at a max of 5MHz, and needs 25 clock cycles to complete. Effectively 200khz or 5usec minimum. 
 //  adcraw = adc1_get_raw(adc_channel_t (hw_channel));
-  current_ticks = adcraw * 1000 + offset_ticks; //Calculation scale changed from 1000000 to 1000 to better fit int32_t and save some ram. 
+  adcraw = adc_curent_ticks[assigned_slot];  
+  current_ticks = adcraw * 1000 + offset_ticks + base_ticks; //Calculation scale changed from 1000000 to 1000 to better fit int32_t and save some ram. 
   if (current_ticks < 0){ //offset_ticks was negative, and would result in a negative ticks. Just set it to 0. 
     current_ticks = 0; 
   } 
@@ -116,10 +119,6 @@ ESP_ERROR_CHECK(adc_continuous_new_handle(&adc_unit_one_config, &adc_unit_one));
 }
 
 void IRAM_ATTR ADC_Ready_ISR(){
-/*uint8_t adc_active_count; 
-volatile bool ADC_result_ready = false; 
-volatile uint16_t ADC_result = 0; 
-volatile uint8_t adc_currently_reading = 0;*/ 
 ADC_result_ready = true; 
 
   return;

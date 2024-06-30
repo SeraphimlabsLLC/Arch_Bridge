@@ -119,13 +119,10 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
     #endif
 
     //Configure ADC
-    adc_index = adc_one[adc_index].adc_channel_config(adcpin, adcoffset, adc_ol_trip);
-    Serial.printf("Tracks: Track %c ADC GPIO %u on adc_indx %u \n", track, adcpin, adc_index); 
-    
-    //adc_ticks_scale = adcscale;
-    //ModeChange(0); //set power mode none, which will also set power state off.
+    adc_index = adc_one[adc_index].adc_channel_config(adcpin, adcoffset, adc_ol_trip); 
+    adc_ticks_scale = adcscale;
+    ModeChange(0); //set power mode none, which will also set power state off.
     //adc_read(); //actually read the ADC
-    //adc_one[adc_index].base_ticks = adc_one[adc_index].current_ticks; //Copy the zero output ticks to base_ticks
     return;
 }
 
@@ -238,7 +235,7 @@ void TrackChannel::StateChange(int8_t newstate){
 void TrackChannel::adc_read() { //Check output current, change state to -int if overloaded. Turn back on if cooldown was reached. 
   adc_one[adc_index].adc_read(); 
   if ((powerstate > 0) && (powermode > 0)) { //Power should be on, enforce limit. 
-    if (adc_one[adc_index].current_ticks > adc_one[adc_index].overload_ticks) {
+    if (&adc_one[adc_index].current_ticks > &adc_one[adc_index].overload_ticks) {
       //if (TIME_US - overload_cooldown > (OL_COOLDOWN * 1000)) { //Only warn when it initially trips, not if it remains. 
         Serial.printf("ADC scale %u ticks * 1000 per A \n", adc_ticks_scale); 
         Serial.printf("ADC detected overload on %c at %i mA, threshold %i mA \n",trackID, (adc_one[adc_index].current_ticks / (adc_ticks_scale/1000)), (adc_one[adc_index].overload_ticks / (adc_ticks_scale / 1000)));
@@ -251,6 +248,8 @@ void TrackChannel::adc_read() { //Check output current, change state to -int if 
     if ((TIME_US - overload_cooldown) > (OL_COOLDOWN * 1000)){ 
       StateChange(powerstate * -1); //Turn power on again by changing the mode back to positive.  
     }
+    //Since power is off and we should be at 0, update base_ticks. 
+    adc_one[adc_index].base_ticks = 0 - adc_one[adc_index].current_ticks; 
   }
   return;
 }

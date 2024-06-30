@@ -146,14 +146,11 @@ void DCCEX_Class::rx_decode(){
     break; 
 
     case 'c': //Display currents
-    for (i = 0; i < max_tracks; i++) {
-      uint8_t adc_index = DCCSigs[i].adc_index; 
-      val = (adc_one[adc_index].smooth_ticks)/(DCCSigs[i].adc_ticks_scale / 1000); //scaled mA
-      Serial.printf("Track %c ADC analog value = %u milliamps, mode %u \n", DCCSigs[i].trackID, val, DCCSigs[i].powermode);
-    }
+      output_current(); //display output currents
     break; 
 
     case 'i': //DCC-EX version string.
+      Serial.printf(BOARD_ID);
 
     break; 
 
@@ -312,6 +309,24 @@ void DCCEX_Class::ddiag() { //Diagnostic mode features
     Serial.printf("Unknown diag mode %c \n", data_pkt[2]);     
   }
   
+  return; 
+}
+
+void DCCEX_Class::output_current(){
+  uint8_t adc_index = 0; 
+  uint8_t i = 0;
+  int32_t val = 0; 
+      for (i = 0; i < max_tracks; i++) {
+        adc_index = DCCSigs[i].adc_index;
+        val = (adc_one[adc_index].smooth_ticks)/(DCCSigs[i].adc_ticks_scale / 1000); //scaled mA
+        Serial.printf("Track %c ADC analog value = %u milliamps, mode %u \n", DCCSigs[i].trackID, val, DCCSigs[i].powermode);
+      }
+      #ifdef ESP32_LOCONET_H
+//    Include Railsync current monitor
+     adc_index = Loconet.ln_adc_index; 
+     val = (adc_one[adc_index].smooth_ticks)/(Loconet.adc_ticks_scale); //scaled V
+     Serial.printf("Loconet Railsync drive %u volts \n", val);      
+     #endif
   return; 
 }
 

@@ -40,6 +40,7 @@ void LN_init(){//Initialize Loconet objects
   LN_UART //Initialize uart 
   Loconet.LN_port.uart_mode = 0; //Change to 1 to use uart fast write
   Loconet.ln_adc_index = adc_one[Loconet.ln_adc_index].adc_channel_config(LN_ADC_GPIO, LN_ADC_OFFSET, LN_ADC_OL);
+  Loconet.adc_ticks_scale = LN_ADC_SCALE; //ADC ticks to volts, instead of mA. 
   return;
 }
 

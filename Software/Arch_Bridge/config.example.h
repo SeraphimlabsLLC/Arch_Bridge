@@ -1,7 +1,7 @@
 //Config file for Arch Bridge or Dynamo boards using ESP32-S3 processors.
 #define CONFIG_H
 
-#define BOARD_ID "SeraphimLabs Arch Bridge v0.1 \n"
+#define BOARD_ID "SeraphimLabs Arch Bridge v0.8 \n"
 //Board Select. Define both, then pick which is active
 #define DYNAMO 1
 #define ARCH_BRIDGE 2
