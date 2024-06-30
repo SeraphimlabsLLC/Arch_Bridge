@@ -31,6 +31,8 @@
   #define ADC_SLOTS 3
 #endif
 
+#define ADC_READSIZE 128
+
 class ADC_Handler {
     public:
     int32_t base_ticks; //value read from ADC when output is off for calc reference.
@@ -42,11 +44,12 @@ class ADC_Handler {
     uint8_t assigned_slot; //Index of current and overload ticks for the values we want.     
 //    uint8_t hw_unit;
     uint8_t hw_channel; 
-    uint8_t adc_channel_config(uint8_t adc_ch, int16_t offset, int32_t adc_ol_trip); 
+    uint8_t adc_channel_config(uint8_t adc_handle, uint8_t adc_ch, int16_t offset, int32_t adc_ol_trip); 
     void adc_read();
     void adc_loop();
 };
 
+uint8_t ADC_new_handle(); //Returns what the next available ADC slot is
 void ADC_Setup_Commit(); //Configure ADC unit 1 for 12 bits + all configured channels
 void ADC_loop(); //ADC polling loop
 void IRAM_ATTR ADC_Ready_ISR(); //Conversion complete ISR callback

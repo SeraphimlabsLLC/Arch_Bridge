@@ -119,7 +119,8 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
     #endif
 
     //Configure ADC
-    adc_index = adc_one[adc_index].adc_channel_config(adcpin, adcoffset, adc_ol_trip); 
+    adc_index = ADC_new_handle();
+    adc_one[adc_index].adc_channel_config(adc_index, adcpin, adcoffset, adc_ol_trip); //Reserve ADC handle
     adc_ticks_scale = adcscale;
     ModeChange(0); //set power mode none, which will also set power state off.
     //adc_read(); //actually read the ADC
