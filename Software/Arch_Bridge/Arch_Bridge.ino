@@ -13,9 +13,9 @@
 #ifndef ESP32_ADC_H
   #include "ESP32_adc.h"
 #endif
-/*#ifndef ESP32_RMTDCC_H
+#ifndef ESP32_RMTDCC_H
   #include "ESP32_rmtdcc.h"
-#endif */
+#endif
 #ifndef DCC_READ_H
   #include "dcc_read.h"
 #endif
@@ -67,15 +67,14 @@ void setup() {
   dccex_init(); //Initialize DCCEX parser
   dccrx_init(); //Initialize DCC signal audit
   attachInterrupt(8, dir_monitor_isr, CHANGE);
-  Tracks_Init();  //Initialize GPIO
+  Tracks_Init();  //Initialize GPIO 
 
   #if BOARD_TYPE == ARCH_BRIDGE
     LN_init(); //Initialize Loconet
     Fastclock_setup(FCLK_ACTIVE); //Check fastclock settings and start it      
   #endif
-  
   ADC_Setup_Commit(); //Run last in setup() to commit the ADC config built up by everything else and start the sampler
-Serial.print("Setup Complete \n");  
+  Serial.print("Setup Complete \n");  
 }
 
 void loop() {  
