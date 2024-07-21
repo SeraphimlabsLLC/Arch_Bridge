@@ -214,21 +214,29 @@ void DCCEX_Class::rx_decode(){
 
 void DCCEX_Class::global_power(char newstate, bool announce){ //Set power state for all tracks, announce to DCCEX
   uint8_t i = 0; 
+  char* txdata = "<0>\n"; 
   Serial.printf("DCCEX: global_power state %c %i announce %i \n", newstate, uint8_t(newstate), announce); 
-    if ((newstate == '0') || (newstate == '1')) {
+    if (newstate == '0') { //DCC-EX power off
       for (i = 0; i < max_tracks; i++) {
-       rx_power_manager(i, newstate); //Change the state of the matching track
-      } 
+       rx_power_manager(i, '0'); //Change the state of the matching track
+      }
+      txdata = "<0>\n"; 
+    }
+    if (newstate == '1') { //DCC-EX power on
+      for (i = 0; i < max_tracks; i++) {
+       rx_power_manager(i, '1'); //Change the state of the matching track
+      }      
+      txdata = "<1>\n"; 
     }
     if (newstate == '!') { //DCC-EX Estop
+      txdata = "<!>\n"; 
       //TODO: Estop actions
     } 
     if (newstate == 'b') { //DCC-EX actually uses <b as CV programming, so don't ever send it.
+      txdata = "<!>\n"; 
       announce = false; 
     }
   if (announce == true) {
-    char* txdata = "<%c>\n", newstate; //Send global power command back to DCCEX
-    Serial.printf("DCCEX: global power anounce %c \n", newstate);
     tx_send(txdata, 4);
   }
 

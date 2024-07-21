@@ -309,7 +309,7 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
       break;
     case 0x83: //Global power on
       Serial.print("Loconet: Power on requested \n");
-      LN_TRK = LN_TRK | 0x03; //Modify TRK byte, power on and clear estop. 
+      LN_TRK = LN_TRK | 0x03; //Set power bit on in TRK byte, set estop release
       dccex.global_power('1', DCCEX_TO_LN); //power off, announce to DCCEX if true
       break;
     case 0x85: //Force idle, broadcast estop
@@ -942,17 +942,21 @@ void LN_Class::show_tx_packet(uint8_t index) { //Display a packet's contents
 void LN_Class::global_power(char state, bool announce){ //Track power bytes, echo to Loconet
   uint8_t tx_index; 
   char response = 0; 
+    Serial.printf("Loconet global_power sending %c \n", state);
   switch (state) {
-    case '0':
+    case 48: //'0'
       response = 0x82; //power off
+      LN_TRK = LN_TRK & 0xFE; //Set power bit off in TRK byte
       break;
-    case '1':
+    case 49: //'1'
       response = 0x83; //power on
+      LN_TRK = LN_TRK | 0x03; //Set power bit on in TRK byte, set estop release
       break; 
-    case '!': 
+    case 33: //'!'
       response = 0x85; //estop
+      LN_TRK = LN_TRK & 0xFD; //Clear estop bit for global estop. 
       break;
-    case 'b': 
+    case 98: //'b'
       if (LN_host_mode == ln_master) { //Only the Loconet master is allowed to use OPC_BUSY
         response = 0x81; //busy
       } else {
@@ -966,11 +970,12 @@ void LN_Class::global_power(char state, bool announce){ //Track power bytes, ech
       return; 
   }
   if (announce == true) {
+    Serial.printf("Loconet global_power sending %x \n", response); 
     tx_index = tx_packet_getempty();
     tx_packets[tx_index]->state = 1;
     tx_packets[tx_index]->priority = LN_min_priority;
     tx_packets[tx_index]->data_len = 2;
-    tx_packets[tx_index]->data_ptr[0] = response; //Power off
+    tx_packets[tx_index]->data_ptr[0] = response; 
     tx_packets[tx_index]->Make_Checksum(); //Populate checksum
     if (tx_pending < 0) { //Needs to send ASAP, so try to send now. 
       tx_send(tx_index); 
