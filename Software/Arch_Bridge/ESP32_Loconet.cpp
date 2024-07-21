@@ -917,32 +917,38 @@ void LN_Class::send_long_ack(uint8_t opcode, uint8_t response) {
 }
 
 void LN_Class::show_rx_packet(uint8_t index) { //Display a packet's contents
-   uint8_t i = 0; 
-   uint8_t pkt_len = rx_packets[index]->rx_count; 
-   Serial.printf("Loconet RX Packet: ");
-   while (i < pkt_len) {
-    Serial.printf("%x ", rx_packets[index]->data_ptr[i]); 
-    i++;
-   }
-   Serial.printf(" \n");
-   return; 
+  #if LN_DEBUG == true
+    uint8_t i = 0; 
+    uint8_t pkt_len = rx_packets[index]->rx_count; 
+    Serial.printf("Loconet show RX Packet: ");
+    while (i < pkt_len) {
+      Serial.printf("%x ", rx_packets[index]->data_ptr[i]); 
+      i++;
+    }
+    Serial.printf(" \n");
+  #endif
+  return; 
 }
 void LN_Class::show_tx_packet(uint8_t index) { //Display a packet's contents
-   uint8_t i = 0; 
-   uint8_t pkt_len = tx_packets[index]->data_len; 
-   Serial.printf("Loconet TX Packet: ");
-   while (i < pkt_len) {
-    Serial.printf("%x ", tx_packets[index]->data_ptr[i]); 
-    i++;
-   }
-   Serial.printf(" \n");
-   return; 
+  #if LN_DEBUG == true
+    uint8_t i = 0; 
+    uint8_t pkt_len = tx_packets[index]->data_len; 
+    Serial.printf("Loconet show TX Packet: ");
+    while (i < pkt_len) {
+      Serial.printf("%x ", tx_packets[index]->data_ptr[i]); 
+      i++;
+    }
+    Serial.printf(" \n");
+  #endif
+  return; 
 }
 
 void LN_Class::global_power(char state, bool announce){ //Track power bytes, echo to Loconet
   uint8_t tx_index; 
   char response = 0; 
-    Serial.printf("Loconet global_power sending %c \n", state);
+  #if LN_DEBUG == true  
+    Serial.printf("Loconet global_power sending %c \n", state); 
+  #endif
   switch (state) {
     case 48: //'0'
       response = 0x82; //power off
@@ -965,12 +971,16 @@ void LN_Class::global_power(char state, bool announce){ //Track power bytes, ech
       }
       break;
     default:
-      Serial.printf("Loconet: global_power received invalid character %c \n", state);
+      #if LN_DEBUG == true
+        Serial.printf("Loconet: global_power received invalid character %c \n", state);
+      #endif
       announce = false; 
       return; 
   }
   if (announce == true) {
-    Serial.printf("Loconet global_power sending %x \n", response); 
+    #if LN_DEBUG == true
+      Serial.printf("Loconet global_power sending %x \n", response); 
+    #endif
     tx_index = tx_packet_getempty();
     tx_packets[tx_index]->state = 1;
     tx_packets[tx_index]->priority = LN_min_priority;
@@ -1190,7 +1200,7 @@ int8_t LN_Class::slot_move(int8_t slot_src, int8_t slot_dest){ //Handle slot mov
         slot_new(slot_dest);  
       }      
   if (slot_src == 0) {//When activated it sets all locomotives to speed 0 functions off
-    Serial.printf("Requested slot 0, stop the train \n");
+    Serial.printf("Requested slot 0, this shouldn't happen so stop the train \n");
     for (i = 1; i < 120; i++){
       if (slot_ptr[i]) {
         slot_ptr[i]->slot_data[1] = (slot_ptr[i]->slot_data[1] & 0xDF) | 0x10  ; //Force slot to state common
@@ -1242,7 +1252,9 @@ void LN_Class::slot_fastclock_set(uint8_t rx_pkt){
   if (s_seconds > 59) { //Probable math error here, this works around it. 
     s_seconds = s_seconds - 60; 
   }
-  Serial.printf("Loconet: Seconds set %i \n", s_seconds); 
+  #if LN_DEBUG == true
+    Serial.printf("Loconet: Seconds set %i \n", s_seconds); 
+  #endif
   Fastclock.clock_set(slot_ptr[slotnum]->slot_data[0], slot_ptr[slotnum]->slot_data[6], slot_ptr[slotnum]->slot_data[5] - slot_hours, slot_ptr[slotnum]->slot_data[3] - slot_minutes, s_seconds, 0);
   Fastclock.clock_get(); //Update clock values with new setpoint. 
   Serial.printf("Loconet: Fastclock set to day %u %u:%u:%u \n", Fastclock.days, Fastclock.hours, Fastclock.minutes, Fastclock.seconds);  

@@ -17,7 +17,7 @@
 #define DCCEX_TO_LN true 
 #define RCN_TURNOUTS //DCC-EX turnouts use RCN
 
-#define LN_MODE MASTER //MASTER has priority delay 0 and provides slots, others do not. SENSOR has priority delay of 6 down to 2. THROTTLE has priority delay of 20 down to 6. 
+#define LN_HOSTMODE ln_master //Default ln_master. Allowed: ln_sensor, ln_throttle, ln_silent
 
 //Fast Clock settings:
 #define FCLK_ENABLE true //False stops the clock from being activated at all. 

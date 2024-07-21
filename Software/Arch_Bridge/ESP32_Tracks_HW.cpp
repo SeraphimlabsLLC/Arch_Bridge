@@ -183,11 +183,13 @@ void TrackChannel::StateChange(int8_t newstate){
   int8_t power_rev = 0;
 //int8_t powerstate; //0 = off, 1 = on_forward, 2 = on_reverse - indicates overloaded 
 //uint8_t powermode; //0 = none, 1 = DCC_external, 2 = DCC_override, 3 = DC, 4 = DCX.
-  Serial.printf("TrackChannel track %c State Change %i \n", trackID, newstate); 
+  #if TRK_DEBUG == true
+    Serial.printf("TrackChannel track %c State Change %i \n", trackID, newstate); 
+  #endif
   if (newstate <= 0) { //Overloaded or off. Shut down enable_out, but no need to change others. 
-    CheckEnable(); //Turns on enable if in a mode that allows it
     powerstate = newstate; //update saved power state  
-      #ifdef DEBUG
+    CheckEnable(); //Change enable state based on power state + input states
+      #if TRK_DEBUG == true
         Serial.printf("Track %c Off \n", trackID);
       #endif
     return; 
@@ -203,13 +205,13 @@ void TrackChannel::StateChange(int8_t newstate){
   if (powermode == 3) {//In DC mode 
     if (newstate == 1) { //DC mode forward  
       gpio_set_level(reverse_pin, 0);
-      #ifdef DEBUG
+      #if TRK_DEBUG == true
         Serial.printf("Track %c in DC Forward state \n", trackID);
       #endif
     }
     if (newstate == 2) { //DC mode reverse
       gpio_set_level(reverse_pin, 1);
-      #ifdef DEBUG
+      #if TRK_DEBUG == true
         Serial.printf("Track %c in DC Reverse state \n", trackID);
       #endif
     }
@@ -217,19 +219,20 @@ void TrackChannel::StateChange(int8_t newstate){
   if (powermode == 4) {//In DCX mode 
     if (newstate == 1) { //DCX mode 'forward' is actually reverse. 
       gpio_set_level(reverse_pin, 1);
-      #ifdef DEBUG
+      #if TRK_DEBUG == true
         Serial.printf("Track %c in DC Reverse state \n", trackID);
       #endif
     }
     if (newstate == 2) { //DCX mode 'reverse' is actually forward. 
       gpio_set_level(reverse_pin, 0);
-      #ifdef DEBUG
+      #if TRK_DEBUG == true
         Serial.printf("Track %c in DC Forward state \n", trackID);
       #endif
     }
   }
-  CheckEnable(); //Turns on enable if in a mode that allows it
   powerstate = newstate; //update saved power state  
+  CheckEnable(); //Change enable state based on power state + input states
+
   return;
 }
 
@@ -238,7 +241,9 @@ void TrackChannel::adc_read() { //Check output current, change state to -int if 
   if ((powerstate > 0) && (powermode > 0)) { //Power should be on, enforce limit. 
     if (&adc_one[adc_index].current_ticks > &adc_one[adc_index].overload_ticks) {
       //if (TIME_US - overload_cooldown > (OL_COOLDOWN * 1000)) { //Only warn when it initially trips, not if it remains. 
-        Serial.printf("ADC scale %u ticks * 1000 per A \n", adc_ticks_scale); 
+        #if TRK_DEBUG == true
+        Serial.printf("ADC scale %u ticks * 1000 per A \n", adc_ticks_scale);
+        #endif 
         Serial.printf("ADC detected overload on %c at %i mA, threshold %i mA \n",trackID, (adc_one[adc_index].current_ticks / (adc_ticks_scale/1000)), (adc_one[adc_index].overload_ticks / (adc_ticks_scale / 1000)));
       //}
        overload_cooldown = TIME_US;
