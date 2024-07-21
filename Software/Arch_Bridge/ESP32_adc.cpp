@@ -190,7 +190,7 @@ ESP_ERROR_CHECK(adc_continuous_new_handle(&adc_unit_one_config, &adc_unit_one));
   ADC_ISR_callbacks = new adc_continuous_evt_cbs_t;
   if (ADC_ISR_callbacks){ //The pointer is initialized, go for it. 
     ADC_ISR_callbacks->on_conv_done = adc_continuous_callback_t(ADC_Ready_ISR);
-    ADC_ISR_callbacks->on_pool_ovf = adc_continuous_callback_t(*ADC_Full_ISR);
+    ADC_ISR_callbacks->on_pool_ovf = adc_continuous_callback_t(ADC_Full_ISR);
     ESP_ERROR_CHECK(adc_continuous_register_event_callbacks(adc_unit_one, ADC_ISR_callbacks, NULL));
     ADC_stored_samples = 0; //Initialize sample counter
     ESP_ERROR_CHECK(adc_continuous_start(adc_unit_one));

@@ -7,6 +7,10 @@
   */
 
 //Rmtdcc dcc; //Define track channel objects with empty values.
+rmt_channel_handle_t rmt_rx_handle = NULL;
+rmt_rx_event_callbacks_t* rmt_rx_cbs = NULL; 
+rmt_channel_handle_t rmt_tx_handle = NULL;
+
 extern uint64_t time_us;
 
 void Rmtdcc::loop_process() { //Workflow loop
@@ -149,10 +153,15 @@ void IRAM_ATTR rmt_isr_handler(void* arg){
 */ 
 
 void Rmtdcc::rmt_rx_init(){ 
-
+  esp_err_t res ;
   //rx_ch = NULL; 
   bool rmt_recv = false;
   //Serial.printf("RMT_RX Initialized \n");
+
+  Serial.printf("RMT RX: Configuring DIR_MONITOR input on %u \n", DIR_MONITOR);
+  gpio_reset_pin(gpio_num_t(DIR_MONITOR));
+  gpio_set_direction(gpio_num_t(DIR_MONITOR), GPIO_MODE_INPUT);
+  gpio_set_pull_mode(gpio_num_t(DIR_MONITOR), GPIO_FLOATING); 
 
 /* Arduino Library 
 //bool rmtInit(int pin, rmt_ch_dir_t channel_direction, rmt_reserve_memsize_t memsize, uint32_t frequency_Hz);
@@ -180,14 +189,38 @@ rmt_recv = rmtInit(DIR_MONITOR, RMT_RX_MODE, RMT_MEM_192);
       .filter_ticks_thresh = 255, //Glitch filter has max allowed of 255 ticks  
       .filter_en = true,                  
     }                                       
-  };
-*/  
-  Serial.printf("Configuring DIR_MONITOR input on %u \n", DIR_MONITOR);
-    gpio_reset_pin(gpio_num_t(DIR_MONITOR));
-    gpio_set_direction(gpio_num_t(DIR_MONITOR), GPIO_MODE_INPUT);
-    gpio_set_pull_mode(gpio_num_t(DIR_MONITOR), GPIO_FLOATING);  
+  }; */
 
+//Arduino ESP32 core 3 aka IDF 5.1 API:
+
+  rmt_receive_config_t rx_config = {
+    .signal_range_min_ns = 25000,
+    .signal_range_max_ns = 1000000,
+  };   
+//    .extra_flags.en_partial_rx = 1, //Trips complete ISR when buffer is at half 
   
+  rmt_rx_channel_config_t* rx_ch_conf = NULL;
+  rx_ch_conf = new rmt_rx_channel_config_t;
+  rx_ch_conf->gpio_num = gpio_num_t(DIR_MONITOR);
+  rx_ch_conf->clk_src = RMT_CLK_SRC_DEFAULT;
+  rx_ch_conf->resolution_hz = 1000000;         //1MHz, so 1uS per tick
+  rx_ch_conf->mem_block_symbols = 64;          //4 bytes per block, so 256 bytes  };
+  /*
+    .flags.invert_in = false,
+    .flags.with_dma = false, 
+    .flags.io_loop_back = false,
+    .intr_priority = 0,
+  }; */
+  
+//res = ESP_ERROR_CHECK(rmt_new_rx_channel(rx_ch_conf, rmt_rx_handle));
+if (!(res == ESP_OK)) {
+  Serial.printf("RMT RX: Error initializing handle \n"); 
+}
+
+  rmt_rx_cbs = new rmt_rx_event_callbacks_t;
+  rmt_rx_cbs->on_recv_done = rmt_rx_done_callback_t(rmt_rx_done);
+//  res = ESP_ERROR_CHECK(rmt_rx_register_event_callbacks(rmt_rx_handle, rmt_rx_cbs, NULL));
+
 /*If possible configure:
 * RMT_MEM_RX_WRAP_EN_CHm so it reads in a loop. 
 * RMT_CHm_RX_LIM_REG set the number of RX entries before threshold interrupt
@@ -259,6 +292,11 @@ void Rmtdcc::setEOT(rmt_item32_t* item) {
 }*/
 
 #endif
+
+void IRAM_ATTR rmt_rx_done(){
+
+  return;
+}
 
 void rmt_loop() { //Reflector into Rmtdcc::loop_process();
 //  dcc.loop_process(); 

@@ -54,9 +54,11 @@ class DCCEX_Class {
   void loop_process(); //Scanning loop to include in loop();
   void rx_decode(); //Process the opcode that was found
 
+//Layout functions: 
+  void global_power(char state, bool announce); //global power true/false, echo to DCCEX
   void rx_track_manager(); //Received track mode command
 //  void tx_track_manager(); 
-  void rx_power_manager(); //Received track power command
+  void rx_power_manager(uint8_t track, char state); //Received track power command
 //  void tx_power_manager(); 
   void ddiag(); //Process diagnostic commands
   void output_current(); //Display output currents

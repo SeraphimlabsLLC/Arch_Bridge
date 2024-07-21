@@ -136,27 +136,43 @@ void DCCEX_Class::rx_decode(){
   //An implementation of https://dcc-ex.com/throttles/tech-reference.html#
   uint8_t i = 0;
   uint16_t val = 0; 
+
   if (rx_state != 2) { //No packet to process
     return; 
   }
   switch (data_pkt[1]) {
 
+    case '0': //Global power off
+    case '1': //Global power on
+    case '!': //Estop
+      //Serial.printf("DCCEX global power state %c %i \n", data_pkt[1], data_pkt[1]); 
+      global_power(data_pkt[1], false);
+      Loconet.global_power(data_pkt[1], DCCEX_TO_LN); //Send to Loconet if true
+      break; 
+    
     case '=': //Track Manager
-    rx_track_manager();
-    break; 
+      rx_track_manager();
+      break; 
+
+    case 'b': //Programming command.
+      Loconet.global_power(data_pkt[1], DCCEX_TO_LN); //Send to Loconet
+      break; 
 
     case 'c': //Display currents
       output_current(); //display output currents
-    break; 
+      break; 
 
     case 'i': //DCC-EX version string.
       Serial.printf(BOARD_ID);
+      break; 
 
-    break; 
-
-    case 'p': //power manager
-    rx_power_manager();
-    break;
+    case 'p': //power manager. <p0 C> and <p1 C> typical examples
+      for (i = 0; i < max_tracks; i++) {
+        if (data_pkt[4] == DCCSigs[i].trackID) { //Command relevant to one of ours
+          rx_power_manager(i, data_pkt[2]); //Change the state of the matching track
+        }
+      }
+      break;
 
     case 'D': 
       Serial.printf("DCCEX Debug: \n"); 
@@ -193,6 +209,29 @@ void DCCEX_Class::rx_decode(){
     
   } 
   rx_state = 0;  
+  return; 
+}
+
+void DCCEX_Class::global_power(char newstate, bool announce){ //Set power state for all tracks, announce to DCCEX
+  uint8_t i = 0; 
+  Serial.printf("DCCEX: global_power state %c %i announce %i \n", newstate, uint8_t(newstate), announce); 
+    if ((newstate == '0') || (newstate == '1')) {
+      for (i = 0; i < max_tracks; i++) {
+       rx_power_manager(i, newstate); //Change the state of the matching track
+      } 
+    }
+    if (newstate == '!') { //DCC-EX Estop
+      //TODO: Estop actions
+    } 
+    if (newstate == 'b') { //DCC-EX actually uses <b as CV programming, so don't ever send it.
+      announce = false; 
+    }
+  if (announce == true) {
+    char* txdata = "<%c>\n", newstate; //Send global power command back to DCCEX
+    Serial.printf("DCCEX: global power anounce %c \n", newstate);
+    tx_send(txdata, 4);
+  }
+
   return; 
 }
 
@@ -260,13 +299,13 @@ void DCCEX_Class::rx_track_manager(){ //Process track manager input
   }
   return; 
 }
-void DCCEX_Class::rx_power_manager(){
+
+
+void DCCEX_Class::rx_power_manager(uint8_t track, char state){
   uint8_t i = 0; 
   bool power = false;
   //Serial.printf("DCCEX Power State %c, track %c \n", data_pkt[2], data_pkt[4]);
-//  if (data_pkt[2] == '1') {
-//    power = true;
-//  }
+/*
   for (i = 0; i < max_tracks; i++) {
     //Serial.printf("rx_power_manager track find %c, %c \n", data_pkt[4], DCCSigs[i].trackID);
     if (data_pkt[4] == DCCSigs[i].trackID) { //Command relevant to one of ours
@@ -283,6 +322,29 @@ void DCCEX_Class::rx_power_manager(){
       }
       break; //Exit the loop early since we found what we needed. 
     }
+  }
+*/
+  if (!(DCCSigs[track].trackID)){
+    Serial.printf("DCCEX : Invalid track ID to change power of %i \n" , track);    
+    return; 
+  }
+  switch (state) {
+    case '2':
+    case '1':
+      if (state == '2') {
+        DCCSigs[track].StateChange(2);
+      }
+      if (state == '1') {
+        DCCSigs[track].StateChange(1);
+      }
+      Serial.printf("DCCEX : Turning on power to track %c \n" , DCCSigs[track].trackID);    
+      break;
+    case '0':
+      DCCSigs[track].StateChange(0);
+      Serial.printf("DCCEX : Turning off power to track %c \n" , DCCSigs[track].trackID);  
+      break; 
+    default: 
+      Serial.printf("DCCEX : Invalid track power state %c %i \n", state, state);
   }
   return;
 }

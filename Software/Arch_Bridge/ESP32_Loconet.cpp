@@ -39,7 +39,7 @@ extern ADC_Handler adc_one[ADC_SLOTS];
 void LN_init(){//Initialize Loconet objects
   LN_UART //Initialize uart 
   Loconet.LN_port.uart_mode = 0; //Change to 1 to use uart fast write
-
+  Loconet.LN_set_mode(LN_HOSTMODE); //set default host mode
   Loconet.ln_adc_index = ADC_new_handle();
   Serial.printf("Loconet railsync adc handle %i \n", Loconet.ln_adc_index); 
   adc_one[Loconet.ln_adc_index].adc_channel_config(Loconet.ln_adc_index, LN_ADC_GPIO, LN_ADC_OFFSET, LN_ADC_OL); //Reserve ADC handle
@@ -303,25 +303,19 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
     case 0x81:  //Master Busy
       break;
     case 0x82: //Global power off
-      Serial.print("Power off requested \n"); 
+      Serial.print("Loconet: Power off requested \n"); 
       LN_TRK = LN_TRK & 0xFE; //Set power bit off in TRK byte
-       #if DCCEX_TO_LN == true //Only send if allowed to. 
-      //dccex.power(false);
-      #endif
+      dccex.global_power('0', DCCEX_TO_LN); //power off, announce to DCCEX if true
       break;
     case 0x83: //Global power on
-      Serial.print("Power on requested \n");
+      Serial.print("Loconet: Power on requested \n");
       LN_TRK = LN_TRK | 0x03; //Modify TRK byte, power on and clear estop. 
-       #if DCCEX_TO_LN == true //Only send if allowed to. 
-      //dccex.power(true);
-      #endif
+      dccex.global_power('1', DCCEX_TO_LN); //power off, announce to DCCEX if true
       break;
     case 0x85: //Force idle, broadcast estop
-      Serial.print("<!> \n"); //DCC-EX Estop
+      Serial.print("Loconet: <!> \n"); //DCC-EX Estop
       LN_TRK = LN_TRK & 0xFD; //Clear estop bit for global estop. 
-       #if DCCEX_TO_LN == true //Only send if allowed to. 
-       
-       #endif
+       dccex.global_power('!', DCCEX_TO_LN); //estop, announce to DCCEX if true
       break; 
       
     //4 byte opcodes: 
@@ -456,7 +450,7 @@ void LN_Class::tx_queue(){ //Try again to send queued packets on each loop cycle
   time_us = TIME_US;
 
   //Serial.printf("TX_Q priority loop \n");
-  //while (priority <= LN_MIN_PRIORITY){ 
+  //while (priority <= LN_min_priority){ 
   //  while (i < LN_TX_Q) {
   for (i = 0; i < LN_TX_Q; i++) {
   //Serial.printf("TX_Q. priority = %u i = %u, tx_next_check %u, LN_TX_Q = %u \n", priority, i, tx_next_check, LN_TX_Q);  
@@ -488,8 +482,8 @@ void LN_Class::tx_queue(){ //Try again to send queued packets on each loop cycle
             tx_packets[tx_next_check]->state = 4;
             tx_packets[tx_next_check]->tx_attempts--;
             tx_packets[tx_next_check]->priority--; //Increase priority for the next attempt.
-          if (tx_packets[tx_next_check]->priority < LN_MAX_PRIORITY) {//Enforce priority limit
-              tx_packets[tx_next_check]->priority = LN_MAX_PRIORITY;
+          if (tx_packets[tx_next_check]->priority < LN_max_priority) {//Enforce priority limit
+              tx_packets[tx_next_check]->priority = LN_max_priority;
             }
             if (tx_next_check == tx_pending) {
               tx_pending = -1;
@@ -562,6 +556,14 @@ void LN_Class::tx_send(uint8_t txptr){
 
   rx_len = LN_port.read_len(); //Check if data has been received since the last read. Don't send now if it has. 
   if (rx_len > 0) {
+    return; 
+  }
+
+  if (LN_host_mode == ln_silent) { //Silent mode, transmitter disabled. 
+    tx_packets[txptr]->state = 5; //Set to complete so that it gets dropped.
+    if (txptr == tx_pending) { //Clear pending if it was this packet. 
+      tx_pending = -1;
+    }
     return; 
   }
   
@@ -752,6 +754,44 @@ void LN_Class::tx_packet_del(uint8_t index){ //Delete a packet after confirmatio
   return;
 }
 
+void LN_Class::LN_set_mode(LN_hostmode newmode){ //Set current Loconet access mode
+  //enum LN_hostmode {ln_master = 0x80, ln_sensor = 0x20, ln_throttle = 0x08, ln_silent = 0}; //Enum for operating level
+  if (newmode > LN_HOSTMODE) {
+    Serial.printf("Loconet: Attempt to change to a host mode above LN_HOSTMODE. \n"); 
+    return; 
+  }
+  
+  LN_host_mode = newmode;   
+  switch (LN_host_mode) {
+    case ln_master:
+      LN_max_priority = 0; //maximum allowed priority for this mode
+      LN_min_priority = 20; //minimum allowed priority for this mode
+      Serial.printf("Loconet: Host mode set to master \n"); 
+      break; 
+    case ln_sensor:
+      LN_max_priority = 2; //maximum allowed priority for this mode
+      LN_min_priority = 6; //minimum allowed priority for this mode
+      Serial.printf("Loconet: Host mode set to sensor \n"); 
+      break;
+    case ln_throttle:
+      LN_max_priority = 6; //maximum allowed priority for this mode
+      LN_min_priority = 20; //minimum allowed priority for this mode 
+      Serial.printf("Loconet: Host mode set to throttle \n");  
+      break;
+    case ln_silent:  //Not allowed to send
+      LN_max_priority = 127; 
+      LN_min_priority = 127; 
+      Serial.printf("Loconet: Host mode set to silent \n"); 
+      break;   
+    default: 
+      Serial.printf("Loconet Host mode invalid %u \n", newmode);   
+  }
+  return;
+}
+LN_hostmode LN_Class::LN_get_mode(){ //Return current Loconet access mode
+  return LN_host_mode;
+}
+
 void LN_Class::rx_req_sw(uint8_t rx_pkt){
   uint16_t addr = 0; 
   uint8_t cmd = 0; 
@@ -776,7 +816,7 @@ void LN_Class::tx_req_sw(uint16_t addr, bool dir, bool state){
   uint8_t sw2 = ((addr >> 8) & 0x0F) | (0x10 * state) | (0x20 * dir); //addr bits 7-10 | (state * 16) | (dir * 32)
   tx_index = tx_packet_getempty();
   tx_packets[tx_index]->state = 1;
-  tx_packets[tx_index]->priority = LN_MIN_PRIORITY; 
+  tx_packets[tx_index]->priority = LN_min_priority; 
   tx_packets[tx_index]->data_len = 4;
   tx_packets[tx_index]->data_ptr[0] = 0xB0; //REQ_SW
   tx_packets[tx_index]->data_ptr[1] = sw1; 
@@ -807,7 +847,7 @@ void LN_Class::tx_cab_speed(uint16_t addr, uint8_t spd){
     slot_ptr[slotnum]->slot_data[2] = spd; //Update speed byte
     Serial.printf("LN_Class::tx_cab_speed cab %u updated with speed %u Preparing Loconet notification \n", addr, spd);
 
-    tx_packets[tx_index]->priority = LN_MAX_PRIORITY; 
+    tx_packets[tx_index]->priority = LN_max_priority; 
     tx_packets[tx_index]->data_len = response_size;
     tx_packets[tx_index]->data_ptr[0] = 0xA0; //OPC_LOCO_SPD
     tx_packets[tx_index]->data_ptr[1] = slotnum; 
@@ -842,7 +882,7 @@ void LN_Class::tx_cab_dir(uint16_t addr, bool dir){
     } else {    
       slot_ptr[slotnum]->slot_data[3] = slot_ptr[slotnum]->slot_data[3] & 0xDF; //Clear dir bit
     }
-    tx_packets[tx_index]->priority = LN_MAX_PRIORITY; 
+    tx_packets[tx_index]->priority = LN_max_priority; 
     tx_packets[tx_index]->data_len = response_size;
     tx_packets[tx_index]->data_ptr[0] = 0xA1; //OPC_LOCO_DIRF
     tx_packets[tx_index]->data_ptr[1] = slotnum; 
@@ -864,7 +904,7 @@ void LN_Class::send_long_ack(uint8_t opcode, uint8_t response) {
   uint8_t tx_index; 
   tx_index = tx_packet_getempty();
   tx_packets[tx_index]->state = 1;
-  tx_packets[tx_index]->priority = LN_MIN_PRIORITY;
+  tx_packets[tx_index]->priority = LN_min_priority;
   tx_packets[tx_index]->data_len = 4;
   tx_packets[tx_index]->data_ptr[0] = 0xB4; //Long Acknowledge
   tx_packets[tx_index]->data_ptr[1] = opcode & 0x7F; //Opcode being given LACK & 0x7F to unset bit 7. 
@@ -899,6 +939,46 @@ void LN_Class::show_tx_packet(uint8_t index) { //Display a packet's contents
    return; 
 }
 
+void LN_Class::global_power(char state, bool announce){ //Track power bytes, echo to Loconet
+  uint8_t tx_index; 
+  char response = 0; 
+  switch (state) {
+    case '0':
+      response = 0x82; //power off
+      break;
+    case '1':
+      response = 0x83; //power on
+      break; 
+    case '!': 
+      response = 0x85; //estop
+      break;
+    case 'b': 
+      if (LN_host_mode == ln_master) { //Only the Loconet master is allowed to use OPC_BUSY
+        response = 0x81; //busy
+      } else {
+        announce = false; 
+        return; 
+      }
+      break;
+    default:
+      Serial.printf("Loconet: global_power received invalid character %c \n", state);
+      announce = false; 
+      return; 
+  }
+  if (announce == true) {
+    tx_index = tx_packet_getempty();
+    tx_packets[tx_index]->state = 1;
+    tx_packets[tx_index]->priority = LN_min_priority;
+    tx_packets[tx_index]->data_len = 2;
+    tx_packets[tx_index]->data_ptr[0] = response; //Power off
+    tx_packets[tx_index]->Make_Checksum(); //Populate checksum
+    if (tx_pending < 0) { //Needs to send ASAP, so try to send now. 
+      tx_send(tx_index); 
+    }
+  }
+  return; 
+}
+
 LN_Class::LN_Class(){ //Constructor, initializes some values.
   time_us = TIME_US;
   rx_pending = -1;
@@ -906,6 +986,9 @@ LN_Class::LN_Class(){ //Constructor, initializes some values.
   rx_next_new = 0; 
   rx_next_check = 0;
   netstate = startup;
+  LN_host_mode = ln_silent; //default to ln_silent 
+  LN_max_priority = 127; 
+  LN_min_priority = 127; 
   LN_TRK = 0x06; //Slot global TRK. 0x06 = Loconet 1.1 capable, track idle, power off. 
   return;
 }
@@ -1042,7 +1125,7 @@ void LN_Class::slot_read(int8_t slotnum){ //Handle slot reads
   response_size = 14; //Packet is 14 bytes long, should be 0x0E
   tx_index = tx_packet_getempty();
   tx_packets[tx_index]->state = 1;
-  tx_packets[tx_index]->priority = LN_MAX_PRIORITY; 
+  tx_packets[tx_index]->priority = LN_max_priority; 
   tx_packets[tx_index]->data_len = response_size;
   //Serial.printf("Loconet: slot reply data: ");
   i = 0;
@@ -1218,6 +1301,7 @@ void LN_Class::slot_opsw_set(uint8_t rx_pkt){ //Write CS opsw data
     Serial.printf("Loconet: CS opsw data reset to defaults \n"); 
    }
   //Opsw bit locking, prevent incompatible/unsupported options from being selected
+  slot_ptr[127]->slot_data[6] & 0x0A; //opsw 42, disable beep on purge. opsw 44, 120 slots.
   slot_ptr[127]->slot_data[5] & 0x07; //opsw 36 - 39 are memory resets. When not impemented, keep them set to off. 
   slot_ptr[127]->slot_data[2] & 0x77; //opsw 20 address 0 not allowed. opsw 21-23 are step modes,
   
@@ -1264,7 +1348,7 @@ int8_t LN_Class::slot_new(uint8_t slotnum) { //Initialize empty slots
     slot_ptr[slotnum]->slot_data[5] = 0x00;  
     //Byte 05: opsw36 consist reset = 0x08, opsw37 route reset = 0x10, opsw38 roster reset = 0x20
     //opsw39 all memory reset = 0x40
-    slot_ptr[slotnum]->slot_data[6] = 0x08;  //0x08 = opsw 44 C, 120 slots
+    slot_ptr[slotnum]->slot_data[6] = 0x0A;  //0x02 = opsw 42 C, disable beep on purge. 0x08 = opsw 44 C, 120 slots
     slot_ptr[slotnum]->slot_data[7] = 0x00;
     slot_ptr[slotnum]->slot_data[8] = 0x00;
     slot_ptr[slotnum]->slot_data[9] = 0x00;

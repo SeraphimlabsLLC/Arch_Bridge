@@ -12,9 +12,9 @@
 #define MAX_ACCESSORIES 16 
 
 //Command bridging filters
-#define LN_TO_DCCEX true
+#define LN_TO_DCCEX false
 #define RS_TO_DCCEX false //Only enable if DCC-EX is not the CS. 
-#define DCCEX_TO_LN true 
+#define DCCEX_TO_LN false 
 #define RCN_TURNOUTS //DCC-EX turnouts use RCN
 
 #define LN_MODE MASTER //MASTER has priority delay 0 and provides slots, others do not. SENSOR has priority delay of 6 down to 2. THROTTLE has priority delay of 20 down to 6. 

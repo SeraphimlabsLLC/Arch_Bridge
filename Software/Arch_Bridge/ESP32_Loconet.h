@@ -23,6 +23,8 @@
 #include "Arduino.h"
 #include "esp_timer.h" //Required for timer functions to work.
 
+#define LN_HOSTMODE ln_master //Default host mode, also highest allowed mode
+
 //Loconet UART settings, from ESP32_uart.h: (uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
 #define LN_UART Loconet.LN_port.uart_init(1, 17, 18, 16666, 255, 255);
 #define LN_COLL_PIN 8 //GPIO pin for hardware CD
@@ -39,10 +41,17 @@
 #define LN_ADC_OL 3650000 //Railsync overload threshold in ADC ticks x 1000;
 #define LN_ADC_SCALE 160 //ticks per volt
 
-//TODO: Change this to use an enum or class and assign min priority by opcode
-#define LN_MASTER 1
-#define LN_SENSOR 2
-#define LN_THROTTLE 4
+//Queue settings: 
+#define LN_RX_Q 16
+#define LN_TX_Q 32
+#define TX_SENT_EXPIRE 64000 //Time to keep sent packets waiting for loopback
+
+/*  
+  //TODO: Change this to use an enum or class and assign min priority by opcode
+#define LN_MASTER 0x80
+#define LN_SENSOR 0x20
+#define LN_THROTTLE 0x08
+#define LN_SILENT 0x00
 
 //typedef enum LN_Priority_min {Master = 0, Sensor = 2, Throttle = 6;
 //#if LN_PRIORITY == MASTER 
@@ -60,10 +69,6 @@
 #endif 
 */
 
-//Queue settings: 
-#define LN_RX_Q 16
-#define LN_TX_Q 32
-#define TX_SENT_EXPIRE 64000 //Time to keep sent packets waiting for loopback
 
 //Processing reflectors, use these to avoid having to include the entire class in main.
 void LN_init(); //Initialize Loconet interface
@@ -71,6 +76,7 @@ void LN_loop(); //Loconet process loop
 
 //Enums: 
 enum LN_netstate {startup = 0, disconnected = 1, inactive = 2, active = 3};
+enum LN_hostmode {ln_master = 0x80, ln_sensor = 0x20, ln_throttle = 0x08, ln_silent = 0}; //Enum for operating level
 
 class LN_Packet{ //Track packet states. The packet data itself goes in a char[] and this only stores the ptr
   public: 
@@ -115,6 +121,8 @@ class LN_Class {
   uint64_t LN_loop_timer; //Time since last loop_process
   ESP_Uart LN_port; //Class inside a class
   LN_netstate netstate; //Network operating condition
+  void LN_set_mode(LN_hostmode newmode); //Set current Loconet access mode
+  LN_hostmode LN_get_mode(); //Return current Loconet access mode
   uint64_t signal_time; //time of last netstate change
 //  uint64_t rx_last_us; //time in startup us of last byte received  
   uint8_t tx_pkt_len; //length of last tx packet
@@ -142,16 +150,15 @@ class LN_Class {
   
   int8_t loco_select(uint8_t high_addr, uint8_t low_addr); //Return the slot managing this locomotive, or assign one if new. 
 
-  //Railsync ADC
+  //Power functions 
+  void global_power(char state, bool announce); //global power true/false, echo to DCCEX
   uint8_t ln_adc_index;
   int32_t adc_ticks_scale; //ADC ticks per Volt
   
   LN_Class(); //Constructor
 
   private:
-  
   uint64_t last_time_us;
-  
   LN_Packet* rx_packets[LN_RX_Q]; //Pointers to RX packets
   uint8_t rx_next_new; 
   uint8_t rx_next_check;
@@ -160,6 +167,9 @@ class LN_Class {
   uint8_t tx_next_new;
   uint8_t tx_next_check; 
   volatile int8_t tx_pending; //Index of which packet is actively sending. Set to -1 if none. 
+  LN_hostmode LN_host_mode; //master/sensor/throttle/silent
+  uint8_t LN_max_priority; //maximum allowed priority for this mode
+  uint8_t LN_min_priority; //minimum allowed priority for this mode
 
   const uint8_t slot_hours = 104; 
   uint8_t slot_minutes = 68; //DCS100 mode. Use 68 for others.   

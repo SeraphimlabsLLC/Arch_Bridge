@@ -5,20 +5,24 @@
 #include "Arduino.h"
 #include "driver/gpio.h"
 
-#include "driver/rmt.h"
+/*#include "driver/rmt.h"
 #include "soc/rmt_reg.h"
 #include "soc/rmt_struct.h"
 #include "soc/rmt_periph.h"
 #include "freertos/ringbuf.h" 
 #include "esp32-hal.h" //Aduino RMT
+*/
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "driver/rmt_rx.h"
+#include "driver/gpio.h"
 
 /******************
  * Continuous RMT RX may not be posssible in IDF 4.4 without modifying the driver itself
  * See https://github.com/espressif/esp-idf/issues/11478
  * IDF 5.1 will restructure things, revisit this then. 
  */
-
-
 
 //Use config.h if present, otherwise defaults
 #ifndef CONFIG_H
@@ -49,10 +53,6 @@
 #define DIR_MONITOR_RMT 4 //Will soon be hard coded. 
 #define DIR_OVERRIDE_RMT 0
 
-
-void rmt_loop(); //Reflect into Rmtdcc:process_loop();
-
-
 class Rmtdcc {
   public:
   uint64_t last_rmt_read; 
@@ -75,9 +75,9 @@ class Rmtdcc {
  //Using ESP-IDF v 4.46 
 
 //  rmt_channel_handle_t rx_ch; //RMT connection object
-  RingbufHandle_t rmt_rx_handle; //RMT ring buffer handle 
-  rmt_item32_t* rx_rmt_data; //RMT data object
-  rmt_item32_t rx_last_bit; //Holds the previously decoded symbol 
+//  RingbufHandle_t rmt_rx_handle; //RMT ring buffer handle 
+//  rmt_item32_t* rx_rmt_data; //RMT data object
+ // rmt_item32_t rx_last_bit; //Holds the previously decoded symbol 
   size_t* rx_data_size; //RMT data object size
   
   uint8_t rx_byteout; //Unfinished RX byte
@@ -102,3 +102,6 @@ class Rmtdcc {
 
 #endif
 }; 
+
+void rmt_loop(); //Reflect into Rmtdcc:process_loop();
+void IRAM_ATTR rmt_rx_done();
