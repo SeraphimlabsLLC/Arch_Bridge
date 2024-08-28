@@ -34,7 +34,7 @@
  * Format: 
  * On ESP32-S3, RMT channels 0-3 are TX only and 4-7 are RX only
  */
-#define TRK_DEBUG true
+#define TRK_DEBUG false
  
 void Tracks_Init();
 void Tracks_Loop();

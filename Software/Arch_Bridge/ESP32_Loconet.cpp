@@ -90,12 +90,19 @@ void LN_Class::loop_process(){
     }
   }
   
-  if ((LN_cd_hit == true) && (tx_pending > -1)) {
+  if (LN_cd_hit == true) {
+//    if (tx_pending > -1) {
     Serial.printf("LN CD true at timestamp %u \n", LN_cd_edge); 
 //    LN_port.rx_flush();
 //    LN_port.tx_flush();
-    
-    LN_cd_hit = false; 
+//    }
+  //Reset collision flag
+  if (TIME_US - LN_cd_edge > 900) { //60uS per bit * 15 bits
+    Serial.printf("Loconet BREAK reset after %u uS \n", (TIME_US - LN_cd_edge));
+    LN_port.uart_invert(false, false); //Reset TX
+    LN_cd_hit = false;
+    LN_cd_edge = TIME_US; 
+    }
   }
     
   //Network should be ok to interact with: 
@@ -379,7 +386,9 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
     case 0xBA: //MOVE slot SRC to DEST
     //0xB8 to 0xBF require replies
     case 0xB8: //UNLINK slot ARG1 from slot ARG2
-      Serial.printf("Slot move %u to %u \n", rx_packets[rx_pkt]->data_ptr[1], rx_packets[rx_pkt]->data_ptr[2]); 
+      #if LN_DEBUG == true
+        Serial.printf("Slot move %u to %u \n", rx_packets[rx_pkt]->data_ptr[1], rx_packets[rx_pkt]->data_ptr[2]); 
+      #endif
       slotnum = slot_move(rx_packets[rx_pkt]->data_ptr[1], rx_packets[rx_pkt]->data_ptr[2]); //Process slot data move
       if (slotnum < 0) { //No free slot found. Send LACK fail. 
         send_long_ack(0xBA, 0);
@@ -390,7 +399,9 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
       break; 
     case 0xBB: //Request SLOT DATA/status block
       slotnum = rx_packets[rx_pkt]->data_ptr[1];
-      Serial.printf("Throttle requesting slot %u data \n", slotnum);
+      #if LN_DEBUG == true
+        Serial.printf("Throttle requesting slot %u data \n", slotnum);
+      #endif
       if (slotnum > 120) {
         show_rx_packet(rx_pkt); 
       }
@@ -406,7 +417,9 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
         send_long_ack(0xBF, 0);
         break;
       }
-      Serial.printf("Request for loco %u found/set in slot %u \n", rx_packets[rx_pkt]->data_ptr[2], slotnum);
+      #if LN_DEBUG == true
+        Serial.printf("Request for loco %u found/set in slot %u \n", rx_packets[rx_pkt]->data_ptr[2], slotnum);
+      #endif
       //slot_data[0] already set to free if this is a new assignment 
       slot_ptr[slotnum] -> slot_data[1] = rx_packets[rx_pkt]->data_ptr[2];
       slot_ptr[slotnum] -> slot_data[6] = rx_packets[rx_pkt]->data_ptr[1];
@@ -436,7 +449,9 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
       break; 
     
     default: 
-    Serial.printf("No match for %x \n", rx_packets[rx_pkt]->data_ptr[0]);
+    #if LN_DEBUG == true
+      Serial.printf("No match for %x \n", rx_packets[rx_pkt]->data_ptr[0]);
+    #endif
     rx_packets[rx_pkt]->state = 4;
   }
   measure_time_start();
@@ -679,6 +694,10 @@ void LN_Class::transmit_break(){
   //Write 15 bits low for BREAK on collision detection.  
   //char txbreak[2] {char(0x00), char(0x01)};
   //LN_port.uart_write(txbreak, 2);
+  Serial.printf("Loconet: Inverting Uart TX pin \n"); 
+  LN_port.uart_invert(true, false); //Invert TX to transmit Loconet BREAK 
+  LN_cd_edge = TIME_US; //Record time in case ISR doesn't
+  LN_cd_hit = true; 
   return;
 }
 bool LN_Class::receive_break(uint8_t break_ptr){ //Possible BREAK input at ptr. 
@@ -686,6 +705,7 @@ bool LN_Class::receive_break(uint8_t break_ptr){ //Possible BREAK input at ptr.
   if (rx_break == true) {
   //TODO: Flush RX_Q
   }
+  Serial.printf("Loconet: Received Break Input\n"); 
   return rx_break;
 }
 
@@ -947,7 +967,7 @@ void LN_Class::global_power(char state, bool announce){ //Track power bytes, ech
   uint8_t tx_index; 
   char response = 0; 
   #if LN_DEBUG == true  
-    Serial.printf("Loconet global_power sending %c \n", state); 
+    Serial.printf("Loconet global_power sending state %c \n", state); 
   #endif
   switch (state) {
     case 48: //'0'
@@ -978,9 +998,6 @@ void LN_Class::global_power(char state, bool announce){ //Track power bytes, ech
       return; 
   }
   if (announce == true) {
-    #if LN_DEBUG == true
-      Serial.printf("Loconet global_power sending %x \n", response); 
-    #endif
     tx_index = tx_packet_getempty();
     tx_packets[tx_index]->state = 1;
     tx_packets[tx_index]->priority = LN_min_priority;

@@ -69,6 +69,13 @@ class ESP_pwmcap {
 
 };
 
+class ESP_hwtimer {
+  public:
+
+  private:
+  
+};
+
 void ESP_pwmcap_isr(); 
 
 #endif

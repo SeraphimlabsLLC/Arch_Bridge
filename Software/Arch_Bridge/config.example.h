@@ -35,7 +35,7 @@
 * uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
 * Parser selection. 0 = no parser, 1 = dccex, 2 = loconet
 */
-#define TTY_CONFIG tty.uart_init(0, 43, 44, 115200, 4, 128); 
+#define TTY_CONFIG tty.uart_init(0, 43, 44, 115200, 4, 128); //921600
 #define DCCEX_UART dccex.dccex_port.uart_init(2, 15, 16, 115200, 4, 128); //41 and 42 are right next to the uart0 pins for easy routing
 
 //I2C settings: 

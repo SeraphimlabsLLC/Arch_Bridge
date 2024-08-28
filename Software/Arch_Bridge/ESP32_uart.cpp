@@ -54,6 +54,7 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t
     };
     txbuff = 256; 
     rxbuff = 256; 
+    uart_inv_pinmask = NULL; //No pins inverted. 
     Serial.printf("UART: Configuring uart %u to baud %u with txbuff %u rxbuff %u \n", uartnum, baudrate, txbuff, rxbuff); 
     ESP_ERROR_CHECK(uart_driver_install(uart_port_t(uartnum), txbuff, rxbuff, 0, NULL, 0));
     ESP_ERROR_CHECK(uart_param_config(uart_port_t(uartnum), &uart_config));
@@ -90,6 +91,29 @@ uint16_t ESP_Uart::uart_tx_len(){ //Fetch how much data is currently in the TX b
   uint16_t tx_remain = 0;
 
   return tx_remain;  
+}
+
+void ESP_Uart::uart_invert(bool tx, bool rx){ //Invert UART TX pin or RX pin
+//esp_err_t uart_set_line_inverse(uart_port_t uart_num, uint32_t inverse_mask)
+//inverse mask values in https://github.com/espressif/esp-idf/commit/205c409d1979c58b65630d809056dd760701d98f#diff-a99a2c2811d68971c0ef78a29cc780911ca738077c05cad61946bde6a8b374aa
+
+  uint32_t pinmask = NULL; //uart_inv_pinmask; 
+  if (tx == true) {
+    pinmask = pinmask | UART_SIGNAL_TXD_INV; //OR UART_SIGNAL_TXD_INV
+      //ESP_ERROR_CHECK(uart_set_line_inverse((uart_num), UART_SIGNAL_TXD_INV));
+  } else {
+    pinmask = pinmask & ~UART_SIGNAL_TXD_INV; //AND NOT UART_SIGNAL_TXD_INV
+  }
+  if (rx == true) {
+    pinmask = pinmask | UART_SIGNAL_RXD_INV;
+  } else {
+    pinmask = pinmask & ~UART_SIGNAL_RXD_INV; 
+  } 
+  //Serial.printf("UART: Inverting TX pin on unit %u, pinmask %u \n", uart_num, pinmask); 
+
+  //uart_inv_pinmask = pinmask; //save the new pinmask
+  ESP_ERROR_CHECK(uart_set_line_inverse((uart_num), pinmask));
+  return;
 }
 
 void ESP_Uart::uart_tx_int_txdone(bool enabled){ //Fetch how much data is currently in the TX buffer
