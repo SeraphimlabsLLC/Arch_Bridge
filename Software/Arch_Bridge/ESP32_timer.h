@@ -23,10 +23,12 @@
 #if BOARD_TYPE == DYNAMO
   #define DIR_MONITOR 38 //RMT Input pin, 9 on Arch_Bridge 38 on Dynamo
   #define DIR_OVERRIDE 21 //GPIO21, use for RMT Output
+  #define HWTIM_SLOTS 1 //Number of hardware timers in use
 #endif
 
 #if BOARD_TYPE == ARCH_BRIDGE
   #define DIR_MONITOR 9 //RMT Input pin, 9 on Arch_Bridge 38 on Dynamo
+  #define HWTIM_SLOTS 2 //Number of hardware timers in use
 #endif
 
 #ifndef BOARD_TYPE
@@ -71,7 +73,8 @@ class ESP_pwmcap {
 
 class ESP_hwtimer {
   public:
-
+    uint8_t hw_channel; 
+    uint8_t hwtim_channel_config(); 
   private:
   
 };

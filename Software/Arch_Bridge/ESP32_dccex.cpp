@@ -207,7 +207,7 @@ void DCCEX_Class::rx_decode(){
     #endif 
     break; 
     case 'X': //DCCEX received invalid command. 
-      Loconet.transmit_break();
+      //Loconet.transmit_break();
       break; 
     default:
     Serial.printf("Invalid Command \n");

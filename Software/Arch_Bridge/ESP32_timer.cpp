@@ -8,6 +8,8 @@
 #define US_PER_MINUTE 60000000
 #define US_PER_SECOND 1000000
 
+ESP_hwtimer hwtimer[HWTIM_SLOTS];
+
 volatile uint64_t time_us = 0; 
 uint64_t last_time_us = 0;
 uint64_t meas_start_time= 0;
