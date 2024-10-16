@@ -203,6 +203,7 @@ void LN_Class::rx_scan(){ //Scan received data for a valid frame
       coll = tx_loopback(); 
       if (coll == 0) { //Check if the data so far matches what we sent. On match, mark both as success. 
         tx_pending = -1; 
+        
         continue;
       }
       Serial.printf("TX Loopback had %i differences. rx_pending %i, tx_pending %i \n", coll, rx_pending, tx_pending);  
@@ -601,6 +602,7 @@ void LN_Class::tx_send(uint8_t txptr){
       //LN_port.uart_write(writedata, tx_pkt_len);
       LN_port.uart_write(tx_packets[txptr]->data_ptr, tx_pkt_len);   
       tx_packets[txptr]->state = 3; //sent 
+      line_flags = line_flags | 0x01; //set bit 1 to indicate that transmission started
     }
   } 
   return;
@@ -638,7 +640,8 @@ uint8_t LN_Class::tx_loopback(){
     if (rx_packets[rx_pending]->rx_count == tx_packets[tx_pending]->data_len) { //Packet is complete and intact. 
 //        Serial.printf("Transmission of packet %d confirmed in %d \n", tx_pending, rx_pending);
         tx_packets[tx_pending]->state = 5; //Mark TX complete
-        tx_packets[tx_pending]->last_start_time = TIME_US; //Time it was set to this state.  
+        tx_packets[tx_pending]->last_start_time = TIME_US; //Time it was set to this state.
+        line_flags = line_flags & ~0x01; //Unset bit 1 to indicate that transmission ended  
         tx_pending = -1;        
         rx_packets[rx_pending]->state = 5; //Mark RX complete
         rx_packets[rx_pending]->last_start_time = TIME_US; //Time it was set to this state.   
@@ -649,6 +652,7 @@ uint8_t LN_Class::tx_loopback(){
     transmit_break();
     tx_packets[tx_pending]->tx_attempts--; 
     tx_packets [tx_pending]->state = 4; 
+    line_flags = line_flags & ~0x01; //Unset bit 1 to indicate that transmission ended
     //tx_pending = -1;
     //if (rx_packets[rx_pending]->rx_count == rx_packets[rx_pending]->data_len) { //If the complete packet is here, drop from rx_pending
     rx_packets[rx_pending]->state = 4;
@@ -660,13 +664,17 @@ uint8_t LN_Class::tx_loopback(){
 
 void IRAM_ATTR LN_CD_isr(){
  uint8_t i = 0; 
-  if (TIME_US - LN_cd_edge > 120) 
-  LN_cd_edge = TIME_US; 
-  if (gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin)) == 1) {
-    if (gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin)) == 0) {
+  if (Loconet.line_flags && 0x01) { //Transmitter should be active, watch for bitwise collision
+    if ((gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin)) == 1) && (gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin)) == 0)) {
       Loconet.transmit_break(); 
+      Loconet.line_flags = Loconet.line_flags & ~0x01; //Unset bit 1 to indicate that transmission ended
     }    
-  } 
+  }
+  if ((TIME_US - LN_cd_edge) > 850){ //Received a 0 longer than 850uS, assume its an RX break
+    Loconet.line_flags = Loconet.line_flags | 0x02; //Set bit 2 to indicate break was received. 
+  }
+  
+  LN_cd_edge = TIME_US;  
   return; 
 }
 void IRAM_ATTR LN_gptimer_alarm(){//When triggered, check the source and act accordingly. 
@@ -702,7 +710,8 @@ void IRAM_ATTR LN_Class::transmit_break(){
   //Serial.printf("Loconet: Collision! BREAK set \n"); 
   return;
 }
-bool LN_Class::receive_break(uint8_t break_ptr){ //Possible BREAK input at ptr. 
+
+bool IRAM_ATTR LN_Class::receive_break(){ //Possible BREAK input at ptr. 
   bool rx_break = false;
   if (rx_break == true) {
   //TODO: Flush RX_Q

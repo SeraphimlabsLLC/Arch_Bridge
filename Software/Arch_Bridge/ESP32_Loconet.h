@@ -126,6 +126,7 @@ class LN_Class {
   void LN_set_mode(LN_hostmode newmode); //Set current Loconet access mode
   LN_hostmode LN_get_mode(); //Return current Loconet access mode
   uint64_t signal_time; //time of last netstate change
+  volatile uint8_t line_flags; //bit 1 = sending, bit 2 = break received
 //  uint64_t rx_last_us; //time in startup us of last byte received  
   uint8_t tx_pkt_len; //length of last tx packet
  
@@ -158,6 +159,7 @@ class LN_Class {
   int32_t adc_ticks_scale; //ADC ticks per Volt
 
   void IRAM_ATTR transmit_break(); //transmit 60uS x 15 bits of 0 as BREAK
+  bool IRAM_ATTR receive_break(); 
   
   LN_Class(); //Constructor
 
@@ -195,9 +197,6 @@ class LN_Class {
   uint8_t tx_packet_getempty(); //Get the next available rx_packet handle, creating one if necessary
   void show_tx_packet(uint8_t index); ////Print contents of a transmitted packet
   void tx_packet_del(uint8_t index); //Delete a packet
-
-
-  bool receive_break(uint8_t break_ptr);
 
   void fastclock_update(); //Calculate updated fast clock
   void slot_queue(); //Scan slots and purge inactive
