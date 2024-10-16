@@ -93,7 +93,7 @@ uint16_t ESP_Uart::uart_tx_len(){ //Fetch how much data is currently in the TX b
   return tx_remain;  
 }
 
-void ESP_Uart::uart_invert(bool tx, bool rx){ //Invert UART TX pin or RX pin
+void IRAM_ATTR ESP_Uart::uart_invert(bool tx, bool rx){ //Invert UART TX pin or RX pin
 //esp_err_t uart_set_line_inverse(uart_port_t uart_num, uint32_t inverse_mask)
 //inverse mask values in https://github.com/espressif/esp-idf/commit/205c409d1979c58b65630d809056dd760701d98f#diff-a99a2c2811d68971c0ef78a29cc780911ca738077c05cad61946bde6a8b374aa
 

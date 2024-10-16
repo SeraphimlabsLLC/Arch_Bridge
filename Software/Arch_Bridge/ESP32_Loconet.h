@@ -31,6 +31,7 @@
 
 //Constants that shouldn't be changed.
 #define LN_LOOP_DELAY_US 0 //60uS * 8 bits
+#define GPTIMERLAG 30 //uS to shorten the timer by to compensate for jitter
 
 #define LN_BITLENGTH_US 60 
 #define LN_COL_BACKOFF 20
@@ -77,6 +78,7 @@ void LN_loop(); //Loconet process loop
 //Enums: 
 enum LN_netstate {startup = 0, disconnected = 1, inactive = 2, active = 3};
 enum LN_hostmode {ln_master = 0x80, ln_sensor = 0x20, ln_throttle = 0x08, ln_silent = 0}; //Enum for operating level
+//enum LN_timerstage {none = 0, startup = 1, listening = 2, BREAK = 3}; 
 
 class LN_Packet{ //Track packet states. The packet data itself goes in a char[] and this only stores the ptr
   public: 
@@ -155,7 +157,7 @@ class LN_Class {
   uint8_t ln_adc_index;
   int32_t adc_ticks_scale; //ADC ticks per Volt
 
-  void transmit_break();
+  void IRAM_ATTR transmit_break(); //transmit 60uS x 15 bits of 0 as BREAK
   
   LN_Class(); //Constructor
 
@@ -204,3 +206,4 @@ class LN_Class {
 };
 
 void IRAM_ATTR LN_CD_isr(); //ISR for handling collision detection
+void IRAM_ATTR LN_gptimer_alarm(); //ISR for handling gptimer alarms

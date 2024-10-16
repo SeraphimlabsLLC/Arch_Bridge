@@ -13,7 +13,8 @@
   extern DCCEX_Class dccex;
 #endif
 #ifndef ESP32_TIMER_H
-  #include "ESP32_timer.h" //For fastclock access
+  #include "ESP32_timer.h" //For gptimer and fastclock access
+  ESP_gptimer LN_gptimer; //Timer handle owned by this instance
   extern Fastclock_class Fastclock; 
 #endif
 
@@ -25,9 +26,7 @@
 ESP_Uart LN_port; //Loconet uart object
 LN_Class Loconet; //Loconet processing object
 volatile uint64_t LN_cd_edge = 0; //time_us of last edge received. 
-volatile bool LN_cd_hit = false; //true if the ISR saw ((rx_pin == 0) && (tx_pin == 1))
-//extern volatile uint64_t uart_tx_delay_start;
-//extern volatile uint64_t uart_tx_delay_stop;
+volatile bool LN_break_sent = false; 
 
 //extern DCCEX_Class dccex_port;
 extern uint64_t time_us;
@@ -37,6 +36,7 @@ extern ADC_Handler adc_one[ADC_SLOTS];
  
 
 void LN_init(){//Initialize Loconet objects
+  LN_gptimer.gptimer_init(); //Initialize ESP gptimer for collision detection
   LN_UART //Initialize uart 
   Loconet.LN_port.uart_mode = 0; //Change to 1 to use uart fast write
   Loconet.LN_set_mode(LN_HOSTMODE); //set default host mode
@@ -67,7 +67,7 @@ void LN_Class::loop_process(){
       signal_time = TIME_US; 
       LN_port.rx_flush();
       LN_port.tx_flush();
-      LN_cd_hit = false;
+      LN_break_sent = false; 
       Serial.printf("Loconet start \n");
       attachInterrupt(Loconet.LN_port.rx_pin, LN_CD_isr, CHANGE); //Attach the pcint used for CD     
       netstate = active;
@@ -80,6 +80,7 @@ void LN_Class::loop_process(){
     if (TIME_US - signal_time > 100000) {
       if (netstate != disconnected) { 
         netstate = disconnected;
+        detachInterrupt(Loconet.LN_port.rx_pin); //Turn off ISR 
         Serial.printf("Loconet lost connection to master. Resetting link state. \n"); 
       }
       return; 
@@ -89,20 +90,9 @@ void LN_Class::loop_process(){
       signal_time = TIME_US; 
     }
   }
-  
-  if (LN_cd_hit == true) {
-//    if (tx_pending > -1) {
-    Serial.printf("LN CD true at timestamp %u \n", LN_cd_edge); 
-//    LN_port.rx_flush();
-//    LN_port.tx_flush();
-//    }
-  //Reset collision flag
-  if (TIME_US - LN_cd_edge > 900) { //60uS per bit * 15 bits
-    Serial.printf("Loconet BREAK reset after %u uS \n", (TIME_US - LN_cd_edge));
-    LN_port.uart_invert(false, false); //Reset TX
-    LN_cd_hit = false;
-    LN_cd_edge = TIME_US; 
-    }
+
+  if (LN_break_sent == true) { //Is this even needed anymore?
+    LN_break_sent = false; 
   }
     
   //Network should be ok to interact with: 
@@ -609,8 +599,7 @@ void LN_Class::tx_send(uint8_t txptr){
       tx_packets[txptr]->last_start_time = time_us;  
       
       //LN_port.uart_write(writedata, tx_pkt_len);
-      LN_port.uart_write(tx_packets[txptr]->data_ptr, tx_pkt_len);
-      LN_cd_hit = false; //Reset the CD flag     
+      LN_port.uart_write(tx_packets[txptr]->data_ptr, tx_pkt_len);   
       tx_packets[txptr]->state = 3; //sent 
     }
   } 
@@ -670,34 +659,47 @@ uint8_t LN_Class::tx_loopback(){
 }
 
 void IRAM_ATTR LN_CD_isr(){
-//volatile uint64_t LN_cd_time = 0; //time_us of last edge received. 
-//volatile bool LN_cd_hit = false; //true if the ISR saw ((rx_pin == 0) && (tx_pin == 1))
  uint8_t i = 0; 
   if (TIME_US - LN_cd_edge > 120) 
   LN_cd_edge = TIME_US; 
   if (gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin)) == 1) {
     if (gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin)) == 0) {
-      LN_cd_hit = true; //set flag that a collision was detected. 
+      Loconet.transmit_break(); 
     }    
-  } /*else { //Diagnostic: Measure how long from when data was buffered to when it actually starts
-      if (gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin)) == 0) {
-      if ((uart_tx_delay_start != 0) && (uart_tx_delay_stop == 0))  {//Conditions are right to sample tx delay
-        uart_tx_delay_stop = LN_cd_edge;
-      } 
+  } 
+  return; 
+}
+void IRAM_ATTR LN_gptimer_alarm(){//When triggered, check the source and act accordingly. 
+  uint8_t owner = LN_gptimer.alarm_owner(); 
+    if (owner == 3) { //BREAK was sent
+      Loconet.LN_port.uart_invert(false, false); //Reset TX
+      LN_cd_edge = TIME_US; //Record time in case ISR doesn't
+      LN_break_sent = true; 
+      return;
     }
-  } */
-
+/*    if (owner == 2) { //Listening for clear line
+        if (LN_edge_count == 0) {
+          //todo: Trigger the transmission of a prepared packet from here
+        } else {
+          //todo: action if CD time was not met
+        }      
+      return; 
+    }
+    if (owner == 1) { //Startup timer
+      //todo: Consider moving the code to handle startup and disconnected to here
+      return;
+    } */
+    
   return; 
 }
 
-void LN_Class::transmit_break(){
+void IRAM_ATTR LN_Class::transmit_break(){
   //Write 15 bits low for BREAK on collision detection.  
-  //char txbreak[2] {char(0x00), char(0x01)};
-  //LN_port.uart_write(txbreak, 2);
-  Serial.printf("Loconet: Inverting Uart TX pin \n"); 
+  //Serial.printf("Loconet: Inverting Uart TX pin \n"); 
   LN_port.uart_invert(true, false); //Invert TX to transmit Loconet BREAK 
   LN_cd_edge = TIME_US; //Record time in case ISR doesn't
-  LN_cd_hit = true; 
+  LN_gptimer.alarm_set(900 - GPTIMERLAG, 3);//15 bit at 60us per bit. Owner tag 3. 
+  //Serial.printf("Loconet: Collision! BREAK set \n"); 
   return;
 }
 bool LN_Class::receive_break(uint8_t break_ptr){ //Possible BREAK input at ptr. 
@@ -1129,9 +1131,7 @@ int8_t LN_Class::loco_select(uint8_t high_addr, uint8_t low_addr){ //Return the 
   }
     slot_ptr[slotnum] -> slot_data[0] = 3; //Slot status set to free, 128 step speed
     slot_ptr[slotnum] -> slot_data[1] = low_addr;
-    slot_ptr[slotnum] -> slot_data[6] = high_addr
-    
-    ;
+    slot_ptr[slotnum] -> slot_data[6] = high_addr;
   
   return slotnum;
 }

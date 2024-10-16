@@ -1,14 +1,11 @@
 #ifndef ESP32_TIMER_H
   #include "ESP32_timer.h"
 #endif
+#if BOARD_TYPE == ARCH_BRIDGE
+  #include "ESP32_Loconet.h"
+#endif
 
-//Clock constants for clock_set() and clock_get(). 
-#define US_PER_DAY 86400000000
-#define US_PER_HOUR 3600000000
-#define US_PER_MINUTE 60000000
-#define US_PER_SECOND 1000000
-
-ESP_hwtimer hwtimer[HWTIM_SLOTS];
+//ESP_gptimer esp_gptimer;
 
 volatile uint64_t time_us = 0; 
 uint64_t last_time_us = 0;
@@ -45,6 +42,81 @@ void measure_time_stop() {
   //meas_cumu_time = meas_cumu_time + (time_us - meas_start_time); 
   return;  
 }
+
+
+//ESP GPTimer functions
+
+void IRAM_ATTR ESP_gptimer::alarm_set(uint32_t count, uint8_t owner){
+  alarm_owner_v = owner; 
+  //ESP_ERROR_CHECK(gptimer_stop(gptimer));
+  gptimer_stop(gptimer);
+  gptimer_disable(gptimer);
+  
+  gptimer_alarm_config_t alarm_config = {
+    .alarm_count = count, // alarm target = count in us
+  };
+  ESP_ERROR_CHECK(gptimer_set_alarm_action(gptimer, &alarm_config));
+
+  gptimer_event_callbacks_t cbs = {
+    .on_alarm = gptimer_alarm_cb_t(ESP_gptimer_alarm_isr), // register user callback
+  };
+  ESP_ERROR_CHECK(gptimer_register_event_callbacks(gptimer, &cbs, NULL));
+  gptimer_set (0); //Set the count to 0
+  gptimer_enable(gptimer);
+  gptimer_start(gptimer);
+  alarm_counting = true; 
+  return;
+}
+
+uint8_t IRAM_ATTR ESP_gptimer::alarm_owner(){ //Returns alarm owner. 
+  return alarm_owner_v;
+}
+
+bool ESP_gptimer::alarm_is_set(){ //returns true if alarm is set
+  if (alarm_owner_v == 0){ //If there is no owner then it shouldn't be counting. 
+    alarm_counting = false; 
+  }
+  return alarm_counting;
+}
+
+uint32_t ESP_gptimer::alarm_value(){ //returns value set in alarm
+  return alarm_set_value;
+}
+
+
+uint8_t ESP_gptimer::gptimer_init(){
+gptimer_config_t timer_config = {
+    .clk_src = GPTIMER_CLK_SRC_DEFAULT,
+    .direction = GPTIMER_COUNT_UP,
+    .resolution_hz = 1 * 1000 * 1000, // 1MHz, 1 tick = 1us
+};
+ESP_ERROR_CHECK(gptimer_new_timer(&timer_config, &gptimer));
+gptimer_set (0); //Set the count to 0
+ESP_ERROR_CHECK(gptimer_enable(gptimer)); //enable gptimer, priming it for later
+ESP_ERROR_CHECK(gptimer_start(gptimer)); //start gptimer, priming it for later 
+return 0; //Eventually make this return non-zero if the gptimer_new_timer fails
+}
+
+uint64_t IRAM_ATTR ESP_gptimer::gptimer_read(){
+  uint64_t read_value; 
+  ESP_ERROR_CHECK(gptimer_get_raw_count(gptimer, &read_value));
+}
+  
+void ESP_gptimer::gptimer_set(uint64_t newcount){
+  gptimer_set_raw_count(gptimer, newcount);
+  return; 
+}
+
+void IRAM_ATTR ESP_gptimer_alarm_isr(){ //ISR for gptimer alarm
+  #if BOARD_TYPE == ARCH_BRIDGE
+    #ifndef ESP32_LOCONET_H
+      #include "ESP32_Loconet.h"
+    #endif
+    LN_gptimer_alarm(); //This will be better handled some other way eventually.    
+  #endif
+  return; 
+}
+
 
 #if BOARD_TYPE == ARCH_BRIDGE //If this is an arch bridge, include fastclock features
 Fastclock_class Fastclock; //For fastclock

@@ -12,6 +12,7 @@
 
 #include "Arduino.h"
 #include "driver/gpio.h"
+#include "driver/gptimer.h"
 #include "driver/mcpwm.h"
 #include "soc/mcpwm_struct.h"
 #include "soc/mcpwm_reg.h"
@@ -23,12 +24,15 @@
 #if BOARD_TYPE == DYNAMO
   #define DIR_MONITOR 38 //RMT Input pin, 9 on Arch_Bridge 38 on Dynamo
   #define DIR_OVERRIDE 21 //GPIO21, use for RMT Output
-  #define HWTIM_SLOTS 1 //Number of hardware timers in use
 #endif
 
 #if BOARD_TYPE == ARCH_BRIDGE
   #define DIR_MONITOR 9 //RMT Input pin, 9 on Arch_Bridge 38 on Dynamo
-  #define HWTIM_SLOTS 2 //Number of hardware timers in use
+  //Clock constants for clock_set() and clock_get()in Loconet
+  #define US_PER_DAY 86400000000
+  #define US_PER_HOUR 3600000000
+  #define US_PER_MINUTE 60000000
+  #define US_PER_SECOND 1000000
 #endif
 
 #ifndef BOARD_TYPE
@@ -40,6 +44,26 @@ uint64_t esp_us(); //Equivalent to micros();
 void Heartbeat(uint64_t seconds); //Checks for and displays console heartbeat
 void measure_time_start();
 void measure_time_stop(); 
+
+
+void esp_gptimer_init(); //Reflector into ESP_gptimer class
+class ESP_gptimer {
+  public:
+    uint8_t gptimer_init(); 
+    uint64_t gptimer_read(); //Get current value from the gptimer
+    void gptimer_set(uint64_t newcount); //set gptimer count
+    void IRAM_ATTR alarm_set(uint32_t count, uint8_t owner);
+    uint32_t alarm_value(); //returns alarm value currently set
+    uint8_t IRAM_ATTR alarm_owner(); //read value of alarm owner
+    bool alarm_is_set(); //returns true if alarm is set
+    
+  private:
+  gptimer_handle_t gptimer = NULL; //Holder for hardware handle
+  volatile uint8_t alarm_owner_v; //alarm owner value
+  volatile bool alarm_counting; //true if alarm is set
+  volatile uint32_t alarm_set_value; //Value set in alarm
+};
+void IRAM_ATTR ESP_gptimer_alarm_isr(); //ISR for gptimer alarm
 
 #if BOARD_TYPE == ARCH_BRIDGE //If this is an arch bridge, include fastclock features
 void Fastclock_setup(bool enabled); //Initialize fastclock from outside class
@@ -69,14 +93,6 @@ class ESP_pwmcap {
 
   private:
 
-};
-
-class ESP_hwtimer {
-  public:
-    uint8_t hw_channel; 
-    uint8_t hwtim_channel_config(); 
-  private:
-  
 };
 
 void ESP_pwmcap_isr(); 

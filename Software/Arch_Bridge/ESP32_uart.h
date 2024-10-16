@@ -34,7 +34,7 @@ class ESP_Uart {
   uint16_t read_len(); //returns how much data there is to be read 
   void uart_write(const char* write_data, uint8_t write_len); //Write to uart up to write_len bytes from write_data
   uint16_t uart_tx_len(); //Fetch how much data is currently in the TX buffer
-  void uart_invert(bool tx, bool rx); //Invert UART TX pin
+  void IRAM_ATTR uart_invert(bool tx, bool rx); //Invert UART TX pin
   void uart_tx_int_txdone(bool enabled); //Turn TX Done ISR on and off
   void uart_rx_flush(); //Erase the RX buffer contents
   void rx_flush(); //Reset the rx buffer
