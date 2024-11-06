@@ -159,7 +159,7 @@ class LN_Class {
   int32_t adc_ticks_scale; //ADC ticks per Volt
 
   void IRAM_ATTR transmit_break(); //transmit 60uS x 15 bits of 0 as BREAK
-  bool IRAM_ATTR receive_break(); 
+  void receive_break(); 
   
   LN_Class(); //Constructor
 

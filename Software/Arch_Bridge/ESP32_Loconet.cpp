@@ -65,8 +65,8 @@ void LN_Class::loop_process(){
      LN_port.rx_read_processed = 255; //Mark as fully processed so it gets discarded.
     if (((TIME_US - signal_time) > 250000)) { 
       signal_time = TIME_US; 
-      LN_port.rx_flush();
-      LN_port.tx_flush();
+      receive_break(); 
+      line_flags = 0; //Initialize line flags to 0
       LN_break_sent = false; 
       Serial.printf("Loconet start \n");
       attachInterrupt(Loconet.LN_port.rx_pin, LN_CD_isr, CHANGE); //Attach the pcint used for CD     
@@ -89,6 +89,11 @@ void LN_Class::loop_process(){
     if (netstate == active) {
       signal_time = TIME_US; 
     }
+  }
+
+  if (line_flags && 0x02) { //Receive break flag was set by ISR. 
+    receive_break(); 
+    line_flags = line_flags & ~0x02; //Unset receive break flag
   }
 
   if (LN_break_sent == true) { //Is this even needed anymore?
@@ -711,13 +716,11 @@ void IRAM_ATTR LN_Class::transmit_break(){
   return;
 }
 
-bool IRAM_ATTR LN_Class::receive_break(){ //Possible BREAK input at ptr. 
-  bool rx_break = false;
-  if (rx_break == true) {
-  //TODO: Flush RX_Q
-  }
+void LN_Class::receive_break(){ //Possible BREAK input at ptr. 
+  LN_port.rx_flush();
+  LN_port.tx_flush();
   Serial.printf("Loconet: Received Break Input\n"); 
-  return rx_break;
+  return;
 }
 
 uint8_t LN_Class::rx_packet_getempty(){ //Scan rx_packets and return 1st empty slot
