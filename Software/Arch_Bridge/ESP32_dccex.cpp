@@ -49,16 +49,13 @@ void DCCEX_Class::loop_process(){
     }
     return; 
   }
-  //Serial.printf("DCCEX uart_rx cycle: \n");
-  uart_rx(false); //Read uart data 
-  //Serial.printf("DCCEX rx_scan cycle: \n");
-  rx_scan(); //Scan RX ring for an opcode
+  
+  uart_rx(&dccex_port); //Read uart data from dccex port and scan for packets
   if (rx_state == 2) {
     rx_decode();
   }
-  uart_rx(true); //Read console data 
-  //Serial.printf("DCCEX rx_scan cycle: \n");
-  rx_scan(); //Scan RX ring for an opcode
+
+  uart_rx(&tty); //Read console data 
   if (rx_state == 2) {
     rx_decode();
   }
@@ -73,54 +70,39 @@ void DCCEX_Class::loop_process(){
   return;
 }
 
-uint8_t DCCEX_Class::uart_rx(bool console){ //Read incoming data into a buffer
-  uint8_t read_size = 0;
-  uint8_t i = 0;
-  if (console == true) {
-   tty.rx_read_processed = dccex_port.rx_read_processed; //Sync tty rx_read_processed with ours.  
-   read_size = tty.uart_read(0); //populate rx_read_data and rx_read_len
-   dccex_port.rx_read_data = tty.rx_read_data; //Pointer to the data just read
-   dccex_port.rx_read_len = tty.rx_read_len; //Size of rx_read_data
-   dccex_port.rx_read_processed = tty.rx_read_processed; //Sync tty rx_read_processed with ours
-   tty.rx_read_len = 0; //Steal the data. 
-  } else { 
-   read_size = dccex_port.uart_read(0); //populate rx_read_data and rx_read_len
-   dccex_port.rx_read_data = dccex_port.rx_read_data; //Pointer to the data just read
-   dccex_port.rx_read_len = dccex_port.rx_read_len; //Size of rx_read_data
-   if (dccex_port.rx_read_len > 0){
-     //Serial.printf("UART %u received", dccex_port.uart_num);
-     //Serial.printf(dccex_port.rx_read_data); 
-     //Serial.printf("\n");
-   }
+uint8_t DCCEX_Class::uart_rx(ESP_Uart* uart){ //Read incoming data and scan it for packets
+  uint16_t i = 0;
+  uint16_t read_size = 0; 
+  //uint8_t rx_state = 0; 
+  if (uart->rx_read_processed == 255) { //Existing dat is processed, try to get more. 
+    read_size = uart->uart_read(0); //populate rx_read_data and rx_read_len
+    if (uart->rx_read_len > 0){ //Data was actually moved, update the timer.
+      rx_last_us = TIME_US;
+    } else {
+      return 0; 
+    }
   }
-   
-  if (dccex_port.rx_read_len > 0){ //Data was actually moved, update the timer.
-    rx_last_us = TIME_US;
-  }
-  return read_size;
-}
 
-void DCCEX_Class::rx_scan(){ //Scan ring buffer data for an opcode and return its location
-  uint16_t i = 0; 
-
-  while (i < dccex_port.rx_read_len) {
+Serial.printf("dccex: %u bytes read \n", uart->rx_read_len);
+  i = uart->rx_read_processed; //Prime the start of processing
+  while (i < uart->rx_read_len) {
     //Serial.printf("Char: %c \n");
-    if ((dccex_port.rx_read_data[i] == '<') && (rx_state == 0)) { // 0x3e
+    if ((uart->rx_read_data[i] == '<') && (rx_state == 0)) { // 0x3e
       //Serial.printf("START: ");
       rx_state = 1; //pending
       data_len = 0; 
     }
     
     if (rx_state == 1) { //Record data until finding >
-      data_pkt[data_len] = dccex_port.rx_read_data[i];
-      Serial.printf("%c", dccex_port.rx_read_data[i] );
+      data_pkt[data_len] = uart->rx_read_data[i];
+      Serial.printf("%c", uart->rx_read_data[i] );
       data_len++;
       
       if (data_len > 255) { //Would exceed buffer size. Discard malformed packet. 
         rx_state = 0;
       }
 
-      if (dccex_port.rx_read_data[i] == '>') { //stop recording data. Reset for next packet.
+      if (uart->rx_read_data[i] == '>') { //stop recording data. Reset for next packet.
         rx_state = 2; //RX complete, ready to process  
         //Serial.printf(" COMPLETE ");
         Serial.printf("\n"); 
@@ -128,8 +110,12 @@ void DCCEX_Class::rx_scan(){ //Scan ring buffer data for an opcode and return it
     }
     i++; 
   }
-  dccex_port.rx_read_processed = 255; //Mark uart buffer complete so it reads again.
-  return;    
+  uart->rx_read_processed = uart->rx_read_processed + i; //Track how much data has been processed. 
+  if (uart->rx_read_processed >= uart->rx_read_len) {
+    uart->rx_read_processed = 255; //mark uart buffer complete so it reads again. 
+    uart->rx_read_len = 0; 
+  }
+  return rx_state;    
 }
 
 void DCCEX_Class::rx_decode(){

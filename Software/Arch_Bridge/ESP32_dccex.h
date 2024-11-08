@@ -16,7 +16,6 @@
 #endif
 #include "Arduino.h"
 
-
 //Reflectors to insert into main() instead of using an extern
 void dccex_init(); //DCCEX_Class::dccex_init();
 void dccex_loop(); //DCCEX_Class::dccex_loop();
@@ -82,7 +81,7 @@ class DCCEX_Class {
   uint64_t fastclock_ping;
   uint32_t fastclock_next;
   
-  uint8_t uart_rx(bool console); //Receive data from uart, either from the dccex input or console
-  void rx_scan(); //Scan rx ring for a valid packet
+  uint8_t uart_rx(ESP_Uart* uart); //Receive data from the provided uart handle
+  //void rx_scan(ESP_Uart* uart); //Scan the provided rx ring for a valid packet
   void tx_send(char* txdata, uint8_t txsize); //Send data
 };
