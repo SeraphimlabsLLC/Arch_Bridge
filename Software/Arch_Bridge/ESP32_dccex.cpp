@@ -287,8 +287,10 @@ void DCCEX_Class::rx_track_manager(){ //Process track manager input
       if (!(data_pkt[i])) { //Out of data. Command was invalid. 
         return; 
       }
+      
     }
-    Serial.printf("DC Mode intended for track %c with cab address %i, command %s \n", track, dcaddr, data_pkt);
+    Serial.printf("\n");
+    Serial.printf("DC Mode intended for track %c with cab address %u, command %s \n", track, dcaddr, data_pkt);
   }  
  
   Serial.printf("Track %c mode %u \n", track, tmode);
@@ -296,7 +298,9 @@ void DCCEX_Class::rx_track_manager(){ //Process track manager input
   if (track == DCCSigs[i].trackID) { //Command relevant to one of ours
       DCCSigs[i].ModeChange(tmode);
       if (dcaddr >= 0) { //Set DC address if one was given. 
-        DCCSigs[i].cabaddr = dcaddr; 
+        DCCSigs[i].CabAddress(dcaddr); 
+      } else {
+        DCCSigs[i].CabAddress(NULL);
       }
     }
   }
@@ -365,7 +369,7 @@ void DCCEX_Class::output_current(){
       for (i = 0; i < max_tracks; i++) {
         adc_index = DCCSigs[i].adc_index;
         adc_one[adc_index].adc_read(NULL, NULL, &smooth, NULL); 
-        Serial.printf("Track %c ADC analog value = %u milliamps, mode %u \n", DCCSigs[i].trackID, smooth /(DCCSigs[i].adc_ticks_scale / 1000), DCCSigs[i].powermode); //smooth scaled to mA
+        Serial.printf("Track %c ADC analog value = %u milliamps\n", DCCSigs[i].trackID, smooth /(DCCSigs[i].adc_ticks_scale / 1000)); //smooth scaled to mA
       }
       #ifdef ESP32_LOCONET_H
 //    Include Railsync current monitor

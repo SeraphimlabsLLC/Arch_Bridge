@@ -40,7 +40,7 @@
 #define LN_ADC_GPIO 9 //GPIO for Railsync load meter ADC input
 #define LN_ADC_OFFSET 0 //ADC zero offset
 #define LN_ADC_OL 3650000 //Railsync overload threshold in ADC ticks x 1000;
-#define LN_ADC_SCALE 147 //ticks per volt was 160
+#define LN_ADC_SCALE 145 //ticks per mV was 160
 
 //Queue settings: 
 #define LN_RX_Q 16

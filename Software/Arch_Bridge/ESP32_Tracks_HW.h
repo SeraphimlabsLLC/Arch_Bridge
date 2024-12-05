@@ -68,9 +68,7 @@ class TrackChannel {
   public:
     uint8_t index; //What track number is this? 
     char trackID; //Char to use as a handle for DCC-EX commmands
-    int16_t cabaddr; //DCC addresss used for DC mode
-    int8_t powerstate; //0 = off, 1 = on_forward, 2 = on_reverse - indicates overloaded 
-    uint8_t powermode; //0 = none, 1 = EXT, 2 = DCC_Internal, 3 = DC, 4 = DCX. Future: Mode for generating PROG? 
+
     uint8_t adc_index; //ADC index used for this channel
     int32_t adc_ticks_scale; //ADC ticks per amp * 1000. This can be higher than the adc max value if the hardware is <1A max. 
 
@@ -83,12 +81,16 @@ class TrackChannel {
     void ModeChange (int8_t newmode);
     void StateChange(int8_t newstate);
     uint8_t CheckEnable(); //Reads en_in, sets en_out the same, and returns on or off. 
-    void adc_read();
+    void Status_Check();
     void Overload_Check(int32_t current, int32_t overload); //Check overload/reset
-
+    void CabAddress(int16_t cab_addr); 
 
     private: 
     SemaphoreHandle_t power_mutex; //mutex to protect powerstate. 
+    int8_t powerstate; //0 = off, 1 = on_forward, 2 = on_reverse - indicates overloaded 
+    uint8_t powermode; //0 = none, 1 = EXT, 2 = DCC_Internal, 3 = DC, 4 = DCX. Future: Mode for generating PROG? 
     uint8_t overload_mode; //0 = current, 1 = volts
     uint64_t overload_cooldown; //time_us of overload last detected
+
+    int16_t cabaddr; //DCC addresss used for DC mode
 };

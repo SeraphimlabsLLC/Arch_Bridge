@@ -57,7 +57,7 @@ class ADC_Handler {
     uint8_t assigned_slot; //Index of current and overload ticks for the values we want.  
 //    uint8_t hw_channel; //Hardware channel used
     uint8_t gpio_pin; //GPIO pins used
-//    std::function<void(int32_t, int32_t)> overload_check; //store overload check callback
+    std::function<void(int32_t, int32_t)> overload_check; //store overload check callback
 
 };
 

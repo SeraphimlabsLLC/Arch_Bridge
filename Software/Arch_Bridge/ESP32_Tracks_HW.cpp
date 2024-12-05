@@ -71,14 +71,10 @@ void Tracks_Init(){ //Populates track class with values. ADC moved to ADC_Init()
 void Tracks_Loop(){ //Check tasks each scan cycle.
   uint8_t i = 0;
   MasterEnable(); //Update Master status. Dynamo this is external input, ArchBridge is always true.
- 
   for (i = 0; i < max_tracks; i++){ //Check active tracks for faults
-    DCCSigs[i].adc_read(); //actually read the ADC and enforce overload cooldown.  
-    if (DCCSigs[i].powerstate > 0){ //Power should be on
-      DCCSigs[i].CheckEnable();
-    }
+    DCCSigs[i].Status_Check(); //Check status of each track  
+    delayMicroseconds(400);  
   }
-
   return;
 }
 
@@ -128,7 +124,12 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
     return;
 }
 
-void TrackChannel::ModeChange (int8_t newmode){ //Updates GPIO modes when changing powermode
+void TrackChannel::CabAddress(int16_t cab_addr){
+  cabaddr = cab_addr; 
+  return;
+}
+
+void TrackChannel::ModeChange (int8_t newmode){ //Updates GPIO modes when changing powermode, does not call StateChange except in mode 0
   //0 = none, 1 = DCC_external, 2 = DCC_override, 3 = DC, 4 = DCX.
   StateChange(0); // //Always turn the track off before changing modes
   switch (newmode) {     
@@ -159,10 +160,7 @@ void TrackChannel::ModeChange (int8_t newmode){ //Updates GPIO modes when changi
       gpio_reset_pin(gpio_num_t(brake_pin));
       gpio_set_direction(gpio_num_t(brake_pin), GPIO_MODE_OUTPUT); 
       //TODO: Insert commands to enable brake PWM
-      Serial.printf("Track %d configured to DC \n", trackID);
-      if (cabaddr < 0) {
-        Serial.printf("Track %c configured to DC but has no addresss and cannot be controlled. \n", trackID); 
-      }
+      Serial.printf("Track %c configured to DC with address %u \n", trackID, cabaddr);
     break;
   }
   #if BOARD_TYPE == DYNAMO //Dynamo reuses enable_in for DC select. This code isn't necessary on Arch Bridge
@@ -175,14 +173,16 @@ void TrackChannel::ModeChange (int8_t newmode){ //Updates GPIO modes when changi
       }
     }
   #endif
-  
-  powermode = newmode; //update powermode with new value
+  if (xSemaphoreTake(power_mutex, 100)){
+    powermode = newmode; //update powermode with new value
+    xSemaphoreGive(power_mutex); 
+  }
   return;
 }
 
 void TrackChannel::StateChange(int8_t newstate){
   int8_t power_rev = 0;
-//int8_t powerstate; //0 = off, 1 = on_forward, 2 = on_reverse - indicates overloaded 
+//int8_t powerstate; //<0 indicates overloaded, 0 = off, 1 = on_forward, 2 = on_reverse  
 //uint8_t powermode; //0 = none, 1 = DCC_external, 2 = DCC_override, 3 = DC, 4 = DCX.
   #if TRK_DEBUG == true
     Serial.printf("TrackChannel track %c State Change %i \n", trackID, newstate); 
@@ -237,16 +237,23 @@ void TrackChannel::StateChange(int8_t newstate){
   return;
 }
 
-void TrackChannel::adc_read() { //Check output current, change state to -int if overloaded. Turn back on if cooldown was reached. 
-  int32_t current = 0; 
-  //Serial.printf("TrackChannel adc_read \n");
-  //adc_one[adc_index].adc_read(&current, NULL, NULL, NULL);
+void TrackChannel::Status_Check() { 
+  int32_t current = 0;
+  int32_t overload = 0; 
+  adc_one[adc_index].adc_read(&current, NULL, NULL, &overload);
+  Overload_Check(current, overload); 
   return;
 }
 
-void TrackChannel::Overload_Check(int32_t current, int32_t overload){ //Check for overload/reset 
+void TrackChannel::Overload_Check(int32_t current, int32_t overload){ //Check for overload/reset
+  int8_t powerstate_change = 0;  
   if (xSemaphoreTake(power_mutex, 100)){
-    if ((powerstate > 0) && (powermode > 0)) { //Power should be on, enforce limit. 
+    if (powermode <= 0) { //Power mode set to off, no need to do anything.
+      xSemaphoreGive(power_mutex);
+      return; 
+    }
+    //Powermode always > 0 at this point. 
+    if (powerstate > 0) { //Power should be on, enforce limit. 
       if (current > overload) {
         if (TIME_US - overload_cooldown > (OL_COOLDOWN * 1000)) { //Only warn when it initially trips, not if it remains. 
           #if TRK_DEBUG == true
@@ -256,15 +263,25 @@ void TrackChannel::Overload_Check(int32_t current, int32_t overload){ //Check fo
           Serial.printf("ADC detected overload on %c at %i mA, threshold %i mA \n",trackID, (current / (adc_ticks_scale/1000)), (overload / (adc_ticks_scale / 1000)));
         }
       overload_cooldown = TIME_US;
+      gpio_set_level(enable_out_pin, 0); //Force enable_out_pin off.  
+      powerstate_change = powerstate * -1; //Set power state overload by making mode negative.
+      //xSemaphoreGive(power_mutex); 
+      StateChange(powerstate_change);  
+      //return; 
       }
-    StateChange(powerstate * -1); //Set power state overload by making mode negative. 
     } 
-    if ((powerstate < 0) && (powermode > 0)) { //Power should be on but was set off by overload. 
+    
+    if (powerstate < 0) { //Power should be on but was set off by overload. 
       if ((TIME_US - overload_cooldown) > (OL_COOLDOWN * 1000)){ 
-        StateChange(powerstate * -1); //Turn power on again by changing the mode back to positive.  
+        powerstate_change = powerstate * -1; //Set power state overload by making mode negative.
+        //xSemaphoreGive(power_mutex); 
+        StateChange(powerstate_change); //Turn power on again by changing the mode back to positive.
+        //return;  
       }
     }
     xSemaphoreGive(power_mutex);
+  } else {
+    Serial.printf("TRACKS: Overload_Check was skipped due to mutex timeout \n");
   }
   return; 
 }

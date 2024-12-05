@@ -142,11 +142,13 @@ void ADC_Handler::adc_sample(){
   int32_t adc_raw;  
   if (xSemaphoreTake(ticks_mutex, 1000)){ //Check if the channel is free, skip it if its not within 10 ticks
     previous_ticks = current_ticks; //store existing value
-    adc_raw = analogRead(gpio_pin);
+    adc_raw = analogRead(gpio_pin); 
     current_ticks = adc_raw * 1000 + offset_ticks + base_ticks; 
     smooth_ticks = ((smooth_ticks * 15) + current_ticks) / 16;
     //overload_check(current_ticks, overload_ticks); //Use callback to check for overload and take action to set/clear
     xSemaphoreGive(ticks_mutex); //Release the channel
+  } else {
+    Serial.printf("ADC sample skipped on gpio %u \n", gpio_pin); 
   }
   return; 
 }

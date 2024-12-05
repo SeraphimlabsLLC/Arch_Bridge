@@ -91,11 +91,11 @@ void loop_Task(void * pvParameters) {
 #endif
 dccex_loop(); //Process serial input for DCCEX commands
 Tracks_Loop(); //Process and update tracks
-dccrx_loop(); //Process and update DCC packets
+//dccrx_loop(); //Process and update DCC packets
 
 #if BOARD_TYPE == ARCH_BRIDGE //If this is an arch bridge, check the loconet
   
-  LN_loop(); //Process Loconet loop
+  //LN_loop(); //Process Loconet loop
   
 #endif 
 Heartbeat(HEARTBEAT_S);
