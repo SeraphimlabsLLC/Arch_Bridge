@@ -361,17 +361,17 @@ void DCCEX_Class::ddiag() { //Diagnostic mode features
 void DCCEX_Class::output_current(){
   uint8_t adc_index = 0; 
   uint8_t i = 0;
-  int32_t val = 0; 
+  int32_t smooth = 0; 
       for (i = 0; i < max_tracks; i++) {
         adc_index = DCCSigs[i].adc_index;
-        val = (adc_one[adc_index].smooth_ticks)/(DCCSigs[i].adc_ticks_scale / 1000); //scaled mA
-        Serial.printf("Track %c ADC analog value = %u milliamps, mode %u \n", DCCSigs[i].trackID, val, DCCSigs[i].powermode);
+        adc_one[adc_index].adc_read(NULL, NULL, &smooth, NULL); 
+        Serial.printf("Track %c ADC analog value = %u milliamps, mode %u \n", DCCSigs[i].trackID, smooth /(DCCSigs[i].adc_ticks_scale / 1000), DCCSigs[i].powermode); //smooth scaled to mA
       }
       #ifdef ESP32_LOCONET_H
 //    Include Railsync current monitor
      adc_index = Loconet.ln_adc_index; 
-     val = (adc_one[adc_index].smooth_ticks)/(Loconet.adc_ticks_scale); //scaled V
-     Serial.printf("Loconet Railsync drive %u volts \n", val);      
+     adc_one[adc_index].adc_read(NULL, NULL, &smooth, NULL); 
+     Serial.printf("Loconet Railsync drive %u mV, minimum 7000mV. \n", smooth / (Loconet.adc_ticks_scale)); //smooth scaled mV      
      #endif
   return; 
 }

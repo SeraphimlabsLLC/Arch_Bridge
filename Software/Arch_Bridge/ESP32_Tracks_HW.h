@@ -59,7 +59,7 @@ bool MasterEnable();
   #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 16938409, -65000, 3650000, 'C');
   #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 1693480, -65000, 3650000, 'D');
   #define MASTER_EN 3 //Is an Output Enable instead of an input
-  #define DIR_MONITOR 9 //GPIO9, railsync input. 
+  #define DIR_MONITOR 38 //GPIO38, railsync input. 
   //Arch_Bridge boards do not generate a DIR_OVERRIDE, but the TX RMT can be attached to individual track REV pins.  
 #endif
 
@@ -84,7 +84,11 @@ class TrackChannel {
     void StateChange(int8_t newstate);
     uint8_t CheckEnable(); //Reads en_in, sets en_out the same, and returns on or off. 
     void adc_read();
+    void Overload_Check(int32_t current, int32_t overload); //Check overload/reset
+
 
     private: 
+    SemaphoreHandle_t power_mutex; //mutex to protect powerstate. 
+    uint8_t overload_mode; //0 = current, 1 = volts
     uint64_t overload_cooldown; //time_us of overload last detected
 };

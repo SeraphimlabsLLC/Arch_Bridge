@@ -117,6 +117,7 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
       gpio_set_level(enable_in_pin, 1); //Default to DC mode ON so that a Railsync signal is not passed until set to a DCC mode. 
     } 
     #endif
+    power_mutex = xSemaphoreCreateMutex(); //Initialize power_mutex for use now that everything it protects is configured. 
 
     //Configure ADC
     adc_index = ADC_new_handle();
@@ -237,42 +238,61 @@ void TrackChannel::StateChange(int8_t newstate){
 }
 
 void TrackChannel::adc_read() { //Check output current, change state to -int if overloaded. Turn back on if cooldown was reached. 
-  adc_one[adc_index].adc_read(); 
-  if ((powerstate > 0) && (powermode > 0)) { //Power should be on, enforce limit. 
-    if (&adc_one[adc_index].current_ticks > &adc_one[adc_index].overload_ticks) {
-      //if (TIME_US - overload_cooldown > (OL_COOLDOWN * 1000)) { //Only warn when it initially trips, not if it remains. 
-        #if TRK_DEBUG == true
-        Serial.printf("ADC scale %u ticks * 1000 per A \n", adc_ticks_scale);
-        #endif 
-        Serial.printf("ADC detected overload on %c at %i mA, threshold %i mA \n",trackID, (adc_one[adc_index].current_ticks / (adc_ticks_scale/1000)), (adc_one[adc_index].overload_ticks / (adc_ticks_scale / 1000)));
-      //}
-       overload_cooldown = TIME_US;
-      StateChange(powerstate * -1); //Set power state overload by making mode negative. 
-    }
-  } 
-  if ((powerstate < 0) && (powermode > 0)) { //Power should be off. This isn't an else because we don't want it to happen on powerstate 0. 
-    if ((TIME_US - overload_cooldown) > (OL_COOLDOWN * 1000)){ 
-      StateChange(powerstate * -1); //Turn power on again by changing the mode back to positive.  
-    }
-    //Since power is off and we should be at 0, update base_ticks. 
-    adc_one[adc_index].base_ticks = 0 - adc_one[adc_index].current_ticks; 
-  }
+  int32_t current = 0; 
+  //Serial.printf("TrackChannel adc_read \n");
+  //adc_one[adc_index].adc_read(&current, NULL, NULL, NULL);
   return;
+}
+
+void TrackChannel::Overload_Check(int32_t current, int32_t overload){ //Check for overload/reset 
+  if (xSemaphoreTake(power_mutex, 100)){
+    if ((powerstate > 0) && (powermode > 0)) { //Power should be on, enforce limit. 
+      if (current > overload) {
+        if (TIME_US - overload_cooldown > (OL_COOLDOWN * 1000)) { //Only warn when it initially trips, not if it remains. 
+          #if TRK_DEBUG == true
+            Serial.printf("ADC scale %u ticks * 1000 per A \n", adc_ticks_scale);
+          #endif 
+          //adc_one[adc_index].adc_read(&current, NULL, NULL, &overload); //Function is already handed the values to use
+          Serial.printf("ADC detected overload on %c at %i mA, threshold %i mA \n",trackID, (current / (adc_ticks_scale/1000)), (overload / (adc_ticks_scale / 1000)));
+        }
+      overload_cooldown = TIME_US;
+      }
+    StateChange(powerstate * -1); //Set power state overload by making mode negative. 
+    } 
+    if ((powerstate < 0) && (powermode > 0)) { //Power should be on but was set off by overload. 
+      if ((TIME_US - overload_cooldown) > (OL_COOLDOWN * 1000)){ 
+        StateChange(powerstate * -1); //Turn power on again by changing the mode back to positive.  
+      }
+    }
+    xSemaphoreGive(power_mutex);
+  }
+  return; 
 }
 
 uint8_t TrackChannel::CheckEnable(){ //Verify power mode and state, then set enable. Arch_Bridge devices also read enable_in_pin
   uint8_t enable_in = 1; //default value for enable in
-  #if BOARD_TYPE == ARCH_BRIDGE //Enable In pin is only used on Arch Bridge
-    if ((enable_in_pin > 0) && (powermode == 1)){ //If enable_in_pin is configured and powermode = DCC EXT, read and update enable_in_pin
-      enable_in = enable_in & gpio_get_level(enable_in_pin);
-      //Serial.printf("DCC: Enable In is %u \n", enable_in);
+//  Serial.printf("CheckEnable semaphore take \n");
+//  if (xSemaphoreTake(power_mutex, 100)){
+    #if BOARD_TYPE == ARCH_BRIDGE //Enable In pin is only used on Arch Bridge
+      if ((enable_in_pin > 0) && (powermode == 1)){ //If enable_in_pin is configured and powermode = DCC EXT, read and update enable_in_pin
+        enable_in = enable_in & gpio_get_level(enable_in_pin);
+        //Serial.printf("DCC: Enable In is %u \n", enable_in);
+      }
+    #endif
+    if ((powerstate <= 0) || (powermode <= 0)){ 
+      //Always turn enable_out off if state is overloaded or off or powermode is off. 
+      enable_in = 0;   
     }
-  #endif
-  if ((powerstate <= 0) || (powermode <= 0)){ 
-    //Always turn enable_out off if state is overloaded or off or powemode is off. 
-    enable_in = 0;   
+//  }
+  gpio_set_level(enable_out_pin, enable_in); //Actually set the output pin. 
+  if (enable_in = 0) { //Since power is off and we should be at 0, update base_ticks. 
+    int32_t current = 0; 
+    Serial.printf("CheckEnable adc read to set zero \n");
+    adc_one[adc_index].adc_read(&current, NULL, NULL, NULL);
+    if (current != 0) { //Current wasn't at 0 when off, update base_ticks
+      adc_one[adc_index].adc_zero_set(current); 
+    }
   }
-    gpio_set_level(enable_out_pin, enable_in); 
   return enable_in;
 }
 

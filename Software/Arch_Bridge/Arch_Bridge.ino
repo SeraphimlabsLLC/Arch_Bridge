@@ -39,6 +39,7 @@
 
 //extern TrackChannel DCCSigs[];
 //extern Rmtdcc dcc; 
+TaskHandle_t loop_task;
 
 volatile uint64_t edge_last;
 volatile uint32_t edge_delta;
@@ -76,10 +77,18 @@ void setup() {
   #endif
   ADC_Setup_Commit(); //Run last in setup() to commit the ADC config built up by everything else and start the sampler
   Serial.print("Setup Complete \n");  
+   xTaskCreatePinnedToCore(loop_Task, "loopTask", 10000, NULL, 1, &loop_task, 1); 
 }
 
-void loop() {  
-ADC_loop(); //Process ADC data
+void loop() { 
+
+}
+
+void loop_Task(void * pvParameters) {
+  while (true) {
+#if ADC_TASK != TRUE
+//  ADC_loop(); //Process ADC data
+#endif
 dccex_loop(); //Process serial input for DCCEX commands
 Tracks_Loop(); //Process and update tracks
 dccrx_loop(); //Process and update DCC packets
@@ -90,4 +99,5 @@ dccrx_loop(); //Process and update DCC packets
   
 #endif 
 Heartbeat(HEARTBEAT_S);
+  }
 }
