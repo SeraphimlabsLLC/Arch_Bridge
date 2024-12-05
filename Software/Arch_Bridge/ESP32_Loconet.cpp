@@ -91,9 +91,9 @@ void LN_Class::loop_process(){
     }
   }
 
-  if (line_flags && 0x02) { //Receive break flag was set by ISR. 
-    receive_break(); 
-    line_flags = line_flags & ~0x02; //Unset receive break flag
+  if (line_flags && 0x02) { //Receive break flag was set by ISR.
+    //Serial.printf("Loconet: Break from ISR \n");
+    //receive_break(); 
   }
 
   if (LN_break_sent == true) { //Is this even needed anymore?
@@ -671,12 +671,14 @@ void IRAM_ATTR LN_CD_isr(){
  uint8_t i = 0; 
   if (Loconet.line_flags && 0x01) { //Transmitter should be active, watch for bitwise collision
     if ((gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin)) == 1) && (gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin)) == 0)) {
-      Loconet.transmit_break(); 
-      Loconet.line_flags = Loconet.line_flags & ~0x01; //Unset bit 1 to indicate that transmission ended
+      //Loconet.transmit_break(); 
+      //Loconet.line_flags = Loconet.line_flags & ~0x01; //Unset bit 1 to indicate that transmission ended
     }    
   }
   if ((TIME_US - LN_cd_edge) > 850){ //Received a 0 longer than 850uS, assume its an RX break
-    Loconet.line_flags = Loconet.line_flags | 0x02; //Set bit 2 to indicate break was received. 
+    if (!(Loconet.line_flags && 0x04)) { //We are not transmitting break
+      //Loconet.line_flags = Loconet.line_flags | 0x02; //Set bit 2 to indicate break was received from some other source.
+    }
   }
   
   LN_cd_edge = TIME_US;  
@@ -688,6 +690,8 @@ void IRAM_ATTR LN_gptimer_alarm(){//When triggered, check the source and act acc
       Loconet.LN_port.uart_invert(false, false); //Reset TX
       LN_cd_edge = TIME_US; //Record time in case ISR doesn't
       LN_break_sent = true; 
+      Loconet.line_flags = Loconet.line_flags & ~0x04; //clear bit 4 to indicate transmit break completion.
+      Serial.printf("Loconet: TX Break complete \n");
       return;
     }
 /*    if (owner == 2) { //Listening for clear line
@@ -709,9 +713,10 @@ void IRAM_ATTR LN_gptimer_alarm(){//When triggered, check the source and act acc
 void IRAM_ATTR LN_Class::transmit_break(){
   //Write 15 bits low for BREAK on collision detection.  
   //Serial.printf("Loconet: Inverting Uart TX pin \n"); 
-  LN_port.uart_invert(true, false); //Invert TX to transmit Loconet BREAK 
+  Loconet.line_flags = Loconet.line_flags | 0x04; //set bit 3 to indicate break transmitting
+  //LN_port.uart_invert(true, false); //Invert TX to transmit Loconet BREAK 
   LN_cd_edge = TIME_US; //Record time in case ISR doesn't
-  LN_gptimer.alarm_set(900 - GPTIMERLAG, 3);//15 bit at 60us per bit. Owner tag 3. 
+  //LN_gptimer.alarm_set(900 - GPTIMERLAG, 3);//15 bit at 60us per bit. Owner tag 3. 
   //Serial.printf("Loconet: Collision! BREAK set \n"); 
   return;
 }
@@ -719,7 +724,8 @@ void IRAM_ATTR LN_Class::transmit_break(){
 void LN_Class::receive_break(){ //Possible BREAK input at ptr. 
   LN_port.rx_flush();
   LN_port.tx_flush();
-  Serial.printf("Loconet: Received Break Input\n"); 
+  line_flags = line_flags & ~0x02; //Unset receive break flag
+  //Serial.printf("Loconet: Received Break Input\n"); 
   return;
 }
 

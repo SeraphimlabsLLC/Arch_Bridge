@@ -126,7 +126,7 @@ class LN_Class {
   void LN_set_mode(LN_hostmode newmode); //Set current Loconet access mode
   LN_hostmode LN_get_mode(); //Return current Loconet access mode
   uint64_t signal_time; //time of last netstate change
-  volatile uint8_t line_flags; //bit 1 = sending, bit 2 = break received
+  volatile uint8_t line_flags; //bit 1 = sending, bit 2 = break received, bit 3 = break transmitting
 //  uint64_t rx_last_us; //time in startup us of last byte received  
   uint8_t tx_pkt_len; //length of last tx packet
  
