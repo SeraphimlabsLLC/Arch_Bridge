@@ -74,7 +74,9 @@ void ADC_loop(){
         //Serial.printf("ADC startpos %i of %i bytes\n", startpos, adc_readlen); 
       } 
       for (i = startpos; i < adc_readlen; (i = i + SOC_ADC_DIGI_RESULT_BYTES)) {
-      adc_digi_output_data_t *adc_raw = (adc_digi_output_data_t*)&adc_raw_bytes[i]; //Converts the raw bytes to ADC data struct  
+        //Refer to this for what the line below is supposed to do: https://esp32.com/viewtopic.php?t=29555
+        adc_digi_output_data_t *adc_raw = (void*)&adc_raw_bytes[i]; //Converts the raw bytes to ADC data struct  
+      //adc_digi_output_data_t *adc_raw = (adc_digi_output_data_t*)&adc_raw_bytes[i]; //Converts the raw bytes to ADC data struct  
       
       channel = adc_raw->type2.channel; 
       adc_data = adc_raw->val & 0x0FFF; 
