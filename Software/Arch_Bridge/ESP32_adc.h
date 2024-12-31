@@ -34,20 +34,24 @@
 
 #define ADC_READSIZE 128
 #define ADC_TASK true
+#define ADC_DRIVER esp_cont //Arduino or eap_cont to choose which api is used
 
 
 
 class ADC_Handler {
     public:   
     uint8_t adc_channel_config(uint8_t adc_handle, uint8_t adc_ch, int16_t offset, int32_t adc_ol_trip); 
-    void adc_sample(); //Sample the voltage and update the values
+    void adc_sample(); //Sample the ADC using the Arduino IDE api
+    void adc_save_sample(int32_t sample); //Save the provided sample
     void adc_read(int32_t* current, int32_t* previous, int32_t* smooth, int32_t* overload); //returns the stored values
     void adc_zero_set(int32_t current); //Adjusts base_ticks so that current_ticks would be zero
     void adc_loop();
     uint8_t adc_show_slot(); //returns current handler index
+    uint8_t get_gpio(); //returns gpio number set by adc_channel_config
 
     private: 
-    SemaphoreHandle_t ticks_mutex; //mutex to protect outputs
+    SemaphoreHandle_t ticks_mutex; //mutex to protect output
+    StaticSemaphore_t ticks_mutex_buffer; //memory allocation for mutex
     int32_t current_ticks; //value read on most recent scan
     int32_t previous_ticks; //value read on prior scan
     int32_t smooth_ticks; // =(adc_smooth_ticks * 15 + adc_current_ticks) / 16
@@ -64,6 +68,8 @@ class ADC_Handler {
 uint8_t ADC_new_handle(); //Returns what the next available ADC slot is
 void ADC_Setup_Commit(); //Configure ADC unit 1 for 12 bits + all configured channels
 void ADC_loop(); //ADC polling loop
+
+void ADC_Continuous_Parser(uint32_t samples);// Sample processing loop
 void adc_task(void * pvParameters); //ADC Task
 void IRAM_ATTR ADC_Ready_ISR(); //Conversion complete ISR callback
 void IRAM_ATTR ADC_Full_ISR(); //ADC memory full. Flush it. 
