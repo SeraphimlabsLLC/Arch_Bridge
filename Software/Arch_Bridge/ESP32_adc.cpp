@@ -210,7 +210,7 @@ ESP_ERROR_CHECK(adc_continuous_new_handle(&adc_unit_one_config, &adc_unit_one));
   Serial.printf("ADC1: adc_active_count %i \n", adc_active_count);
   adc_continuous_config_t adc1_channel_config = {
     .pattern_num = adc_active_count,
-    .sample_freq_hz = 10000, //83KHz max
+    .sample_freq_hz = 30000, //83KHz max
     .conv_mode = ADC_CONV_SINGLE_UNIT_1,
     .format = ADC_DIGI_OUTPUT_FORMAT_TYPE2,
   };
