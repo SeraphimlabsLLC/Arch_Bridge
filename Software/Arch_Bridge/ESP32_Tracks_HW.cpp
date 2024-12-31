@@ -117,10 +117,9 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
 
     //Configure ADC
     adc_index = ADC_new_handle();
-    adc_one[adc_index].adc_channel_config(adc_index, adcpin, adcoffset, adc_ol_trip); //Reserve ADC handle
+    adc_one[adc_index].adc_channel_config(adcpin, adcoffset, adc_ol_trip); //Reserve ADC handle
     adc_ticks_scale = adcscale;
     ModeChange(0); //set power mode none, which will also set power state off.
-    //adc_read(); //actually read the ADC
     return;
 }
 
@@ -247,38 +246,35 @@ void TrackChannel::Status_Check() {
 
 void TrackChannel::Overload_Check(int32_t current, int32_t overload){ //Check for overload/reset
   int8_t powerstate_change = 0;  
-  if (xSemaphoreTake(power_mutex, 100)){
-    if (powermode <= 0) { //Power mode set to off, no need to do anything.
+  
+  if (xSemaphoreTake(power_mutex, 10000)){
+    if (powermode == 0) { //Power mode set to off, no need to do anything.
       xSemaphoreGive(power_mutex);
       return; 
     }
-    //Powermode always > 0 at this point. 
     if (powerstate > 0) { //Power should be on, enforce limit. 
       if (current > overload) {
-        if (TIME_US - overload_cooldown > (OL_COOLDOWN * 1000)) { //Only warn when it initially trips, not if it remains. 
-          #if TRK_DEBUG == true
-            Serial.printf("ADC scale %u ticks * 1000 per A \n", adc_ticks_scale);
-          #endif 
-          //adc_one[adc_index].adc_read(&current, NULL, NULL, &overload); //Function is already handed the values to use
-          Serial.printf("ADC detected overload on %c at %i mA, threshold %i mA \n",trackID, (current / (adc_ticks_scale/1000)), (overload / (adc_ticks_scale / 1000)));
-        }
-      overload_cooldown = TIME_US;
-      gpio_set_level(enable_out_pin, 0); //Force enable_out_pin off.  
-      powerstate_change = powerstate * -1; //Set power state overload by making mode negative.
-      //xSemaphoreGive(power_mutex); 
-      StateChange(powerstate_change);  
-      //return; 
-      }
-    } 
-    
-    if (powerstate < 0) { //Power should be on but was set off by overload. 
-      if ((TIME_US - overload_cooldown) > (OL_COOLDOWN * 1000)){ 
+        Serial.printf("ADC detected overload on %c at %i mA, threshold %i mA \n",trackID, (current / adc_ticks_scale), (overload / adc_ticks_scale));
+        overload_cooldown = TIME_US;
+        gpio_set_level(enable_out_pin, 0); //Force enable_out_pin off.  
         powerstate_change = powerstate * -1; //Set power state overload by making mode negative.
         //xSemaphoreGive(power_mutex); 
-        StateChange(powerstate_change); //Turn power on again by changing the mode back to positive.
-        //return;  
+        StateChange(powerstate_change);  
+        //return; 
       }
     }
+    if (powermode < 0) { //Overload recovery
+      if (TIME_US - overload_cooldown > (OL_COOLDOWN * 1000)) { //Only warn when it initially trips, not if it remains. 
+        #if TRK_DEBUG == true
+          Serial.printf("ADC scale %u ticks * 1000 per A \n", adc_ticks_scale);
+        #endif 
+        //adc_one[adc_index].adc_read(&current, NULL, NULL, &overload); //Function is already handed the values to use
+        if (current < overload) {
+          powerstate_change = powerstate * -1; //Set power state normal again.
+          StateChange(powerstate_change);  
+        }
+      }
+    } 
     xSemaphoreGive(power_mutex);
   } else {
     Serial.printf("TRACKS: Overload_Check was skipped due to mutex timeout \n");
@@ -307,7 +303,7 @@ uint8_t TrackChannel::CheckEnable(){ //Verify power mode and state, then set ena
     Serial.printf("CheckEnable adc read to set zero \n");
     adc_one[adc_index].adc_read(&current, NULL, NULL, NULL);
     if (current != 0) { //Current wasn't at 0 when off, update base_ticks
-      adc_one[adc_index].adc_zero_set(current); 
+      adc_one[adc_index].adc_zero_set(); 
     }
   }
   return enable_in;

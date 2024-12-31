@@ -42,7 +42,7 @@ void LN_init(){//Initialize Loconet objects
   Loconet.LN_set_mode(LN_HOSTMODE); //set default host mode
   Loconet.ln_adc_index = ADC_new_handle();
   Serial.printf("Loconet railsync adc handle %i \n", Loconet.ln_adc_index); 
-  adc_one[Loconet.ln_adc_index].adc_channel_config(Loconet.ln_adc_index, LN_ADC_GPIO, LN_ADC_OFFSET, LN_ADC_OL); //Reserve ADC handle
+  adc_one[Loconet.ln_adc_index].adc_channel_config(LN_ADC_GPIO, LN_ADC_OFFSET, LN_ADC_OL); //Reserve ADC handle
   Loconet.adc_ticks_scale = LN_ADC_SCALE; //ADC ticks to volts, instead of mA. 
   return;
 }

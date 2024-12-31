@@ -150,11 +150,18 @@ void DCCEX_Class::rx_decode(){
 
     case 'c': //Display currents
       output_current(); //display output currents
+      if (data_pkt[2] == '0') {
+        Serial.printf("DCCEX: Zeroing ADC readings \n");
+        for (i = 0; i < max_tracks; i++) {
+          uint8_t adc_index = DCCSigs[i].adc_index;
+          adc_one[adc_index].adc_zero_set(); 
+        }
+      }        
       break; 
 
     case 'i': //DCC-EX version string.
       Serial.printf(BOARD_ID);
-      break; 
+      break;   
 
     case 'p': //power manager. <p0 C> and <p1 C> typical examples
       for (i = 0; i < max_tracks; i++) {
@@ -365,17 +372,22 @@ void DCCEX_Class::ddiag() { //Diagnostic mode features
 void DCCEX_Class::output_current(){
   uint8_t adc_index = 0; 
   uint8_t i = 0;
-  int32_t smooth = 0; 
+  int32_t reading = 0; 
+  int32_t overload = 0; 
       for (i = 0; i < max_tracks; i++) {
         adc_index = DCCSigs[i].adc_index;
-        adc_one[adc_index].adc_read(NULL, NULL, &smooth, NULL); 
-        Serial.printf("Track %c ADC analog value = %u milliamps\n", DCCSigs[i].trackID, smooth /(DCCSigs[i].adc_ticks_scale / 1000)); //smooth scaled to mA
+        //adc_one[adc_index].print_flag(true);
+        adc_one[adc_index].adc_read(&reading, NULL, NULL, &overload); 
+        Serial.printf("Track %c ADC analog value = %u milliamps \n", DCCSigs[i].trackID, reading /DCCSigs[i].adc_ticks_scale); //smooth scaled to mA
+        //Serial.printf("Track %c ADC analog value = %u milliamps, max %d milliamps, raw %i \n", DCCSigs[i].trackID, reading /DCCSigs[i].adc_ticks_scale, overload /DCCSigs[i].adc_ticks_scale, reading); //smooth scaled to mA
       }
       #ifdef ESP32_LOCONET_H
-//    Include Railsync current monitor
+//    Include Railsync voltage monitor
      adc_index = Loconet.ln_adc_index; 
-     adc_one[adc_index].adc_read(NULL, NULL, &smooth, NULL); 
-     Serial.printf("Loconet Railsync drive %u mV, minimum 7000mV. \n", smooth / (Loconet.adc_ticks_scale)); //smooth scaled mV      
+     //adc_one[adc_index].print_flag(true);
+     adc_one[adc_index].adc_read(&reading, NULL, NULL, NULL); 
+     Serial.printf("Loconet Railsync drive %u mV, minimum 7000mV. \n", reading / Loconet.adc_ticks_scale); //smooth scaled mV 
+     //Serial.printf("Loconet Railsync drive %u mV, minimum 7000mV. raw %i \n", reading / Loconet.adc_ticks_scale, reading); //smooth scaled mV      
      #endif
   return; 
 }

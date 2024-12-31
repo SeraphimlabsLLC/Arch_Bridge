@@ -56,8 +56,8 @@ bool MasterEnable();
 #if BOARD_TYPE == ARCH_BRIDGE
  // #pragma message "Building as Arch Bridge"
   #define MAX_TRACKS 2
-  #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 16938409, -65000, 3650000, 'C');
-  #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 1693480, -65000, 3650000, 'D');
+  #define TRACK_1 DCCSigs[0].SetupHW(10, 13, 11, 12, 1, 16938, 0, 3650000, 'C'); //16938409
+  #define TRACK_2 DCCSigs[1].SetupHW(14, 48, 21,  47, 2, 1694, 0, 3650000, 'D');
   #define MASTER_EN 3 //Is an Output Enable instead of an input
   #define DIR_MONITOR 38 //GPIO38, railsync input. 
   //Arch_Bridge boards do not generate a DIR_OVERRIDE, but the TX RMT can be attached to individual track REV pins.  

@@ -40,28 +40,30 @@
 
 class ADC_Handler {
     public:   
-    uint8_t adc_channel_config(uint8_t adc_handle, uint8_t adc_ch, int16_t offset, int32_t adc_ol_trip); 
+    void adc_channel_config(uint8_t adc_ch, int16_t offset, int32_t adc_ol_trip); 
     void adc_sample(); //Sample the ADC using the Arduino IDE api
     void adc_save_sample(int32_t sample); //Save the provided sample
     void adc_read(int32_t* current, int32_t* previous, int32_t* smooth, int32_t* overload); //returns the stored values
-    void adc_zero_set(int32_t current); //Adjusts base_ticks so that current_ticks would be zero
+    void adc_zero_set(); //Adjusts base_ticks so that current_ticks would be zero
     void adc_loop();
     uint8_t adc_show_slot(); //returns current handler index
     uint8_t get_gpio(); //returns gpio number set by adc_channel_config
 
+    void print_flag(bool state); //true to print current sample
+    volatile bool print_flag_var; //true to print current sample
+
     private: 
     SemaphoreHandle_t ticks_mutex; //mutex to protect output
     StaticSemaphore_t ticks_mutex_buffer; //memory allocation for mutex
-    int32_t current_ticks; //value read on most recent scan
-    int32_t previous_ticks; //value read on prior scan
-    int32_t smooth_ticks; // =(adc_smooth_ticks * 15 + adc_current_ticks) / 16
+    volatile int32_t current_ticks; //value read on most recent scan
+    volatile int32_t previous_ticks; //value read on prior scan
+    volatile int32_t smooth_ticks; // =(adc_smooth_ticks * 15 + adc_current_ticks) / 16
     int32_t base_ticks; //value read from ADC when output is off for calc reference.
     int32_t offset_ticks; //ADC offset in ticks * 1000. 
     int32_t overload_ticks; //Pre-calculate trip threshold in adc ticks
-    uint8_t assigned_slot; //Index of current and overload ticks for the values we want.  
-//    uint8_t hw_channel; //Hardware channel used
-    uint8_t gpio_pin; //GPIO pins used
+    uint8_t gpio_pin; //GPIO pin used
     std::function<void(int32_t, int32_t)> overload_check; //store overload check callback
+
 
 };
 
