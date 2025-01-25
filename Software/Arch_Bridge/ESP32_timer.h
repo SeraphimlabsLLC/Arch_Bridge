@@ -52,13 +52,15 @@ class ESP_gptimer {
     uint8_t gptimer_init(); 
     uint64_t gptimer_read(); //Get current value from the gptimer
     void gptimer_set(uint64_t newcount); //set gptimer count
-    void IRAM_ATTR alarm_set(uint32_t count, uint8_t owner);
-    uint32_t alarm_value(); //returns alarm value currently set
+    void IRAM_ATTR alarm_set(uint64_t count, uint8_t owner); //Sets the alarm with a count of 0.
+    void IRAM_ATTR alarm_change(uint64_t count, uint8_t owner); //changes the setpoint without touching the count, updated when the ISR callback returns. Give it time to do so. 
+    uint64_t alarm_value(); //returns alarm value currently set
     uint8_t IRAM_ATTR alarm_owner(); //read value of alarm owner
     bool alarm_is_set(); //returns true if alarm is set
     
   private:
   gptimer_handle_t gptimer = NULL; //Holder for hardware handle
+  bool is_active; //true if the timer is running
   volatile uint8_t alarm_owner_v; //alarm owner value
   volatile bool alarm_counting; //true if alarm is set
   volatile uint32_t alarm_set_value; //Value set in alarm

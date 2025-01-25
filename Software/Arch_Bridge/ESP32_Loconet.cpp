@@ -1,4 +1,4 @@
-/*   IMPORTANT:
+/*   IMPORTANT:nge
  *  Some of the message formats used in this code are Copyright Digitrax, Inc.
  */
 #ifndef ESP32_LOCONET_H
@@ -25,8 +25,10 @@
 
 ESP_Uart LN_port; //Loconet uart object
 LN_Class Loconet; //Loconet processing object
+TaskHandle_t LNtask; //Loconet task object
+
 volatile uint64_t LN_cd_edge = 0; //time_us of last edge received. 
-volatile bool LN_break_sent = false; 
+
 
 //extern DCCEX_Class dccex_port;
 extern uint64_t time_us;
@@ -44,67 +46,85 @@ void LN_init(){//Initialize Loconet objects
   Serial.printf("Loconet railsync adc handle %i \n", Loconet.ln_adc_index); 
   adc_one[Loconet.ln_adc_index].adc_channel_config(LN_ADC_GPIO, LN_ADC_OFFSET, LN_ADC_OL); //Reserve ADC handle
   Loconet.adc_ticks_scale = LN_ADC_SCALE; //ADC ticks to volts, instead of mA. 
+  LN_gptimer.alarm_set(-1, 1);//alarm set to where it would take an absurd amount of time to trip. The first edge interrupt to make rx_pin = 1 will lower it. 
+  Loconet.line_flags = 0;
+  attachInterrupt(Loconet.LN_port.rx_pin, LN_CD_isr, CHANGE); //Attach the pcint used for CD
+  xTaskCreatePinnedToCore(LN_task, "lntask", 20000, NULL, 2, &LNtask, 1); 
   return;
 }
 
 void LN_loop(){//reflector into LN_Class::loop_Process()
-  Loconet.loop_process(); //Process and update Loconet
+  //Loconet.loop_process(); //Process and update Loconet
+  return; 
+}
+
+void LN_task(void * pvParameters){
+  while (true){
+    Loconet.loop_process(); //Process and update Loconet
+  } //while
   return; 
 }
 
 void LN_Class::loop_process(){
-//  if (!((time_us - LN_loop_timer) > (LN_LOOP_DELAY_US))) { //Only scan at the interval specified in ESP32_Loconet.h
-//    return; 
-//  }
-//  LN_loop_timer = time_us; //Update last loop time
-//  uint8_t i = 0;
- 
-  if ((gpio_get_level(LN_port.rx_pin) == 1) && ((netstate == startup) || (netstate == disconnected))){
-    //During startup interval, read the uart to keep it clear but don't process it. 
-     uart_rx();
-     LN_port.rx_read_processed = 255; //Mark as fully processed so it gets discarded.
-    if (((TIME_US - signal_time) > 250000)) { 
-      signal_time = TIME_US; 
-      receive_break(); 
-      line_flags = 0; //Initialize line flags to 0
-      LN_break_sent = false; 
-      Serial.printf("Loconet start \n");
-      attachInterrupt(Loconet.LN_port.rx_pin, LN_CD_isr, CHANGE); //Attach the pcint used for CD     
-      netstate = active;
-    }
-    return;
+  uint32_t notifications = 0; 
+  xTaskNotifyWait(0, 0xffffffff, &notifications, 1000); //blocks until a notification is pending, copies into notifications and clears
+  if (notifications > 0) {
+    Serial.printf("Loconet loop process notification %lu, line_flags %lu\n", notifications, line_flags);
   }
   
-  //Check for loss of master connection. Will reset the link if rx_pin is 0 and has not changed in 100mS. 
-  if (gpio_get_level(LN_port.rx_pin) == 0) {
-    if (TIME_US - signal_time > 100000) {
-      if (netstate != disconnected) { 
-        netstate = disconnected;
-        detachInterrupt(Loconet.LN_port.rx_pin); //Turn off ISR 
-        Serial.printf("Loconet lost connection to master. Resetting link state. \n"); 
-      }
-      return; 
-    }
-  } else { //Network is up and line is 1, update signal_time
-    if (netstate == active) {
-      signal_time = TIME_US; 
-    }
+  if (notifications & LN_lineflags::link_disc) { //disconnect detected. 
+    line_flags = line_flags & ~(LN_lineflags::link_active); //unset link_active
+    Serial.printf("Loconet lost connection to network \n");
   }
 
-  if (line_flags && 0x02) { //Receive break flag was set by ISR.
-    //Serial.printf("Loconet: Break from ISR \n");
-    //receive_break(); 
+  if (notifications & LN_lineflags::link_active) { //Been at least 250mS since a 1 was detected, try to connect.
+    Serial.printf("Loconet: connected to network \n");  
+    line_flags = line_flags | LN_lineflags::link_active; //set link_active
+    line_flags = line_flags & ~(LN_lineflags::link_disc); //Unset link_disconected
+    uart_rx(); //read data from buffer
+    LN_port.rx_read_processed = 255; //discard read data 
+    rx_pending = -1; 
+    tx_pending = -1; 
+  } 
+
+  if (!(line_flags & LN_lineflags::link_active)) { 
+    //network is not up, clear buffers and return. 
+    uart_rx(); //read data from buffer
+    LN_port.rx_read_processed = 255; //discard read data 
+    //Loconet starter
+    if ((!(line_flags & LN_lineflags::link_disc)) && (gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin)) == 1)) {
+      Serial.printf("Loconet: loop starting gptimer \n");
+      LN_gptimer.alarm_set(250000, 1); //Sets the alarm with an initial count of 0. 
+      Loconet.line_flags = Loconet.line_flags | LN_lineflags::link_disc; //reuse link_disc for the restart timer    
+    } 
+    return; 
   }
 
-  if (LN_break_sent == true) { //Is this even needed anymore?
-    LN_break_sent = false; 
+  if ((notifications & LN_lineflags::rx_brk) || (line_flags & LN_lineflags::rx_brk))  { //RX Break was set. 
+    if (line_flags & LN_lineflags::rx_brk) {
+      line_flags = line_flags & ~(LN_lineflags::rx_brk); //Unset rx_break
+      Serial.printf("Loconet: RX Break from ISR \n");
+      //receive_break(); 
+    }
   }
-    
-  //Network should be ok to interact with: 
+  if ((notifications & LN_lineflags::tx_brk) || (line_flags & LN_lineflags::tx_brk)) { //TX Break was set.
+    if (line_flags & LN_lineflags::tx_brk) {
+      line_flags = line_flags & ~(LN_lineflags::tx_brk); //Unset tx_brk
+      Serial.printf("Loconet: TX Break complete \n");
+    }
+  }
+  if (notifications & LN_lineflags::rx_recv) { //RX Data
+  }
+  if (notifications & LN_lineflags::tx_snd) { //TX Data
+    if (tx_pending > 0) {//pending packet, try to send it
+      tx_send(tx_pending);
+    }
+  } 
+
   uart_rx(); //Read uart data into the RX ring
   rx_scan(); //Scan RX ring for an opcode
+  //Network is up but no notifications were received. Process the queues. 
   rx_queue(); //Process queued RX packets and run rx_decode
-  //Serial.printf("Loconet tx_queue cycle: \n");
   tx_queue(); //Try to send any queued packets
   slot_queue(); //Clean up stale slots
   #if FCLK_ENABLE == true //Only include the poller if the fastclock should be enabled. If false, the clock won't broadcast. 
@@ -116,10 +136,49 @@ void LN_Class::loop_process(){
       slot_read(123); //Broadcast Fast clock
     } 
   }
-#endif 
+  #endif 
   //Serial.printf("Loconet loop complete \n");
   return;
 } 
+
+/*void LN_Class::network_startup(){
+  uint64_t gptimer_count = LN_gptimer.gptimer_read(); //Get gptimer count since last edge
+  Serial.printf("Loconet network status gptimer_count %lu \n", gptimer_count);
+
+  //Initial startup. 
+  if ((gpio_get_level(LN_port.rx_pin) == 1) && (((line_flags & LN_lineflags::link_disc) == 0))){
+    if (gptimer_count >= 250000) {
+//    if (((TIME_US - signal_time) > 250000)) { 
+      signal_time = TIME_US; 
+      line_flags = line_flags | LN_lineflags::link_disc; //signal ok
+      #if LN_DEBUG == true
+        Serial.printf("Loconet master detected \n");
+      #endif
+    } 
+    return;
+  }
+  //Activate connection if port is enabled and link is up. 
+  if (gpio_get_level(LN_port.rx_pin) == 1) {
+    if ((gptimer_count >= 100000) && (((line_flags & LN_lineflags::link_disc) == 1))) {
+      if ((line_flags & LN_lineflags::link_active) == 1) {
+        line_flags = line_flags | LN_lineflags::link_active; //set to link active  
+      }  
+    }
+  }
+  //Check for loss of master connection. Will reset the link if rx_pin is 0 and has not changed in 100mS. 
+  if (gpio_get_level(LN_port.rx_pin) == 0) {
+    if (gptimer_count >= 100000) {
+//    if (TIME_US - signal_time > 100000) {
+      if (line_flags & LN_lineflags::link_active) {
+        line_flags = line_flags & ~LN_lineflags::link_active; //set to disconnected
+        //detachInterrupt(Loconet.LN_port.rx_pin); //Turn off ISR 
+        Serial.printf("Loconet lost connection to master. Resetting link state. \n"); 
+      }
+      return; 
+    }
+  }
+  return; 
+} */
 
 uint8_t LN_Class::uart_rx(){
   uint8_t read_size = 0;
@@ -131,13 +190,6 @@ uint8_t LN_Class::uart_rx(){
   LN_port.rx_read_data[i] = 0; 
   read_size = LN_port.uart_read(read_size); //populate rx_read_data and rx_data
   LN_port.rx_flush(); //Clear the uart after reading. 
-/*  if (read_size > 0){ //Data was actually moved
-    Serial.printf("uart_rx has bytes in rx_read_data: ");
-    for (i = 0; i < read_size; i++) {
-      Serial.printf("%x ", LN_port.rx_read_data[i]);
-    }
-    Serial.printf("\n");  
-  } */
   LN_port.rx_read_len = read_size; //Just to be sure it is correct. 
   return read_size;
 }
@@ -202,6 +254,9 @@ void LN_Class::rx_scan(){ //Scan received data for a valid frame
     }
     //Serial.printf("RX_Scan full packet %u with size %u has bytes %u \n", rx_pending, rx_packets[rx_pending]->data_len, rx_packets[rx_pending]->rx_count);
     //Packet is the length it should be. 
+    #if LN_DEBUG == true
+      show_rx_packet(rx_pending);
+    #endif
 
 //TX Loopback processing: 
     if (tx_pending > -1) { //rx_pending must be > -1 at this point. && (rx_pending > -1)) { 
@@ -230,7 +285,7 @@ void LN_Class::rx_scan(){ //Scan received data for a valid frame
   LN_port.rx_read_len = 0;  
   //Serial.printf("RX_Scan Complete \n");
   return; 
-}  
+} //::rx_scan()  
 
 void LN_Class::rx_queue(){ //Loop through the RX queue and process all packets in it. 
   uint8_t i = 0;
@@ -299,7 +354,7 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
   uint8_t i = 0;
   int8_t slotnum= -1; //Used for slot processing. 
   rx_packets[rx_pkt]->state = 5;
-  show_rx_packet(rx_pkt); //display packet for debug
+  //show_rx_packet(rx_pkt); //display packet for debug
   switch (opcode) {
     
     //2 byte opcodes:
@@ -397,10 +452,10 @@ int8_t LN_Class::rx_decode(uint8_t rx_pkt){  //Opcode was found. Lets use it.
       slotnum = rx_packets[rx_pkt]->data_ptr[1];
       #if LN_DEBUG == true
         Serial.printf("Throttle requesting slot %u data \n", slotnum);
-      #endif
       if (slotnum > 120) {
         show_rx_packet(rx_pkt); 
       }
+      #endif
       slot_read(slotnum); //Read slot data out to Loconet  
       break; 
     case 0xBC: //REQ state of SWITCH. LACK response 7F for ok. 
@@ -587,29 +642,39 @@ void LN_Class::tx_send(uint8_t txptr){
   
   //if ((time_us - rx_last_us) > (LN_BITLENGTH_US * (tx_packets[txptr]->priority + LN_COL_BACKOFF))) {
   //Use LN_cd_time from the ISR instead of rx_last_us because of the rx buffer uncertainty
-  if ((TIME_US - LN_cd_edge) > (LN_BITLENGTH_US * (tx_packets[txptr]->priority + LN_COL_BACKOFF))) {
+  uint64_t LN_cd_timer = LN_gptimer.gptimer_read(); //Get gptimer count since last edge
+  Loconet.LN_cd_window = (LN_BITLENGTH_US * (tx_packets[txptr]->priority + LN_COL_BACKOFF));
+
+  if (((LN_cd_timer) > Loconet.LN_cd_window) && (gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin)) == 1)) { 
+    //if the last edge was longer than the cd interval, and rx_pin is high indicating an idle bus
+  //if ((TIME_US - LN_cd_edge) > (LN_BITLENGTH_US * (tx_packets[txptr]->priority + LN_COL_BACKOFF))) {
     //Serial.printf("Sending packet %u \n", txptr); 
     tx_pending = txptr; //Save txpending for use in tx_loopback
-   
     i = 0;
     tx_pkt_len = tx_packets[txptr]->data_len; //Track how much data is to be sent for overrun prevention.
     if (tx_packets[txptr]->state == 2) { //Only send if it isn't in state attempting. 
       char writedata[tx_pkt_len]; 
-/*      Serial.printf("Transmitting %u: ", tx_pending);
+      #if LN_DEBUG == true
+      Serial.printf("Transmitting %u: ", tx_pending);
       while (i < tx_pkt_len){ 
         writedata[i] = tx_packets[txptr]->data_ptr[i];
         Serial.printf("%x ", tx_packets[txptr]->data_ptr[i]);
         i++;
      }
-      Serial.printf("\n"); */
+      Serial.printf("\n"); 
+      #endif
       tx_packets[txptr]->last_start_time = time_us;  
       
       //LN_port.uart_write(writedata, tx_pkt_len);
       LN_port.uart_write(tx_packets[txptr]->data_ptr, tx_pkt_len);   
-      tx_packets[txptr]->state = 3; //sent 
-      line_flags = line_flags | 0x01; //set bit 1 to indicate that transmission started
+      tx_packets[txptr]->state = 3; //sent
+      Loconet.LN_cd_window = 850; //Reset to RX break interval
+      line_flags = line_flags | LN_lineflags::tx_snd; //indicate that transmission started
     }
-  } 
+  } else { //CD window wasn't ready or rx_pin wasn't in the wrong state. Set tx_rts.
+    line_flags = line_flags | LN_lineflags::tx_rts;
+    LN_gptimer.alarm_change(Loconet.LN_cd_window, 2); //set timer for the cd interval
+  }
   return;
 }
 
@@ -646,7 +711,7 @@ uint8_t LN_Class::tx_loopback(){
 //        Serial.printf("Transmission of packet %d confirmed in %d \n", tx_pending, rx_pending);
         tx_packets[tx_pending]->state = 5; //Mark TX complete
         tx_packets[tx_pending]->last_start_time = TIME_US; //Time it was set to this state.
-        line_flags = line_flags & ~0x01; //Unset bit 1 to indicate that transmission ended  
+        line_flags = line_flags & ~(LN_lineflags::tx_snd); //Transmission ended  
         tx_pending = -1;        
         rx_packets[rx_pending]->state = 5; //Mark RX complete
         rx_packets[rx_pending]->last_start_time = TIME_US; //Time it was set to this state.   
@@ -654,10 +719,10 @@ uint8_t LN_Class::tx_loopback(){
     return delta;
   } else { //Collision. Transmit break, drop from rx_packet, and decrement tx_attempts to drop if stale.  
 //    Serial.printf("Collision detected, %u differences found. \n", delta);
-    transmit_break();
+    //transmit_break();
     tx_packets[tx_pending]->tx_attempts--; 
     tx_packets [tx_pending]->state = 4; 
-    line_flags = line_flags & ~0x01; //Unset bit 1 to indicate that transmission ended
+    line_flags = line_flags & ~(LN_lineflags::tx_snd); //Transmission ended
     //tx_pending = -1;
     //if (rx_packets[rx_pending]->rx_count == rx_packets[rx_pending]->data_len) { //If the complete packet is here, drop from rx_pending
     rx_packets[rx_pending]->state = 4;
@@ -667,64 +732,115 @@ uint8_t LN_Class::tx_loopback(){
   return delta;
 }
 
-void IRAM_ATTR LN_CD_isr(){
- uint8_t i = 0; 
-  if (Loconet.line_flags && 0x01) { //Transmitter should be active, watch for bitwise collision
-    if ((gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin)) == 1) && (gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin)) == 0)) {
-      //Loconet.transmit_break(); 
-      //Loconet.line_flags = Loconet.line_flags & ~0x01; //Unset bit 1 to indicate that transmission ended
-    }    
+void IRAM_ATTR LN_CD_isr(){ //Pin change ISR has around 4uS latency. 
+  //bool rx_pin_state = ~(gpio_get_level(gpio_num_t(LN_COLL_PIN)));
+  bool cd_pin = gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin));
+  //uint8_t i = 0; 
+  uint64_t gptimer_count = LN_gptimer.gptimer_read(); 
+  //Serial.printf("%u-%llu ", cd_pin, gptimer_count);
+  if (!(Loconet.line_flags & LN_lineflags::link_active)){  //link is not active, if cd_pin became 1, start the timer. 
+    if (cd_pin  == 1) {
+      if (!(Loconet.line_flags & LN_lineflags::link_disc)) {
+        LN_gptimer.alarm_set(250000, 1); //Sets the alarm with an initial count of 0. 
+        Loconet.line_flags = Loconet.line_flags | LN_lineflags::link_disc; //reuse link_disc for the restart timer
+        //Serial.printf("LNCD disc set \n");
+      }
+      //LN_gptimer.alarm_change(250000, 1); //time the 250mS from the 1st detected 1.
+      //Serial.printf("LN_CD_ISR_inactive_count\n");  
+    }
+    return; 
+  } else {   //link is active, reset the timers. 
+    LN_gptimer.gptimer_set(0); //set the timer count to 0. 
+    LN_cd_edge = TIME_US;  //record current time
+    //Serial.printf("LN_CD_ISR_active \n");
   }
-  if ((TIME_US - LN_cd_edge) > 850){ //Received a 0 longer than 850uS, assume its an RX break
-    if (!(Loconet.line_flags && 0x04)) { //We are not transmitting break
-      //Loconet.line_flags = Loconet.line_flags | 0x02; //Set bit 2 to indicate break was received from some other source.
+
+  if (Loconet.line_flags & LN_lineflags::tx_snd) { //Transmitter should be active, watch for bitwise collision
+   // if (cd_pin  == 0){ 
+    if ((gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin))) && (gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin)))) {
+      Loconet.transmit_break(); 
+      }
+    return; 
+  } 
+
+  if (!(Loconet.line_flags & LN_lineflags::tx_brk))  { //TX_break not set
+    if (cd_pin  == 0) { //Input is 0, check if this is break or disconnect.  
+      //if (LN_gptimer.alarm_owner() != 2) { //alarm isn't currently set for break detection
+        if (Loconet.line_flags & LN_lineflags::tx_rts)  {
+          LN_gptimer.alarm_set(Loconet.LN_cd_window, 2); //watch for CD interval
+        } else {
+          LN_gptimer.alarm_set(850, 2); //fixed 850uS RX BREAK detect
+        } 
+      //}
     }
   }
-  
-  LN_cd_edge = TIME_US;  
   return; 
 }
 void IRAM_ATTR LN_gptimer_alarm(){//When triggered, check the source and act accordingly. 
+  BaseType_t wakeup;
+  wakeup = pdFALSE;
+  uint64_t gptimer_count = LN_gptimer.gptimer_read(); 
   uint8_t owner = LN_gptimer.alarm_owner(); 
+  bool cd_pin = gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin));
+  //Serial.printf("gptalarm ct %lu %u pin %u \n", gptimer_count, owner, cd_pin); 
+
     if (owner == 3) { //BREAK was sent
-      Loconet.LN_port.uart_invert(false, false); //Reset TX
-      LN_cd_edge = TIME_US; //Record time in case ISR doesn't
-      LN_break_sent = true; 
-      Loconet.line_flags = Loconet.line_flags & ~0x04; //clear bit 4 to indicate transmit break completion.
-      Serial.printf("Loconet: TX Break complete \n");
+      
+      Loconet.LN_port.uart_invert(false, false); //Reset TX to normal
+      //LN_cd_edge = TIME_US; //Record time in case ISR doesn't
+      //Task will clear line_flags bit for TX break, don't do it here. 
+      xTaskNotifyFromISR(LNtask, LN_lineflags::tx_brk, eSetBits, &wakeup); //LNtask bit 7 for end TX break
+      //Serial.printf("Loconet timer mode 3 alarm \n"); 
       return;
     }
-/*    if (owner == 2) { //Listening for clear line
-        if (LN_edge_count == 0) {
-          //todo: Trigger the transmission of a prepared packet from here
-        } else {
-          //todo: action if CD time was not met
-        }      
+    if (owner == 2) { //Listening for CD window or RX Break
+          //Serial.printf("Loconet timer mode 2 alarm \n"); 
+      if ((gptimer_count >= Loconet.LN_cd_window) && (Loconet.line_flags & LN_lineflags::tx_rts)) { //TX ready to send
+        xTaskNotifyFromISR(LNtask, LN_lineflags::tx_cts, eSetBits, &wakeup); //TX clear to send
+        return; 
+      }
+     
+      if ((gptimer_count >= 850) && (cd_pin == 0) && ((Loconet.line_flags & LN_lineflags::tx_brk) == 0)) { 
+        //rx_pin was 0 for more than RX_break minimum, and we didn't send this break. 
+        LN_gptimer.alarm_change((100000), 1); //change to disconnect detection mode
+        //Serial.printf("Loconet Gptimer rx_break triggered \n"); 
+        xTaskNotifyFromISR(LNtask, LN_lineflags::rx_brk, eSetBits, &wakeup); //RX break received
+      } 
       return; 
+    } 
+     
+    if (owner == 1) { //Network state mode
+      //Serial.printf("Loconet timer mode 1 alarm, gptimer %lu \n", gptimer_count); 
+      if ((gptimer_count >= 250000) && (!(Loconet.line_flags & LN_lineflags::link_active))) { //cold start or disconnected
+        //Serial.printf("Loconet startup \n");
+        xTaskNotifyFromISR(LNtask, LN_lineflags::link_active, eSetBits, &wakeup); //Network should become active. 
+        return; 
+      }
+      if ((gptimer_count >= 100000) && (cd_pin == 0)){
+        //rx_pin was at 0 for more than the disconnect interval. Disconnect. 
+        //Serial.printf("Loconet master lost \n");
+        xTaskNotifyFromISR(LNtask, LN_lineflags::link_disc, eSetBits, &wakeup);
+        return; 
+      }  
     }
-    if (owner == 1) { //Startup timer
-      //todo: Consider moving the code to handle startup and disconnected to here
-      return;
-    } */
     
   return; 
 }
 
 void IRAM_ATTR LN_Class::transmit_break(){
   //Write 15 bits low for BREAK on collision detection.  
-  //Serial.printf("Loconet: Inverting Uart TX pin \n"); 
-  Loconet.line_flags = Loconet.line_flags | 0x04; //set bit 3 to indicate break transmitting
-  //LN_port.uart_invert(true, false); //Invert TX to transmit Loconet BREAK 
-  LN_cd_edge = TIME_US; //Record time in case ISR doesn't
-  //LN_gptimer.alarm_set(900 - GPTIMERLAG, 3);//15 bit at 60us per bit. Owner tag 3. 
-  //Serial.printf("Loconet: Collision! BREAK set \n"); 
+  Loconet.line_flags = Loconet.line_flags | LN_lineflags::tx_brk; //Transmit break
+  Loconet.line_flags = Loconet.line_flags & ~(LN_lineflags::tx_snd); //Transmission ended
+  Loconet.line_flags = Loconet.line_flags & ~(LN_lineflags::tx_rts); //Unset ready to send since buffers must flush.
+  LN_port.uart_invert(true, false); //Invert TX to transmit Loconet BREAK 
+  LN_gptimer.alarm_set(900, 3);//15 bit at 60us per bit. Owner tag 3. 
   return;
 }
 
 void LN_Class::receive_break(){ //Possible BREAK input at ptr. 
   LN_port.rx_flush();
   LN_port.tx_flush();
-  line_flags = line_flags & ~0x02; //Unset receive break flag
+  line_flags = line_flags & ~(LN_lineflags::rx_brk); //Unset receive break flag
   //Serial.printf("Loconet: Received Break Input\n"); 
   return;
 }
@@ -1037,7 +1153,7 @@ LN_Class::LN_Class(){ //Constructor, initializes some values.
   tx_pending = -1;
   rx_next_new = 0; 
   rx_next_check = 0;
-  netstate = startup;
+  line_flags = 0; 
   LN_host_mode = ln_silent; //default to ln_silent 
   LN_max_priority = 127; 
   LN_min_priority = 127; 

@@ -15,7 +15,7 @@ ADC_Handler adc_one[ADC_SLOTS];
 TaskHandle_t adctask; 
 bool adc_task_active = false; 
 
-uint8_t* adc_raw_bytes = NULL; //holder for raw adc data 
+DMA_ATTR static uint8_t* adc_raw_bytes = NULL; //holder for raw adc data 
 adc_continuous_evt_cbs_t* ADC_ISR_callbacks = NULL; //Pointer holder for ISR callbacks
 adc_continuous_handle_t adc_unit_one;
 

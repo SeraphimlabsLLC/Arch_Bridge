@@ -66,7 +66,7 @@ void IRAM_ATTR dir_monitor_isr(){
 void setup() {
 
   ESP_uart_init(); //Initialize tty
- delay(1000); //delay by 100mS so the USB console starts first
+ delay(1000); //delay by 1000mS so the USB console starts first
   dccex_init(); //Initialize DCCEX parser
   dccrx_init(); //Initialize DCC signal audit
 //  attachInterrupt(8, dir_monitor_isr, CHANGE);
@@ -83,13 +83,13 @@ void setup() {
 }
 
 void loop() { 
-
+  //delay(163840); //can't stop loop(), but can make it block.
 }
 
 void loop_Task(void * pvParameters) {
   while (true) {
 #if ADC_TASK != TRUE
-//  ADC_loop(); //Process ADC data
+//  ADC_loop(); //Process ADC data, now in its own task
 #endif
 dccex_loop(); //Process serial input for DCCEX commands
 Tracks_Loop(); //Process and update tracks
@@ -97,7 +97,7 @@ Tracks_Loop(); //Process and update tracks
 
 #if BOARD_TYPE == ARCH_BRIDGE //If this is an arch bridge, check the loconet
   
-  LN_loop(); //Process Loconet loop
+  //LN_loop(); //Process Loconet loop
   
 #endif 
 Heartbeat(HEARTBEAT_S);

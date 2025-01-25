@@ -56,15 +56,18 @@ void ESP_Uart::uart_init(uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t
     rxbuff = 256; 
     uart_inv_pinmask = NULL; //No pins inverted. 
     Serial.printf("UART: Configuring uart %u to baud %u with txbuff %u rxbuff %u \n", uartnum, baudrate, txbuff, rxbuff); 
+    gpio_reset_pin(gpio_num_t(tx_pin)); 
+    gpio_set_direction(gpio_num_t(tx_pin), GPIO_MODE_INPUT_OUTPUT);
+    //gpio_set_pull_mode(gpio_num_t(tx_pin), GPIO_FLOATING); 
+    gpio_reset_pin(gpio_num_t(rx_pin)); 
+    gpio_set_direction(gpio_num_t(rx_pin), GPIO_MODE_INPUT);
+    gpio_set_pull_mode(gpio_num_t(rx_pin), GPIO_FLOATING); 
     ESP_ERROR_CHECK(uart_driver_install(uart_port_t(uartnum), txbuff, rxbuff, 0, NULL, 0));
     ESP_ERROR_CHECK(uart_param_config(uart_port_t(uartnum), &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(uart_port_t(uartnum), tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
     ESP_ERROR_CHECK(uart_flush(uart_port_t(uartnum)));
-    ESP_ERROR_CHECK(uart_set_rx_timeout(uartnum, 2)); //RX Timeout after 2 bit intervals instead of 11
-    REG_SET_FIELD(UART_CONF1_REG(uart_num), UART_RXFIFO_FULL_THRHD, 1); //Change RX threshold to return single bytes. 
-
-
-   
+    ESP_ERROR_CHECK(uart_set_rx_timeout(uart_port_t(uartnum), 2)); //RX Timeout after 2 bit intervals instead of 11
+    REG_SET_FIELD(UART_CONF1_REG(uart_port_t(uart_num)), UART_RXFIFO_FULL_THRHD, 1); //Change RX threshold to return single bytes. 
   }
 return;
 }
@@ -76,7 +79,7 @@ void ESP_Uart::uart_write(const char* write_data, uint8_t write_len){ //Write th
   }
 // if (uart_mode == 0) { //ESP default driver mode
 //   uart_tx_delay_start = TIME_US;
-   uart_write_bytes(uart_num, write_data, write_len);
+   uart_write_bytes(uart_port_t(uart_num), write_data, write_len);
 // }
 /* if (uart_mode == 1) { //Direct to FIFO write
    for (i = 0; i <= write_len; i++){
@@ -112,7 +115,7 @@ void IRAM_ATTR ESP_Uart::uart_invert(bool tx, bool rx){ //Invert UART TX pin or 
   //Serial.printf("UART: Inverting TX pin on unit %u, pinmask %u \n", uart_num, pinmask); 
 
   //uart_inv_pinmask = pinmask; //save the new pinmask
-  ESP_ERROR_CHECK(uart_set_line_inverse((uart_num), pinmask));
+  ESP_ERROR_CHECK(uart_set_line_inverse((uart_port_t(uart_num)), pinmask));
   return;
 }
 
@@ -127,7 +130,7 @@ uint16_t ESP_Uart::read_len(){ //returns how much data there is to be read
   if (uart_num == 0) {
       ready_len = Serial.available();
   } else {   
-    ESP_ERROR_CHECK(uart_get_buffered_data_len(uart_num, (size_t*)&ready_len));
+    ESP_ERROR_CHECK(uart_get_buffered_data_len((uart_port_t(uart_num)), (size_t*)&ready_len));
   }
     //Serial.printf("ready_len was %d \n", ready_len);
   if (ready_len > rx_buff) { //Limit to buffer size
@@ -173,7 +176,7 @@ uint16_t ESP_Uart::uart_read(uint8_t readlen) {//read the specified number of by
   }*/
     //Read using ESP Uart library
     //Serial.printf("Receiving bytes into rx_read_data pointer %u \n", rx_read_data);
-    readlen = uart_read_bytes(uart_num, rx_read_data, readlen, 100); //Read up to rx_read bytes from uart_num tto rx_read_data with a 100 rt tick timeout
+    readlen = uart_read_bytes(uart_port_t(uart_num), rx_read_data, readlen, 100); //Read up to rx_read bytes from uart_num tto rx_read_data with a 100 rt tick timeout
   }
   //Warn if there was a size mismatch. Would only happen if something else read data in between the size check and the actual read. 
   if (rx_read_len != readlen){
@@ -189,7 +192,7 @@ void ESP_Uart::uart_rx_flush() {//Erase all data in the buffer
   if (uart_num == 0) {
     return;
   }
-  ESP_ERROR_CHECK(uart_flush(uart_num));
+  ESP_ERROR_CHECK(uart_flush(uart_port_t(uart_num)));
   return;
 }
 

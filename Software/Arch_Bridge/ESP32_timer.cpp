@@ -46,14 +46,17 @@ void measure_time_stop() {
 
 //ESP GPTimer functions
 
-void IRAM_ATTR ESP_gptimer::alarm_set(uint32_t count, uint8_t owner){
+void IRAM_ATTR ESP_gptimer::alarm_set(uint64_t count, uint8_t owner){
   alarm_owner_v = owner; 
-  //ESP_ERROR_CHECK(gptimer_stop(gptimer));
-  gptimer_stop(gptimer);
-  gptimer_disable(gptimer);
-  
+  if (is_active == true) {
+    ESP_ERROR_CHECK(gptimer_stop(gptimer));
+    ESP_ERROR_CHECK(gptimer_disable(gptimer));
+    is_active = false;
+  }
+  gptimer_set (0); //Set the count to 0
+  alarm_set_value = count; //save the value we are setting to. 
   gptimer_alarm_config_t alarm_config = {
-    .alarm_count = count, // alarm target = count in us
+    .alarm_count = alarm_set_value, // alarm target = count in us
   };
   ESP_ERROR_CHECK(gptimer_set_alarm_action(gptimer, &alarm_config));
 
@@ -61,14 +64,26 @@ void IRAM_ATTR ESP_gptimer::alarm_set(uint32_t count, uint8_t owner){
     .on_alarm = gptimer_alarm_cb_t(ESP_gptimer_alarm_isr), // register user callback
   };
   ESP_ERROR_CHECK(gptimer_register_event_callbacks(gptimer, &cbs, NULL));
-  gptimer_set (0); //Set the count to 0
-  gptimer_enable(gptimer);
-  gptimer_start(gptimer);
   alarm_counting = true; 
+  if (is_active == false) {
+    gptimer_enable(gptimer);
+    gptimer_start(gptimer);
+    is_active = true; 
+  }
+  //Serial.printf("alarm_set count %lu owner %u %u \n", count, alarm_owner_v, owner);
   return;
 }
+void IRAM_ATTR ESP_gptimer::alarm_change(uint64_t count, uint8_t owner){
+  alarm_owner_v = owner; 
+  alarm_set_value = count; //update value the alarm is set to. 
+  gptimer_alarm_config_t alarm_config = {
+    .alarm_count = alarm_set_value, 
+  };
+  ESP_ERROR_CHECK(gptimer_set_alarm_action(gptimer, &alarm_config));
+}
 
-uint8_t IRAM_ATTR ESP_gptimer::alarm_owner(){ //Returns alarm owner. 
+uint8_t IRAM_ATTR ESP_gptimer::alarm_owner(){ //Returns alarm owner.
+  //Serial.printf("alarm_owner %u \n", alarm_owner_v); 
   return alarm_owner_v;
 }
 
@@ -79,7 +94,7 @@ bool ESP_gptimer::alarm_is_set(){ //returns true if alarm is set
   return alarm_counting;
 }
 
-uint32_t ESP_gptimer::alarm_value(){ //returns value set in alarm
+uint64_t ESP_gptimer::alarm_value(){ //returns value set in alarm
   return alarm_set_value;
 }
 
@@ -92,6 +107,7 @@ gptimer_config_t timer_config = {
 };
 ESP_ERROR_CHECK(gptimer_new_timer(&timer_config, &gptimer));
 gptimer_set (0); //Set the count to 0
+is_active = true; 
 ESP_ERROR_CHECK(gptimer_enable(gptimer)); //enable gptimer, priming it for later
 ESP_ERROR_CHECK(gptimer_start(gptimer)); //start gptimer, priming it for later 
 return 0; //Eventually make this return non-zero if the gptimer_new_timer fails
@@ -99,7 +115,13 @@ return 0; //Eventually make this return non-zero if the gptimer_new_timer fails
 
 uint64_t IRAM_ATTR ESP_gptimer::gptimer_read(){
   uint64_t read_value; 
-  ESP_ERROR_CHECK(gptimer_get_raw_count(gptimer, &read_value));
+  if (is_active == true) {
+    ESP_ERROR_CHECK(gptimer_get_raw_count(gptimer, &read_value));
+  } else {
+    Serial.printf("GPtimer not running! \n");
+    read_value = 0; 
+  }
+  return read_value; 
 }
   
 void ESP_gptimer::gptimer_set(uint64_t newcount){

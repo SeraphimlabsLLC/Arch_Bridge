@@ -23,7 +23,7 @@
 #include "Arduino.h"
 #include "esp_timer.h" //Required for timer functions to work.
 
-#define LN_DEBUG false //Enable to show debug messages
+#define LN_DEBUG true //Enable to show debug messages
 
 //Loconet UART settings, from ESP32_uart.h: (uint8_t uartnum, uint8_t txpin, uint8_t rxpin, uint32_t baudrate, uint16_t txbuff, uint16_t rxbuff);
 #define LN_UART Loconet.LN_port.uart_init(1, 17, 18, 16666, 255, 255);
@@ -31,7 +31,6 @@
 
 //Constants that shouldn't be changed.
 #define LN_LOOP_DELAY_US 0 //60uS * 8 bits
-#define GPTIMERLAG 30 //uS to shorten the timer by to compensate for jitter
 
 #define LN_BITLENGTH_US 60 
 #define LN_COL_BACKOFF 20
@@ -43,41 +42,30 @@
 #define LN_ADC_SCALE 141 //ticks per mV calculates to 160, but when measured is more accurate at 141. 
 
 //Queue settings: 
-#define LN_RX_Q 16
+#define LN_RX_Q 32
 #define LN_TX_Q 32
 #define TX_SENT_EXPIRE 64000 //Time to keep sent packets waiting for loopback
-
-/*  
-  //TODO: Change this to use an enum or class and assign min priority by opcode
-#define LN_MASTER 0x80
-#define LN_SENSOR 0x20
-#define LN_THROTTLE 0x08
-#define LN_SILENT 0x00
-
-//typedef enum LN_Priority_min {Master = 0, Sensor = 2, Throttle = 6;
-//#if LN_PRIORITY == MASTER 
-  #define LN_MAX_PRIORITY 0
-  #define LN_MIN_PRIORITY 20
-//#endif
-/*
-#if LN_PRIORITY == SENSOR
-  #define LN_MAX_PRIORITY 2 
-  #define LN_MIN_PRIORITY 6
-#endif  
-#if LN_PRIORITY == THROTTLE
-  #define LN_MAX_PRIORITY 6
-  #define LN_MIN_PRIORITY 20
-#endif 
-*/
-
 
 //Processing reflectors, use these to avoid having to include the entire class in main.
 void LN_init(); //Initialize Loconet interface
 void LN_loop(); //Loconet process loop
+void LN_task(void * pvParameters); //Loconet task loop
 
 //Enums: 
-enum LN_netstate {startup = 0, disconnected = 1, inactive = 2, active = 3};
+//enum LN_netstate {startup = 0, disconnected = 1, inactive = 2, active = 3};
 enum LN_hostmode {ln_master = 0x80, ln_sensor = 0x20, ln_throttle = 0x08, ln_silent = 0}; //Enum for operating level
+enum LN_lineflags {link_disc = 0x0000001, link_active = 0x00000002, rx_recv = 0x00000004, rx_brk = 0x00000008, tx_rts = 0x00000010, tx_cts = 0x00000020, tx_snd = 0x00000040, tx_brk = 0x00000080};
+  /* line_flags, matching arrangement as LNtask notification
+  * bit 0 = disconnect, not used in line_flags
+  * bit 1 = link active / state changed
+  * bit 2 = RX received
+  * bit 3 = RX break received
+  * bit 4 = TX ready to send
+  * bit 5 = TX clear to send
+  * bit 6 = TX sending
+  * bit 7 = TX break active / end
+  * bits 8 - 31 not used
+  */
 //enum LN_timerstage {none = 0, startup = 1, listening = 2, BREAK = 3}; 
 
 class LN_Packet{ //Track packet states. The packet data itself goes in a char[] and this only stores the ptr
@@ -122,15 +110,17 @@ class LN_Class {
   public:
   uint64_t LN_loop_timer; //Time since last loop_process
   ESP_Uart LN_port; //Class inside a class
-  LN_netstate netstate; //Network operating condition
+  //volatile LN_netstate netstate; //Network operating condition
+  volatile uint32_t line_flags; //network status, should really be an enum. 
+  volatile uint64_t LN_cd_window = 0; //Collision detection window of pending packet
   void LN_set_mode(LN_hostmode newmode); //Set current Loconet access mode
   LN_hostmode LN_get_mode(); //Return current Loconet access mode
   uint64_t signal_time; //time of last netstate change
-  volatile uint8_t line_flags; //bit 1 = sending, bit 2 = break received, bit 3 = break transmitting
-//  uint64_t rx_last_us; //time in startup us of last byte received  
+
   uint8_t tx_pkt_len; //length of last tx packet
  
   void loop_process(); //Process time based data
+  //void network_startup(); //Check for Loconet signal
 
   //Turnout handlers 
   void rx_req_sw(uint8_t rx_pkt); //received 0xB0 request switch
@@ -206,3 +196,8 @@ class LN_Class {
 
 void IRAM_ATTR LN_CD_isr(); //ISR for handling collision detection
 void IRAM_ATTR LN_gptimer_alarm(); //ISR for handling gptimer alarms
+
+#define LNTASK_LINK = 0x00000002
+#define LNTASK_RX_RDY = 0x00000004
+#define LNTASK_RX_BRK = 0x00000008
+
