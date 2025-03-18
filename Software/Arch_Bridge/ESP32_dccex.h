@@ -24,9 +24,25 @@ void dccex_loop(); //DCCEX_Class::dccex_loop();
 
 enum dccex_power_mode {OFF = 0, MAIN = 1, PROG = 1, DC = 2, DCX = 3}; //DCCEX track modes
 
-enum accessory_type {none = 0, turnout = 1, sensor = 2, signals = 3};
+enum accessory_type {acc_none = 0, acc_turnout = 1, acc_sensor = 2, acc_signal = 3};
 class Accessory_Device{
+  //Valid DCC addresses from 0-2044. 511 actual addresses, each with 4 suboutputs
+  //Do not allow broadcast addresses 2045-2048
+  //Extended addresses up to 16383
   public:
+  void set_device(uint16_t newid, int16_t dccaddr, accessory_type devtype, uint8_t nlearned_from);
+  uint16_t get_id(); //Get dccex ID of this index
+  int16_t get_addr(); //get dcc address, -1 if not on dcc
+  accessory_type get_type();
+  void set_state(uint8_t newstate);
+  uint8_t get_state();
+  uint8_t get_learnedfrom(); //used for reply routing
+  uint64_t get_lastaction(); //Timestamp of last output
+  uint64_t get_reminder(); //Returns if a reminder is set
+  void set_reminder (uint64_t usdelay, bool repeat); //Take action in usdelay uS, 0 to disable
+  Accessory_Device(); //Constructor
+
+  private:
   uint16_t ID; //DCC-EX turnout or sensor ID, 0-32767
   accessory_type type; 
   int16_t addr; //DCC address, is limited to 14 bits on Loconet. -1 if not accessible by dcc
@@ -34,7 +50,9 @@ class Accessory_Device{
   //bit 0 = output 0/1, bit 1 = direction 0/1. RCN_213 has direction 1 as closed and 0 as thrown. 
   uint8_t learned_from; //Where it was learned from: 0 = empty, 1 = DCC, 2 = Loconet, 3 = DCCEX
   uint64_t last_cmd_us; //Time of last action 
-  uint64_t reminder_us; //Take automatic action in uS, such as a turnout having its output switched off.  
+  uint64_t reminder_us; //Take automatic action in uS, such as a turnout having its output switched off
+  bool repeated; //True if reminder repeats  
+
 };
 
 class DCCEX_Class {
@@ -64,13 +82,15 @@ class DCCEX_Class {
   void Fastclock_set();
   void Fastclock_get(); 
 
-  //Turnout functions: 
+  //Turnout/accessory functions: 
   void rx_req_sw(); //Received switch command
+  void rx_sw_state(uint16_t index, uint8_t status); //Received switch status
   void tx_req_sw(uint16_t addr, bool dir, bool state); //Send switch command
   uint16_t find_sw(uint16_t addr); 
   int16_t acc_get_new(); //Initialize a new accessory slot
   int16_t acc_search_id(uint16_t id, accessory_type type); //Find an accessory by its DCCEX ID and type
   int16_t acc_search_dcc_addr(uint16_t id, accessory_type type); //Find an accessory by its DCC Address and type
+  int16_t acc_request_info(uint16_t id, accessory_type type); //request more info about an item from DCC-EX
 
   //Throttle functions
   void rx_cab(); 

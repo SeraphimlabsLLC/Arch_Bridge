@@ -183,11 +183,14 @@ void DCCEX_Class::rx_decode(){
       
       break; 
       
-    case 'j': 
+    case 'j': //Many detail responses are in j
+      if (data_pkt[2] == 'T') { //response to turnout query
+
+      }
     //jC is fastclock echo
     break; 
 
-    case 'J': 
+    case 'J': //many detail set/query commands are in J
       if (data_pkt[2] == 'C') { //Fast Clock functions. <JC minutes rate> to set. minutes has range 0-1440, number of minutes in 24h. 
         Serial.printf("JC: Fast Clock currently days %u %u:%u:%u \n", Fastclock.days, Fastclock.hours, Fastclock.minutes, Fastclock.seconds);
         Loconet.slot_read(123); //Broadcast fast clock
@@ -415,8 +418,11 @@ void DCCEX_Class::Fastclock_set() {
 
 void DCCEX_Class::rx_req_sw(){ //Received switch command
    uint8_t i = 3; 
+   int16_t index = 0; 
    uint16_t addr = 0; 
    bool dir; 
+   uint8_t state; 
+   uint8_t newstate; 
    while (data_pkt[i] != ' ') {
      addr = addr * 10 + (data_pkt[i] - 48); //Convert str to int
      i++;
@@ -424,23 +430,50 @@ void DCCEX_Class::rx_req_sw(){ //Received switch command
    i++; //Should put us on the state byte. 
    dir = (data_pkt[i] - 48);
   Serial.printf("DCCEX commanded turnout %u to state %u \n", addr, dir); 
-  #if LN_TO_DCCEX == true //Only send if allowed to. 
-  Loconet.tx_req_sw(addr - 1, dir, 1); //State defaults to 1 for now. It may be necessary to add a delay off that sends a 2nd packet with state 0.
+  index = acc_search_id(addr, acc_turnout); 
+  if (index > -1){ //Found stored addr info
+    addr = accessory[index]->get_addr();
+    state = accessory[index]->get_state(); 
+    //todo: Make newstate 
+    if (state != newstate) {
+      rx_sw_state(index, state);  
+      #if LN_TO_DCCEX == true //Only send if allowed to. 
+        Loconet.tx_req_sw(addr - 1, dir, 1); //State defaults to 1 for now. It may be necessary to add a delay off that sends a 2nd packet with state 0.
    
-  #endif
+      #endif     
+    }
+  }
+  return; 
+}
+void DCCEX_Class::rx_sw_state(uint16_t index, uint8_t state){
+  if (!(accessory[index])){
+    //Invalid index, do nothing
+    return; 
+  }
+  accessory[index]->set_state(state);    
   return; 
 }
 
 void DCCEX_Class::tx_req_sw(uint16_t addr, bool dir, bool state){ //Send switch command
   char output[15];
-  sprintf(output, "<T %u %u>\n", addr, dir);
-  tx_send(output, 15);
+  int16_t index = 0; 
+  //uint8_t state = 0; 
+  uint8_t oldstate = 0; 
+  index = acc_search_id(addr, acc_turnout); //Find if there is matching stored info
+  if (index = -1) { //didn't find it, make it. 
+    index = acc_get_new();
+    if (index < 0) {
+      //Couldn't get a usable slot. Give up. 
+      return; 
+    }
+  }
+  oldstate = accessory[index]->get_state(); 
+  if (state != oldstate) { //Only send updated state if it changed. 
+    rx_sw_state(index, state); 
+    printf(output, "<T %u %u>\n", addr, dir);
+    tx_send(output, 15);
+  }
   return; 
-}
-
-uint16_t DCCEX_Class::find_sw(uint16_t addr) {
-
-  return 0; 
 }
 
 void DCCEX_Class::rx_cab(){
@@ -520,11 +553,17 @@ void dccex_loop(){ //Reflector into DCCEX_Class
 ******************************************/
 int16_t DCCEX_Class::acc_search_id(uint16_t id, accessory_type type){ //Find an accessory by its DCCEX ID
   int16_t i; 
+  uint16_t sid;
+  accessory_type stype;
+
   for (i = 0; i < MAX_ACCESSORIES; i++) {
     if (!(accessory[i])){ 
+      //accessory slot undefined, skip it
       continue; 
     }
-    if ((accessory[i]->ID = id) && (accessory[i]->type = type)){
+    sid = accessory[i]->get_id();
+    stype = accessory[i]->get_type();
+    if ((sid == id) && (stype == type)){
       return i; 
     }
   }
@@ -532,35 +571,134 @@ int16_t DCCEX_Class::acc_search_id(uint16_t id, accessory_type type){ //Find an 
 }
 int16_t DCCEX_Class::acc_search_dcc_addr(uint16_t addr, accessory_type type){ //Find an accessory by its DCC Address
   int16_t i; 
+  uint16_t saddr;
+  accessory_type stype;
   for (i = 0; i < accessory_count; i++) {
     if (!(accessory[i])){ 
       continue; 
     }
-    if ((accessory[i]->addr = addr) && (accessory[i]->type = type)) {
+    saddr = accessory[i]->get_addr();
+    stype = accessory[i]->get_type();
+    if ((saddr == addr) && (stype == type)) {
       return i; 
     }
   }
   return -1; 
 }
 
+int16_t DCCEX_Class::acc_request_info(uint16_t id, accessory_type type){ //request more info about an item from DCC-EX
+  uint8_t output_len = 0; 
+  char output[255];
+  if (type == acc_turnout) {
+      output_len = 12; //Max 5 digits + 7 chars overhead 
+      char output[output_len]; 
+      sprintf(output, "<JT %u>\n", id); 
+  }
+  if (type == acc_sensor){
+
+  }
+  if (type == acc_signal) {
+
+  }
+  if (output_len > 0){ //Only transmit if there was data produced to be sent
+    tx_send(output, output_len);  
+  }
+  return 0; 
+}
+
+uint16_t DCCEX_Class::find_sw(uint16_t addr) {
+
+  return 0; 
+}
+
 int16_t DCCEX_Class::acc_get_new(){
-    int16_t index; 
-    index = accessory_count + 1; 
-    if (index > MAX_ACCESSORIES) {
-      Serial.printf("Out of available accessory slots \n");
-      return -1;
+  int16_t index; 
+  accessory_type type; 
+  uint8_t learnedfrom; 
+
+  //Search the list
+  for (index = 0; index <= accessory_count; index++){
+    if (!(accessory[index])){ //not allocated, create it
+      accessory[index] = new Accessory_Device; 
+      if (!(accessory[index])){
+        Serial.printf("Unable to allocate accessory slot. \n"); 
+        return -1; 
+      }     
     }
-    accessory[index] = new Accessory_Device; 
-    if (!(accessory[index])){
-      Serial.printf("Unable to allocate accessory slot. \n"); 
-      return -1; 
-    }
-    accessory[index]->addr = -1; //DCC address, -1 means not set yet.
-    accessory[index]->state = 0; //Empty 
-    accessory[index]->type = none; //no type asssigned yet. 
-    accessory[index]->learned_from = 0; //Where it was learned from: 0 = empty, 1 = DCC, 2 = Loconet, 3 = DCCEX
-    accessory[index]->last_cmd_us = 0; //Time of last action  
-    accessory[index]->reminder_us = 0; //Reminders off by default
-    accessory_count = index; 
-  return index;
+    type = accessory[index]->get_type(); 
+    learnedfrom = accessory[index]->get_learnedfrom(); 
+    if ((type == acc_none) && (learnedfrom == 0)){
+      //empty slot. Use it. 
+      if (index > accessory_count){
+        accessory_count = index; 
+      }
+      return index;
+    }  
+  }   
+  //Couldn't find a usable slot, give up.  
+  Serial.printf("Out of available accessory slots \n");
+  return -1;
+}
+
+/*****************************
+* Accessory_Device functions *
+******************************/
+
+void Accessory_Device::set_reminder(uint64_t usdelay, bool repeat){
+  reminder_us = usdelay; 
+  repeated = repeat; 
+  return;
+}
+
+uint64_t Accessory_Device::get_reminder(){
+  return reminder_us;
+}
+
+uint64_t Accessory_Device::get_lastaction(){
+  return last_cmd_us; 
+}
+
+uint8_t Accessory_Device::get_learnedfrom(){
+  return learned_from;
+}
+
+uint8_t Accessory_Device::get_state(){
+  return state;
+}
+
+void Accessory_Device::set_state(uint8_t newstate){
+  state = newstate;
+  return;
+}
+
+accessory_type Accessory_Device::get_type(){
+  return type;
+}
+
+int16_t Accessory_Device::get_addr(){
+  return addr;
+}
+
+uint16_t Accessory_Device::get_id(){
+  return ID; 
+}
+
+void Accessory_Device::set_device(uint16_t newid, int16_t dccaddr, accessory_type devtype, uint8_t nlearned_from){
+    ID = newid; 
+    addr = dccaddr; 
+    type = devtype; 
+    learned_from = nlearned_from;
+    last_cmd_us = TIME_US; 
+  return; 
+}
+
+Accessory_Device::Accessory_Device(){
+    addr = -1; //DCC address, -1 means not set yet.
+    state = 0; //Empty 
+    type = acc_none; //no type asssigned yet. 
+    learned_from = 0; //Where it was learned from: 0 = empty, 1 = DCC, 2 = Loconet, 3 = DCCEX
+    last_cmd_us = 0; //Time of last action  
+    reminder_us = 0; //Reminders off by default
+    repeated = false; //no recurring reminder
+  return; 
 }

@@ -39,6 +39,7 @@
 void Tracks_Init();
 void Tracks_Loop();
 bool MasterEnable();
+void olcheck(); 
  
 #if BOARD_TYPE == DYNAMO
  // #pragma message "Building as Dynamo"
@@ -81,7 +82,7 @@ class TrackChannel {
     void ModeChange (int8_t newmode);
     void StateChange(int8_t newstate);
     uint8_t CheckEnable(); //Reads en_in, sets en_out the same, and returns on or off. 
-    void Status_Check();
+    void Status_Check(); //Requests ADC mutex, reads values, then calls Overload_Check
     void Overload_Check(int32_t current, int32_t overload); //Check overload/reset
     void CabAddress(int16_t cab_addr); 
 

@@ -43,8 +43,9 @@ void LN_init(){//Initialize Loconet objects
   Loconet.LN_port.uart_mode = 0; //Change to 1 to use uart fast write
   Loconet.LN_set_mode(LN_HOSTMODE); //set default host mode
   Loconet.ln_adc_index = ADC_new_handle();
-  Serial.printf("Loconet railsync adc handle %i \n", Loconet.ln_adc_index); 
-  adc_one[Loconet.ln_adc_index].adc_channel_config(LN_ADC_GPIO, LN_ADC_OFFSET, LN_ADC_OL); //Reserve ADC handle
+  //Serial.printf("Loconet railsync adc handle %i \n", Loconet.ln_adc_index); 
+  adc_one[Loconet.ln_adc_index].adc_channel_config(LN_ADC_GPIO, LN_ADC_OFFSET, LN_ADC_OL * LN_ADC_SCALE, 2, 0); //Reserve ADC handle. Mode 2 for current < threshold, instance 0
+  Loconet.last_ol_time = 0; //prime the overload warning timer
   Loconet.adc_ticks_scale = LN_ADC_SCALE; //ADC ticks to volts, instead of mA. 
   LN_gptimer.alarm_set(-1, 1);//alarm set to where it would take an absurd amount of time to trip. The first edge interrupt to make rx_pin = 1 will lower it. 
   Loconet.line_flags = 0;
@@ -69,7 +70,7 @@ void LN_Class::loop_process(){
   uint32_t notifications = 0; 
   xTaskNotifyWait(0, 0xffffffff, &notifications, 1000); //blocks until a notification is pending, copies into notifications and clears
   if (notifications > 0) {
-    Serial.printf("Loconet loop process notification %lu, line_flags %lu\n", notifications, line_flags);
+    Serial.printf("Loconet loop process notification %i, line_flags %i\n", notifications, line_flags);
   }
   
   if (notifications & LN_lineflags::link_disc) { //disconnect detected. 
@@ -730,6 +731,16 @@ uint8_t LN_Class::tx_loopback(){
     //} 
   }
   return delta;
+}
+
+void LN_Class::Overload_Check(int32_t current, int32_t overload){
+  if (current < overload) { //Voltage below threshold. Warn the user. 
+    if ((TIME_US - last_ol_time) > 10000000) {
+      Serial.printf("Loconet railsync voltage low %u mV, required %u mV \n", current / Loconet.adc_ticks_scale, overload / Loconet.adc_ticks_scale);
+      last_ol_time = TIME_US; 
+    }
+  }
+  return; 
 }
 
 void IRAM_ATTR LN_CD_isr(){ //Pin change ISR has around 4uS latency. 

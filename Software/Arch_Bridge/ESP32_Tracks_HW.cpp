@@ -117,10 +117,14 @@ void TrackChannel::SetupHW(uint8_t en_out_pin, uint8_t en_in_pin, uint8_t rev_pi
 
     //Configure ADC
     adc_index = ADC_new_handle();
-    adc_one[adc_index].adc_channel_config(adcpin, adcoffset, adc_ol_trip); //Reserve ADC handle
+    adc_one[adc_index].adc_channel_config(adcpin, adcoffset, adc_ol_trip, 1, index); //Reserve ADC handle
     adc_ticks_scale = adcscale;
     ModeChange(0); //set power mode none, which will also set power state off.
     return;
+}
+
+void olcheck() {
+  return; 
 }
 
 void TrackChannel::CabAddress(int16_t cab_addr){
@@ -258,9 +262,7 @@ void TrackChannel::Overload_Check(int32_t current, int32_t overload){ //Check fo
         overload_cooldown = TIME_US;
         gpio_set_level(enable_out_pin, 0); //Force enable_out_pin off.  
         powerstate_change = powerstate * -1; //Set power state overload by making mode negative.
-        //xSemaphoreGive(power_mutex); 
         StateChange(powerstate_change);  
-        //return; 
       }
     }
     if (powermode < 0) { //Overload recovery

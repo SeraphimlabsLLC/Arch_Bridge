@@ -8,6 +8,13 @@
 //#include <soc/sens_reg.h>
 //#include <soc/sens_struct.h>
 #include <list>
+#ifndef ESP32_LOCONET_H
+  #include "ESP32_Loconet.h"
+#endif
+#ifndef ESP32_TRACKS_HW_H
+  #include "ESP32_Tracks_HW.h"
+#endif
+
 using namespace std;
 
 uint8_t adc_active_count = 0; //How many ADC pins are being read? 
@@ -18,6 +25,9 @@ bool adc_task_active = false;
 DMA_ATTR static uint8_t* adc_raw_bytes = NULL; //holder for raw adc data 
 adc_continuous_evt_cbs_t* ADC_ISR_callbacks = NULL; //Pointer holder for ISR callbacks
 adc_continuous_handle_t adc_unit_one;
+
+extern LN_Class Loconet;
+extern TrackChannel DCCSigs[MAX_TRACKS];
 
 void ADC_loop(){ 
   #if ADC_DRIVER == Arduino
@@ -141,10 +151,19 @@ void ADC_Handler::adc_save_sample(int32_t sample){
     previous_ticks = current_ticks; //store existing value
     current_ticks = sample * 1000 + offset_ticks + base_ticks; 
     smooth_ticks = ((smooth_ticks * 15) + current_ticks) / 16;
-    //overload_check(current_ticks, overload_ticks); //Use callback to check for overload and take action to set/clear
+    if (ol_mode == 1){ //Tracks, Value > threshold
+      if (current_ticks > overload_ticks){ //technically redundant, avoids the extra function call if it isn't needed
+        DCCSigs[owner_instance].Overload_Check(current_ticks, overload_ticks); 
+      }
+    }
+    if (ol_mode == 2){ //Loconet, Value < threshold
+      if (current_ticks < overload_ticks){
+        Loconet.Overload_Check(current_ticks, overload_ticks); 
+      }
+    }
     xSemaphoreGive(ticks_mutex); //Release the channel
   } else {
-    Serial.printf("ADC save sample skipped on gpio %u \n", gpio_pin); 
+    Serial.printf("ADC check save sample and chekc overload skipped on gpio %u \n", gpio_pin); 
   }
   return; 
 }
@@ -180,7 +199,9 @@ void ADC_Handler::adc_zero_set(){ //Adjusts base_ticks so that current_ticks wou
 return; 
 }
 
-void ADC_Handler::adc_channel_config(uint8_t adc_ch, int16_t offset, int32_t adc_ol_trip){
+void ADC_Handler::adc_channel_config(uint8_t adc_ch, int16_t offset, int32_t adc_ol_trip, uint8_t overload_mode, uint8_t ownerinstance){
+  owner_instance = ownerinstance; 
+  ol_mode = overload_mode; 
   gpio_pin = adc_ch; 
   offset_ticks = offset;
   overload_ticks = adc_ol_trip; 

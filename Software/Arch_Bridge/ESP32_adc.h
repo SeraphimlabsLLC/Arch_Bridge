@@ -40,7 +40,7 @@
 
 class ADC_Handler {
     public:   
-    void adc_channel_config(uint8_t adc_ch, int16_t offset, int32_t adc_ol_trip); 
+    void adc_channel_config(uint8_t adc_ch, int16_t offset, int32_t adc_ol_trip, uint8_t overload_mode, uint8_t ownerinstance); 
     void adc_sample(); //Sample the ADC using the Arduino IDE api
     void adc_save_sample(int32_t sample); //Save the provided sample
     void adc_read(int32_t* current, int32_t* previous, int32_t* smooth, int32_t* overload); //returns the stored values
@@ -53,6 +53,9 @@ class ADC_Handler {
     volatile bool print_flag_var; //true to print current sample
 
     private: 
+    uint8_t ol_mode; //Eventually use a real callback, for now an int to point it to the right library. 
+    uint8_t owner_instance; //Index of the owner for these values
+    void *ol_callback; 
     SemaphoreHandle_t ticks_mutex; //mutex to protect output
     StaticSemaphore_t ticks_mutex_buffer; //memory allocation for mutex
     volatile int32_t current_ticks; //value read on most recent scan

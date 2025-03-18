@@ -38,7 +38,7 @@
 //Loconet Railsync ADC parameters
 #define LN_ADC_GPIO 9 //GPIO for Railsync load meter ADC input
 #define LN_ADC_OFFSET 0 //ADC zero offset
-#define LN_ADC_OL 3650000 //Railsync overload threshold in ADC ticks x 1000;
+#define LN_ADC_OL 7400 //Railsync overload threshold in mV;
 #define LN_ADC_SCALE 141 //ticks per mV calculates to 160, but when measured is more accurate at 141. 
 
 //Queue settings: 
@@ -147,6 +147,8 @@ class LN_Class {
   void global_power(char state, bool announce); //global power true/false, echo to DCCEX
   uint8_t ln_adc_index;
   int32_t adc_ticks_scale; //ADC ticks per Volt
+  uint64_t last_ol_time; //Time since last overload warning
+  void Overload_Check(int32_t current, int32_t overload);
 
   void IRAM_ATTR transmit_break(); //transmit 60uS x 15 bits of 0 as BREAK
   void receive_break(); 
@@ -154,7 +156,7 @@ class LN_Class {
   LN_Class(); //Constructor
 
   private:
-  uint64_t last_time_us;
+  uint64_t last_time_us; 
   LN_Packet* rx_packets[LN_RX_Q]; //Pointers to RX packets
   uint8_t rx_next_new; 
   uint8_t rx_next_check;
