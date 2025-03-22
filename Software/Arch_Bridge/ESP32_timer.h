@@ -51,7 +51,7 @@ class ESP_gptimer {
   public:
     uint8_t gptimer_init(); 
     uint64_t gptimer_read(); //Get current value from the gptimer
-    void gptimer_set(uint64_t newcount); //set gptimer count
+    void IRAM_ATTR gptimer_set(uint64_t newcount); //set gptimer count
     void IRAM_ATTR alarm_set(uint64_t count, uint8_t owner); //Sets the alarm with a count of 0.
     void IRAM_ATTR alarm_change(uint64_t count, uint8_t owner); //changes the setpoint without touching the count, updated when the ISR callback returns. Give it time to do so. 
     uint64_t alarm_value(); //returns alarm value currently set

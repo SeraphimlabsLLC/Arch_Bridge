@@ -124,7 +124,7 @@ uint64_t IRAM_ATTR ESP_gptimer::gptimer_read(){
   return read_value; 
 }
   
-void ESP_gptimer::gptimer_set(uint64_t newcount){
+void IRAM_ATTR ESP_gptimer::gptimer_set(uint64_t newcount){
   gptimer_set_raw_count(gptimer, newcount);
   return; 
 }

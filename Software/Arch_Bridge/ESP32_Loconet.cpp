@@ -56,6 +56,7 @@ void LN_init(){//Initialize Loconet objects
 
 void LN_loop(){//reflector into LN_Class::loop_Process()
   //Loconet.loop_process(); //Process and update Loconet
+  xTaskNotify(LNtask, LN_lineflags::ln_hrt, eSetBits); //LNtask bit 8 for heartbeat scan
   return; 
 }
 
@@ -70,7 +71,7 @@ void LN_Class::loop_process(){
   uint32_t notifications = 0; 
   xTaskNotifyWait(0, 0xffffffff, &notifications, 1000); //blocks until a notification is pending, copies into notifications and clears
   if (notifications > 0) {
-    Serial.printf("Loconet loop process notification %i, line_flags %i\n", notifications, line_flags);
+  //  Serial.printf("Loconet loop process notification %i, line_flags %i\n", notifications, line_flags);
   }
   
   if (notifications & LN_lineflags::link_disc) { //disconnect detected. 
@@ -111,7 +112,7 @@ void LN_Class::loop_process(){
   if ((notifications & LN_lineflags::tx_brk) || (line_flags & LN_lineflags::tx_brk)) { //TX Break was set.
     if (line_flags & LN_lineflags::tx_brk) {
       line_flags = line_flags & ~(LN_lineflags::tx_brk); //Unset tx_brk
-      Serial.printf("Loconet: TX Break complete \n");
+      Serial.printf("Loconet: TX Break complete, line_flags %i \n", line_flags);
     }
   }
   if (notifications & LN_lineflags::rx_recv) { //RX Data
@@ -121,7 +122,6 @@ void LN_Class::loop_process(){
       tx_send(tx_pending);
     }
   } 
-
   uart_rx(); //Read uart data into the RX ring
   rx_scan(); //Scan RX ring for an opcode
   //Network is up but no notifications were received. Process the queues. 
@@ -769,7 +769,7 @@ void IRAM_ATTR LN_CD_isr(){ //Pin change ISR has around 4uS latency.
   if (Loconet.line_flags & LN_lineflags::tx_snd) { //Transmitter should be active, watch for bitwise collision
    // if (cd_pin  == 0){ 
     if ((gpio_get_level(gpio_num_t(Loconet.LN_port.tx_pin))) && (gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin)))) {
-      Loconet.transmit_break(); 
+      //Loconet.transmit_break(); 
       }
     return; 
   } 
@@ -790,7 +790,7 @@ void IRAM_ATTR LN_CD_isr(){ //Pin change ISR has around 4uS latency.
 void IRAM_ATTR LN_gptimer_alarm(){//When triggered, check the source and act accordingly. 
   BaseType_t wakeup;
   wakeup = pdFALSE;
-  uint64_t gptimer_count = LN_gptimer.gptimer_read(); 
+  uint64_t alarm_value = LN_gptimer.alarm_value(); //read the value we had set
   uint8_t owner = LN_gptimer.alarm_owner(); 
   bool cd_pin = gpio_get_level(gpio_num_t(Loconet.LN_port.rx_pin));
   //Serial.printf("gptalarm ct %lu %u pin %u \n", gptimer_count, owner, cd_pin); 
@@ -805,13 +805,15 @@ void IRAM_ATTR LN_gptimer_alarm(){//When triggered, check the source and act acc
       return;
     }
     if (owner == 2) { //Listening for CD window or RX Break
-          //Serial.printf("Loconet timer mode 2 alarm \n"); 
-      if ((gptimer_count >= Loconet.LN_cd_window) && (Loconet.line_flags & LN_lineflags::tx_rts)) { //TX ready to send
+      //Serial.printf("Loconet timer mode 2 alarm count %u \n", alarm_value); 
+      if ((alarm_value >= Loconet.LN_cd_window) && (cd_pin == 1) && (Loconet.line_flags & LN_lineflags::tx_rts)) { 
+        //Value remained 1 for the entirety of the CD window
+        LN_gptimer.alarm_change((100000), 1); //change to disconnect detection mode
         xTaskNotifyFromISR(LNtask, LN_lineflags::tx_cts, eSetBits, &wakeup); //TX clear to send
         return; 
       }
      
-      if ((gptimer_count >= 850) && (cd_pin == 0) && ((Loconet.line_flags & LN_lineflags::tx_brk) == 0)) { 
+      if ((alarm_value >= 850) && (cd_pin == 0) && ((Loconet.line_flags & LN_lineflags::tx_brk) == 0)) { 
         //rx_pin was 0 for more than RX_break minimum, and we didn't send this break. 
         LN_gptimer.alarm_change((100000), 1); //change to disconnect detection mode
         //Serial.printf("Loconet Gptimer rx_break triggered \n"); 
@@ -821,13 +823,14 @@ void IRAM_ATTR LN_gptimer_alarm(){//When triggered, check the source and act acc
     } 
      
     if (owner == 1) { //Network state mode
+      alarm_value = LN_gptimer.gptimer_read(); 
       //Serial.printf("Loconet timer mode 1 alarm, gptimer %lu \n", gptimer_count); 
-      if ((gptimer_count >= 250000) && (!(Loconet.line_flags & LN_lineflags::link_active))) { //cold start or disconnected
+      if ((alarm_value >= 250000) && (!(Loconet.line_flags & LN_lineflags::link_active))) { //cold start or disconnected
         //Serial.printf("Loconet startup \n");
         xTaskNotifyFromISR(LNtask, LN_lineflags::link_active, eSetBits, &wakeup); //Network should become active. 
         return; 
       }
-      if ((gptimer_count >= 100000) && (cd_pin == 0)){
+      if ((alarm_value >= 100000) && (cd_pin == 0)){
         //rx_pin was at 0 for more than the disconnect interval. Disconnect. 
         //Serial.printf("Loconet master lost \n");
         xTaskNotifyFromISR(LNtask, LN_lineflags::link_disc, eSetBits, &wakeup);
@@ -964,11 +967,11 @@ void LN_Class::rx_req_sw(uint8_t rx_pkt){
   uint8_t cmd = 0; 
   addr = (((rx_packets[rx_pkt]->data_ptr[2]) & 0x0F) << 7) | (rx_packets[rx_pkt]->data_ptr[1] & 0x7F);
   cmd = ((rx_packets[rx_pkt]->data_ptr[2]) & 0xF0);
-  Serial.printf("Req switch addr %u direction %u, output %u \n", addr, (cmd & 0x20) >> 5, (cmd & 0x10) >> 4);
+  Serial.printf("Loconet: Req switch addr %u direction %u, output %u \n", addr, (cmd & 0x20) >> 5, (cmd & 0x10) >> 4);
   #if DCCEX_TO_LN == true //Only send if allowed to. 
-  if (((cmd & 0x10) >> 4) == true) { //only forward if output is on. 
+  //if (((cmd & 0x10) >> 4) == 1) { //only forward if output is on. 
     dccex.tx_req_sw(addr + 1, (cmd & 0x20) >> 5, (cmd & 0x10) >> 4); //Addr + 1 so the displayed values agree with commanded
-  }
+  //}
   #endif
 
   return;

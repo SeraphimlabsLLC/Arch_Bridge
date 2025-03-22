@@ -9,7 +9,7 @@
 #define HEARTBEAT_S 60 //Seconds between console heartbeats
 
 //System limits. DCC can address up to 16384 combined devices between turnouts, sensors, and signals. 
-#define MAX_ACCESSORIES 16 
+#define MAX_ACCESSORIES 255 
 
 //Command bridging filters
 #define LN_TO_DCCEX true

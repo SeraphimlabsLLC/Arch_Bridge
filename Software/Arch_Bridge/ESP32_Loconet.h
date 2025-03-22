@@ -54,7 +54,7 @@ void LN_task(void * pvParameters); //Loconet task loop
 //Enums: 
 //enum LN_netstate {startup = 0, disconnected = 1, inactive = 2, active = 3};
 enum LN_hostmode {ln_master = 0x80, ln_sensor = 0x20, ln_throttle = 0x08, ln_silent = 0}; //Enum for operating level
-enum LN_lineflags {link_disc = 0x0000001, link_active = 0x00000002, rx_recv = 0x00000004, rx_brk = 0x00000008, tx_rts = 0x00000010, tx_cts = 0x00000020, tx_snd = 0x00000040, tx_brk = 0x00000080};
+enum LN_lineflags {link_disc = 0x0000001, link_active = 0x00000002, rx_recv = 0x00000004, rx_brk = 0x00000008, tx_rts = 0x00000010, tx_cts = 0x00000020, tx_snd = 0x00000040, tx_brk = 0x00000080, ln_hrt = 0x8000000};
   /* line_flags, matching arrangement as LNtask notification
   * bit 0 = disconnect, not used in line_flags
   * bit 1 = link active / state changed
@@ -64,7 +64,8 @@ enum LN_lineflags {link_disc = 0x0000001, link_active = 0x00000002, rx_recv = 0x
   * bit 5 = TX clear to send
   * bit 6 = TX sending
   * bit 7 = TX break active / end
-  * bits 8 - 31 not used
+  * bits 8 - 30 not used
+  * bits 31 = Heartbeat
   */
 //enum LN_timerstage {none = 0, startup = 1, listening = 2, BREAK = 3}; 
 

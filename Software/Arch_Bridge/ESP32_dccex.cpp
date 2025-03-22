@@ -431,6 +431,14 @@ void DCCEX_Class::rx_req_sw(){ //Received switch command
    dir = (data_pkt[i] - 48);
   Serial.printf("DCCEX commanded turnout %u to state %u \n", addr, dir); 
   index = acc_search_id(addr, acc_turnout); 
+  if (index < 0) {//Not found, create it
+    Serial.printf("DCCEX saving info for new turnout index %i \n", addr);
+    index = acc_get_new(); 
+    if (index > -1) {
+      accessory[index]->set_device(addr, addr, acc_turnout, 3); //DCC-EX ID, DCC-EX ID is addr, acc_turnout type, learned from DCCEX
+      rx_sw_state(index, ~state); //set it to not state so that it always writes it the first time
+    }
+  }
   if (index > -1){ //Found stored addr info
     addr = accessory[index]->get_addr();
     state = accessory[index]->get_state(); 
@@ -438,6 +446,7 @@ void DCCEX_Class::rx_req_sw(){ //Received switch command
     if (state != newstate) {
       rx_sw_state(index, state);  
       #if LN_TO_DCCEX == true //Only send if allowed to. 
+        Serial.printf("DCCEX Forwarding Turnout %i to state %i \n", addr, dir);
         Loconet.tx_req_sw(addr - 1, dir, 1); //State defaults to 1 for now. It may be necessary to add a delay off that sends a 2nd packet with state 0.
    
       #endif     
@@ -459,9 +468,14 @@ void DCCEX_Class::tx_req_sw(uint16_t addr, bool dir, bool state){ //Send switch 
   int16_t index = 0; 
   //uint8_t state = 0; 
   uint8_t oldstate = 0; 
-  index = acc_search_id(addr, acc_turnout); //Find if there is matching stored info
-  if (index = -1) { //didn't find it, make it. 
+  Serial.printf("DCCEX tx_req_sq addr %i, dir, %i \n", addr, dir);
+  index = acc_search_dcc_addr(addr - 1, acc_turnout); //Find if there is matching stored info
+  if (index < 0 ) { //didn't find it, make it. 
     index = acc_get_new();
+    if (index > -1) {
+      accessory[index]->set_device(addr, addr - 1, acc_turnout, 2); //DCC-EX ID, DCC-EX ID is addr, acc_turnout type, learned from Loconet
+      rx_sw_state(index, ~state); //set it to not state so that it always writes it the first time
+    }    
     if (index < 0) {
       //Couldn't get a usable slot. Give up. 
       return; 
@@ -623,15 +637,14 @@ int16_t DCCEX_Class::acc_get_new(){
       if (!(accessory[index])){
         Serial.printf("Unable to allocate accessory slot. \n"); 
         return -1; 
+      } else {
+        accessory_count++; 
       }     
     }
     type = accessory[index]->get_type(); 
     learnedfrom = accessory[index]->get_learnedfrom(); 
     if ((type == acc_none) && (learnedfrom == 0)){
       //empty slot. Use it. 
-      if (index > accessory_count){
-        accessory_count = index; 
-      }
       return index;
     }  
   }   
